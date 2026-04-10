@@ -1,1 +1,321 @@
+<!DOCTYPE html>
 
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>VibeCoding Dashboard</title>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="VibeDash"/>
+<meta name="theme-color" content="#0f1117"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#0f1117;color:#fff;min-height:100vh}
+.sidebar{width:260px;background:#16181f;border-right:1px solid #2a2d3a;height:100vh;position:fixed;left:0;top:0;display:flex;flex-direction:column;overflow:hidden;transition:.2s}
+.sidebar.hidden{width:0;min-width:0}
+.main{margin-left:260px;padding:24px;min-height:100vh;transition:.2s}
+.main.full{margin-left:0}
+.card{background:#16181f;border:1px solid #2a2d3a;border-radius:12px;padding:16px;margin-bottom:12px}
+.btn{border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-family:inherit}
+.tag{background:#1e2130;border:1px solid #2a2d3a;color:#888;font-size:11px;border-radius:5px;padding:3px 9px;display:inline-block;margin:2px}
+.proj-btn{display:flex;align-items:center;gap:9px;width:100%;background:transparent;border:none;border-left:3px solid transparent;padding:8px 10px;cursor:pointer;margin-bottom:2px;text-align:left;color:#ccc;font-family:inherit}
+.proj-btn.active{background:#1e2130}
+.inp{background:#1e2130;border:1px solid #2a2d3a;border-radius:8px;color:#ddd;font-size:14px;padding:9px 12px;outline:none;width:100%;font-family:inherit}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal{background:#16181f;border:1px solid #2a2d3a;border-radius:16px;padding:24px;width:100%;max-width:400px;max-height:90vh;overflow:auto}
+.stat-card{background:#1e2130;border-radius:8px;padding:8px 10px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.status-btn{border:none;border-radius:20px;padding:5px 14px;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit}
+.file-row{display:flex;align-items:center;gap:9px;padding:7px 10px;background:#1e2130;border-radius:7px;margin-bottom:5px}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:#2a2d3a;border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+  <div style="padding:18px 20px 14px;border-bottom:1px solid #2a2d3a;display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#2563eb);display:flex;align-items:center;justify-content:center;font-size:16px">⚡</div>
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:14px">VibeCoding</div>
+        <div style="color:#444;font-size:11px">내 프로젝트 대시보드</div>
+      </div>
+    </div>
+    <button onclick="toggleSidebar()" style="background:none;border:none;color:#444;font-size:18px;cursor:pointer">←</button>
+  </div>
+  <div style="padding:12px 20px;border-bottom:1px solid #2a2d3a">
+    <div id="stats" style="display:grid;grid-template-columns:1fr 1fr;gap:7px"></div>
+  </div>
+  <div style="padding:10px 20px 4px">
+    <div style="color:#333;font-size:10px;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">필터</div>
+    <div id="filters"></div>
+  </div>
+  <div style="flex:1;overflow:auto;padding:8px 20px">
+    <div style="color:#333;font-size:10px;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">프로젝트</div>
+    <div id="proj-list"></div>
+  </div>
+  <div style="padding:10px 20px 16px">
+    <button class="btn" onclick="openModal()" style="width:100%;background:#1e2130;border:1px solid rgba(124,58,237,.3);color:#a78bfa;font-weight:600">+ 프로젝트 추가</button>
+  </div>
+</div>
+
+<div class="main" id="main">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <button id="menu-btn" onclick="toggleSidebar()" style="display:none;background:#1e2130;border:1px solid #2a2d3a;color:#aaa;font-size:16px;border-radius:8px;padding:6px 10px;cursor:pointer">☰</button>
+    <h1 id="proj-title" style="color:#fff;font-size:18px;font-weight:700;flex:1"></h1>
+    <button onclick="deleteProject()" style="background:#2a1a1a;border:1px solid #4a2020;color:#f87171;font-size:12px;border-radius:7px;padding:5px 10px;cursor:pointer">삭제</button>
+  </div>
+  <div id="status-btns" style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap"></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:12px">
+    <div class="card">
+      <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">🔗 링크</div>
+      <div id="proj-link"></div>
+    </div>
+    <div class="card">
+      <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">📁 파일</div>
+      <div id="proj-filecount" style="color:#fff;font-size:26px;font-weight:700"></div>
+      <div style="color:#333;font-size:11px">개 파일</div>
+    </div>
+    <div class="card">
+      <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">📊 상태</div>
+      <div id="proj-status-display"></div>
+    </div>
+  </div>
+  <div id="proj-tags" style="margin-bottom:12px"></div>
+  <div class="card">
+    <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">📂 코드 파일 목록</div>
+    <div id="proj-files"></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="color:#444;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px">📝 메모</div>
+      <div id="memo-btns"></div>
+    </div>
+    <div id="memo-view"></div>
+    <textarea id="memo-edit" class="inp" style="display:none;min-height:100px;resize:vertical"></textarea>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal" style="display:none">
+  <div class="modal">
+    <h2 style="color:#fff;margin:0 0 16px;font-size:16px">새 프로젝트 추가</h2>
+    <div style="margin-bottom:10px"><div style="color:#555;font-size:12px;margin-bottom:4px">이름</div><input class="inp" id="f-name" placeholder="프로젝트 이름"/></div>
+    <div style="margin-bottom:10px"><div style="color:#555;font-size:12px;margin-bottom:4px">이모지</div><input class="inp" id="f-emoji" placeholder="🚀" value="🚀"/></div>
+    <div style="margin-bottom:10px"><div style="color:#555;font-size:12px;margin-bottom:4px">링크</div><input class="inp" id="f-link" placeholder="https://..."/></div>
+    <div style="margin-bottom:10px"><div style="color:#555;font-size:12px;margin-bottom:4px">태그 (쉼표 구분)</div><input class="inp" id="f-tags" placeholder="React, Python"/></div>
+    <div style="margin-bottom:10px"><div style="color:#555;font-size:12px;margin-bottom:4px">파일 (쉼표 구분)</div><input class="inp" id="f-files" placeholder="App.jsx, main.py"/></div>
+    <div style="margin-bottom:10px"><div style="color:#555;font-size:12px;margin-bottom:4px">메모</div><input class="inp" id="f-memo" placeholder="간단한 설명"/></div>
+    <div style="margin-bottom:16px">
+      <div style="color:#555;font-size:12px;margin-bottom:4px">상태</div>
+      <select class="inp" id="f-status"><option>계획중</option><option>진행중</option><option>완료</option><option>중단</option></select>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" onclick="addProject()" style="flex:1;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;font-weight:600;padding:11px">추가</button>
+      <button class="btn" onclick="closeModal()" style="flex:1;background:#1e2130;border:1px solid #2a2d3a;color:#666;padding:11px">취소</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var STATUS = {
+  '완료':   {dot:'#34d399', bg:'#059669'},
+  '진행중': {dot:'#60a5fa', bg:'#2563eb'},
+  '계획중': {dot:'#a78bfa', bg:'#7c3aed'},
+  '중단':   {dot:'#6b7280', bg:'#374151'}
+};
+var PALETTE = ['#6ee7b7','#93c5fd','#fca5a5','#fde68a','#c4b5fd','#fdba74'];
+var DEFAULT_PROJECTS = [
+  {id:1,name:'Todo App',emoji:'✅',status:'완료',tags:['React','Tailwind'],link:'',files:['App.jsx','TodoList.jsx'],memo:'기본 CRUD 완성',color:'#6ee7b7'},
+  {id:2,name:'포트폴리오 사이트',emoji:'🌐',status:'진행중',tags:['Next.js'],link:'',files:['index.tsx','About.tsx'],memo:'프로젝트 섹션 작업 중',color:'#93c5fd'},
+  {id:3,name:'AI 챗봇',emoji:'🤖',status:'계획중',tags:['Python','Claude API'],link:'',files:['main.py'],memo:'프롬프트 설계 단계',color:'#fca5a5'}
+];
+
+var projects = [];
+var selected = null;
+var filter = '전체';
+var sidebarOpen = true;
+
+function fileIcon(f) {
+  if (f.endsWith('.jsx')||f.endsWith('.tsx')) return '⚛️';
+  if (f.endsWith('.py')) return '🐍';
+  if (f.endsWith('.css')) return '🎨';
+  if (f.endsWith('.md')) return '📝';
+  return '📄';
+}
+
+function loadData() {
+  try {
+    var d = localStorage.getItem('vibe_v1');
+    projects = d ? JSON.parse(d) : DEFAULT_PROJECTS.slice();
+  } catch(e) {
+    projects = DEFAULT_PROJECTS.slice();
+  }
+}
+
+function saveData() {
+  try { localStorage.setItem('vibe_v1', JSON.stringify(projects)); } catch(e){}
+}
+
+function render() {
+  renderStats();
+  renderFilters();
+  renderList();
+  if (selected) renderMain();
+}
+
+function renderStats() {
+  var html = '';
+  var keys = Object.keys(STATUS);
+  for (var i=0; i<keys.length; i++) {
+    var s = keys[i];
+    var n = projects.filter(function(p){return p.status===s;}).length;
+    html += '<div class="stat-card" style="border-left:3px solid '+STATUS[s].dot+'">' +
+      '<div style="color:#fff;font-size:18px;font-weight:700">'+n+'</div>' +
+      '<div style="color:#555;font-size:11px">'+s+'</div></div>';
+  }
+  document.getElementById('stats').innerHTML = html;
+}
+
+function renderFilters() {
+  var all = ['전체'].concat(Object.keys(STATUS));
+  var html = '';
+  for (var i=0; i<all.length; i++) {
+    var s = all[i];
+    var cnt = s!=='전체' ? projects.filter(function(p){return p.status===s;}).length : '';
+    var active = filter===s;
+    html += '<button onclick="setFilter(\''+s+'\')" style="display:flex;justify-content:space-between;align-items:center;width:100%;background:transparent;border:none;border-left:3px solid '+(active?'#7c3aed':'transparent')+';padding:6px 10px;color:'+(active?'#e0e0e0':'#555')+';font-size:13px;cursor:pointer;font-family:inherit">' +
+      '<span>'+s+'</span>'+(s!=='전체'?'<span style="color:#333;font-size:11px">'+cnt+'</span>':'')+'</button>';
+  }
+  document.getElementById('filters').innerHTML = html;
+}
+
+function renderList() {
+  var filtered = filter==='전체' ? projects : projects.filter(function(p){return p.status===filter;});
+  var html = '';
+  for (var i=0; i<filtered.length; i++) {
+    var p = filtered[i];
+    var active = selected && selected.id===p.id;
+    html += '<button class="proj-btn'+(active?' active':'')+'" onclick="selectProject('+p.id+')" style="border-left:3px solid '+(active?p.color:'transparent')+'">' +
+      '<span style="font-size:16px">'+p.emoji+'</span>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="color:#ccc;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+p.name+'</div>' +
+        '<div style="display:flex;align-items:center;gap:4px;margin-top:2px">' +
+          '<span class="dot" style="background:'+STATUS[p.status].dot+';width:6px;height:6px"></span>' +
+          '<span style="font-size:11px;color:#444">'+p.status+'</span>' +
+        '</div></div></button>';
+  }
+  document.getElementById('proj-list').innerHTML = html;
+}
+
+function renderMain() {
+  document.getElementById('proj-title').textContent = selected.emoji + ' ' + selected.name;
+
+  var sbHtml = '';
+  var keys = Object.keys(STATUS);
+  for (var i=0; i<keys.length; i++) {
+    var s = keys[i];
+    sbHtml += '<button class="status-btn" onclick="setStatus(\''+s+'\')" style="background:'+(selected.status===s?STATUS[s].bg:'#1e2130')+';color:'+(selected.status===s?'#fff':'#555')+'">'+s+'</button>';
+  }
+  document.getElementById('status-btns').innerHTML = sbHtml;
+
+  document.getElementById('proj-link').innerHTML = selected.link
+    ? '<a href="'+selected.link+'" target="_blank" style="color:#60a5fa;font-size:12px;word-break:break-all;text-decoration:none">'+selected.link+'</a>'
+    : '<span style="color:#333;font-size:12px">없음</span>';
+
+  document.getElementById('proj-filecount').textContent = selected.files.length;
+
+  document.getElementById('proj-status-display').innerHTML =
+    '<span class="dot" style="background:'+STATUS[selected.status].dot+'"></span>' +
+    '<span style="color:#fff;font-size:15px;font-weight:600;margin-left:6px">'+selected.status+'</span>';
+
+  document.getElementById('proj-tags').innerHTML = selected.tags.map(function(t){return '<span class="tag">'+t+'</span>';}).join('');
+
+  document.getElementById('proj-files').innerHTML = selected.files.length===0
+    ? '<span style="color:#333;font-size:13px">파일 없음</span>'
+    : selected.files.map(function(f){return '<div class="file-row"><span>'+fileIcon(f)+'</span><span style="color:#bbb;font-size:13px;font-family:monospace">'+f+'</span></div>';}).join('');
+
+  document.getElementById('memo-view').innerHTML = '<div style="color:'+(selected.memo?'#aaa':'#333')+';font-size:13px;line-height:1.7;min-height:60px">'+(selected.memo||'메모를 추가해보세요...')+'</div>';
+  document.getElementById('memo-edit').value = selected.memo;
+  document.getElementById('memo-edit').style.display = 'none';
+  document.getElementById('memo-view').style.display = 'block';
+  document.getElementById('memo-btns').innerHTML = '<button class="btn" onclick="startEditMemo()" style="background:#1e2130;border:1px solid #2a2d3a;color:#555;font-size:12px">편집</button>';
+}
+
+function selectProject(id) {
+  for (var i=0; i<projects.length; i++) {
+    if (projects[i].id===id) { selected=projects[i]; break; }
+  }
+  render();
+}
+
+function setFilter(f) { filter=f; renderFilters(); renderList(); }
+
+function setStatus(s) {
+  for (var i=0; i<projects.length; i++) {
+    if (projects[i].id===selected.id) { projects[i].status=s; selected=projects[i]; break; }
+  }
+  saveData(); render();
+}
+
+function deleteProject() {
+  if (!selected) return;
+  if (!confirm('"'+selected.name+'" 삭제할까요?')) return;
+  projects = projects.filter(function(p){return p.id!==selected.id;});
+  selected = projects.length>0 ? projects[0] : null;
+  saveData(); render();
+}
+
+function startEditMemo() {
+  document.getElementById('memo-view').style.display='none';
+  document.getElementById('memo-edit').style.display='block';
+  document.getElementById('memo-btns').innerHTML=
+    '<button class="btn" onclick="saveMemo()" style="background:#7c3aed;border:none;color:#fff;font-size:12px;margin-right:6px">저장</button>' +
+    '<button class="btn" onclick="cancelMemo()" style="background:#1e2130;border:1px solid #2a2d3a;color:#555;font-size:12px">취소</button>';
+}
+
+function saveMemo() {
+  var val = document.getElementById('memo-edit').value;
+  for (var i=0; i<projects.length; i++) {
+    if (projects[i].id===selected.id) { projects[i].memo=val; selected=projects[i]; break; }
+  }
+  saveData(); renderMain(); renderList();
+}
+
+function cancelMemo() { renderMain(); }
+
+function toggleSidebar() {
+  sidebarOpen=!sidebarOpen;
+  document.getElementById('sidebar').classList.toggle('hidden',!sidebarOpen);
+  document.getElementById('main').classList.toggle('full',!sidebarOpen);
+  document.getElementById('menu-btn').style.display=sidebarOpen?'none':'block';
+}
+
+function openModal() { document.getElementById('modal').style.display='flex'; }
+function closeModal() { document.getElementById('modal').style.display='none'; }
+
+function addProject() {
+  var p = {
+    id: Date.now(),
+    name: document.getElementById('f-name').value || '새 프로젝트',
+    emoji: document.getElementById('f-emoji').value || '🚀',
+    status: document.getElementById('f-status').value,
+    tags: document.getElementById('f-tags').value.split(',').map(function(t){return t.trim();}).filter(Boolean),
+    link: document.getElementById('f-link').value,
+    files: document.getElementById('f-files').value.split(',').map(function(f){return f.trim();}).filter(Boolean),
+    memo: document.getElementById('f-memo').value,
+    color: PALETTE[Math.floor(Math.random()*PALETTE.length)]
+  };
+  projects.push(p);
+  selected = p;
+  saveData(); closeModal(); render();
+}
+
+loadData();
+if (projects.length>0) selected=projects[0];
+render();
+</script>
+
+</body>
+</html>
