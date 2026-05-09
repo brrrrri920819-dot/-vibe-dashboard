@@ -30,20 +30,26 @@ body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#0f
 .file-row{display:flex;align-items:center;gap:9px;padding:7px 10px;background:#1e2130;border-radius:7px;margin-bottom:5px}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:#2a2d3a;border-radius:2px}
+.lucide{display:inline-block;vertical-align:middle;flex-shrink:0}
 </style>
+<script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
 <div class="sidebar" id="sidebar">
   <div style="padding:18px 20px 14px;border-bottom:1px solid #2a2d3a;display:flex;align-items:center;justify-content:space-between">
     <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#2563eb);display:flex;align-items:center;justify-content:center;font-size:16px">⚡</div>
+      <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#2563eb);display:flex;align-items:center;justify-content:center">
+        <i data-lucide="zap" style="width:16px;height:16px;color:#fff;stroke-width:2.5"></i>
+      </div>
       <div>
         <div style="color:#fff;font-weight:700;font-size:14px">VibeCoding</div>
         <div style="color:#444;font-size:11px">내 프로젝트 대시보드</div>
       </div>
     </div>
-    <button onclick="toggleSidebar()" style="background:none;border:none;color:#444;font-size:18px;cursor:pointer">←</button>
+    <button onclick="toggleSidebar()" style="background:none;border:none;color:#444;cursor:pointer;display:flex;align-items:center;padding:4px">
+      <i data-lucide="chevron-left" style="width:18px;height:18px"></i>
+    </button>
   </div>
   <div style="padding:12px 20px;border-bottom:1px solid #2a2d3a">
     <div id="stats" style="display:grid;grid-template-columns:1fr 1fr;gap:7px"></div>
@@ -57,40 +63,56 @@ body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#0f
     <div id="proj-list"></div>
   </div>
   <div style="padding:10px 20px 16px">
-    <button class="btn" onclick="openModal()" style="width:100%;background:#1e2130;border:1px solid rgba(124,58,237,.3);color:#a78bfa;font-weight:600">+ 프로젝트 추가</button>
+    <button class="btn" onclick="openModal()" style="width:100%;background:#1e2130;border:1px solid rgba(124,58,237,.3);color:#a78bfa;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px">
+      <i data-lucide="plus-circle" style="width:14px;height:14px"></i> 프로젝트 추가
+    </button>
   </div>
 </div>
 
 <div class="main" id="main">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-    <button id="menu-btn" onclick="toggleSidebar()" style="display:none;background:#1e2130;border:1px solid #2a2d3a;color:#aaa;font-size:16px;border-radius:8px;padding:6px 10px;cursor:pointer">☰</button>
+    <button id="menu-btn" onclick="toggleSidebar()" style="display:none;background:#1e2130;border:1px solid #2a2d3a;color:#aaa;border-radius:8px;padding:6px 10px;cursor:pointer">
+      <i data-lucide="menu" style="width:16px;height:16px"></i>
+    </button>
     <h1 id="proj-title" style="color:#fff;font-size:18px;font-weight:700;flex:1"></h1>
-    <button onclick="deleteProject()" style="background:#2a1a1a;border:1px solid #4a2020;color:#f87171;font-size:12px;border-radius:7px;padding:5px 10px;cursor:pointer">삭제</button>
+    <button onclick="deleteProject()" style="background:#2a1a1a;border:1px solid #4a2020;color:#f87171;font-size:12px;border-radius:7px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px">
+      <i data-lucide="trash-2" style="width:12px;height:12px"></i>삭제
+    </button>
   </div>
   <div id="status-btns" style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap"></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:12px">
     <div class="card">
-      <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">🔗 링크</div>
+      <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:4px">
+        <i data-lucide="link-2" style="width:11px;height:11px"></i> 링크
+      </div>
       <div id="proj-link"></div>
     </div>
     <div class="card">
-      <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">📁 파일</div>
+      <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:4px">
+        <i data-lucide="folder" style="width:11px;height:11px"></i> 파일
+      </div>
       <div id="proj-filecount" style="color:#fff;font-size:26px;font-weight:700"></div>
       <div style="color:#333;font-size:11px">개 파일</div>
     </div>
     <div class="card">
-      <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">📊 상태</div>
+      <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:4px">
+        <i data-lucide="activity" style="width:11px;height:11px"></i> 상태
+      </div>
       <div id="proj-status-display"></div>
     </div>
   </div>
   <div id="proj-tags" style="margin-bottom:12px"></div>
   <div class="card">
-    <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">📂 코드 파일 목록</div>
+    <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:4px">
+      <i data-lucide="folder-open" style="width:11px;height:11px"></i> 코드 파일 목록
+    </div>
     <div id="proj-files"></div>
   </div>
   <div class="card" style="margin-top:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="color:#444;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px">📝 메모</div>
+      <div style="color:#444;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:4px">
+        <i data-lucide="file-text" style="width:11px;height:11px"></i> 메모
+      </div>
       <div id="memo-btns"></div>
     </div>
     <div id="memo-view"></div>
@@ -138,11 +160,11 @@ var filter = '전체';
 var sidebarOpen = true;
 
 function fileIcon(f) {
-  if (f.endsWith('.jsx')||f.endsWith('.tsx')) return '⚛️';
-  if (f.endsWith('.py')) return '🐍';
-  if (f.endsWith('.css')) return '🎨';
-  if (f.endsWith('.md')) return '📝';
-  return '📄';
+  if (f.endsWith('.jsx')||f.endsWith('.tsx')) return '<i data-lucide="atom" style="width:14px;height:14px;color:#60a5fa;flex-shrink:0"></i>';
+  if (f.endsWith('.py')) return '<i data-lucide="terminal" style="width:14px;height:14px;color:#34d399;flex-shrink:0"></i>';
+  if (f.endsWith('.css')) return '<i data-lucide="palette" style="width:14px;height:14px;color:#f9a8d4;flex-shrink:0"></i>';
+  if (f.endsWith('.md')) return '<i data-lucide="file-text" style="width:14px;height:14px;color:#fde68a;flex-shrink:0"></i>';
+  return '<i data-lucide="file" style="width:14px;height:14px;color:#888;flex-shrink:0"></i>';
 }
 
 function loadData() {
@@ -163,6 +185,7 @@ function render() {
   renderFilters();
   renderList();
   if (selected) renderMain();
+  lucide.createIcons();
 }
 
 function renderStats() {
@@ -234,13 +257,14 @@ function renderMain() {
 
   document.getElementById('proj-files').innerHTML = selected.files.length===0
     ? '<span style="color:#333;font-size:13px">파일 없음</span>'
-    : selected.files.map(function(f){return '<div class="file-row"><span>'+fileIcon(f)+'</span><span style="color:#bbb;font-size:13px;font-family:monospace">'+f+'</span></div>';}).join('');
+    : selected.files.map(function(f){return '<div class="file-row">'+fileIcon(f)+'<span style="color:#bbb;font-size:13px;font-family:monospace">'+f+'</span></div>';}).join('');
 
   document.getElementById('memo-view').innerHTML = '<div style="color:'+(selected.memo?'#aaa':'#333')+';font-size:13px;line-height:1.7;min-height:60px">'+(selected.memo||'메모를 추가해보세요...')+'</div>';
   document.getElementById('memo-edit').value = selected.memo;
   document.getElementById('memo-edit').style.display = 'none';
   document.getElementById('memo-view').style.display = 'block';
-  document.getElementById('memo-btns').innerHTML = '<button class="btn" onclick="startEditMemo()" style="background:#1e2130;border:1px solid #2a2d3a;color:#555;font-size:12px">편집</button>';
+  document.getElementById('memo-btns').innerHTML = '<button class="btn" onclick="startEditMemo()" style="background:#1e2130;border:1px solid #2a2d3a;color:#555;font-size:12px;display:flex;align-items:center;gap:4px"><i data-lucide="pencil" style="width:11px;height:11px"></i>편집</button>';
+  lucide.createIcons();
 }
 
 function selectProject(id) {
@@ -271,8 +295,9 @@ function startEditMemo() {
   document.getElementById('memo-view').style.display='none';
   document.getElementById('memo-edit').style.display='block';
   document.getElementById('memo-btns').innerHTML=
-    '<button class="btn" onclick="saveMemo()" style="background:#7c3aed;border:none;color:#fff;font-size:12px;margin-right:6px">저장</button>' +
-    '<button class="btn" onclick="cancelMemo()" style="background:#1e2130;border:1px solid #2a2d3a;color:#555;font-size:12px">취소</button>';
+    '<button class="btn" onclick="saveMemo()" style="background:#7c3aed;border:none;color:#fff;font-size:12px;margin-right:6px;display:flex;align-items:center;gap:4px"><i data-lucide="check" style="width:11px;height:11px"></i>저장</button>' +
+    '<button class="btn" onclick="cancelMemo()" style="background:#1e2130;border:1px solid #2a2d3a;color:#555;font-size:12px;display:flex;align-items:center;gap:4px"><i data-lucide="x" style="width:11px;height:11px"></i>취소</button>';
+  lucide.createIcons();
 }
 
 function saveMemo() {
