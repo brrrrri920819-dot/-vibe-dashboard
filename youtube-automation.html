@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>YouTube 자동화 시스템</title>
+<meta name="theme-color" content="#0f1117"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#0f1117;color:#fff;min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#2a2d3a;border-radius:3px}
+
+/* Layout */
+.sidebar{width:220px;background:#16181f;border-right:1px solid #1e2130;height:100vh;position:fixed;left:0;top:0;display:flex;flex-direction:column;overflow:hidden;transition:.25s;z-index:100}
+.sidebar.hidden{width:0}
+.main{margin-left:220px;padding:28px 28px 60px;min-height:100vh;transition:.25s}
+.main.full{margin-left:0}
+
+/* Common */
+.card{background:#16181f;border:1px solid #1e2130;border-radius:12px;padding:18px;margin-bottom:14px}
+.btn{border:none;border-radius:8px;padding:9px 16px;cursor:pointer;font-size:13px;font-family:inherit;transition:.15s}
+.btn:hover{filter:brightness(1.15)}
+.inp{background:#1e2130;border:1px solid #2a2d3a;border-radius:8px;color:#ddd;font-size:13px;padding:9px 12px;outline:none;width:100%;font-family:inherit;transition:border .15s}
+.inp:focus{border-color:#7c3aed}
+.inp::placeholder{color:#3a3d4a}
+.tag-chip{background:#1e2130;border:1px solid #2a2d3a;color:#888;font-size:11px;border-radius:5px;padding:3px 9px;display:inline-block;margin:2px;cursor:pointer}
+.tag-chip:hover{border-color:#7c3aed;color:#a78bfa}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px}
+.modal{background:#16181f;border:1px solid #2a2d3a;border-radius:16px;padding:26px;width:100%;max-width:480px;max-height:90vh;overflow:auto}
+.section-title{color:#444;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+
+/* Nav */
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;background:transparent;border:none;border-left:3px solid transparent;padding:9px 14px;cursor:pointer;text-align:left;color:#555;font-family:inherit;font-size:13px;transition:.15s}
+.nav-item:hover{color:#aaa;background:#1a1c24}
+.nav-item.active{color:#e0e0e0;border-left-color:#ff0000;background:#1a1c24}
+.nav-icon{font-size:16px;width:20px;text-align:center}
+
+/* Status badges */
+.status-idea{background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3)}
+.status-plan{background:rgba(37,99,235,.2);color:#60a5fa;border:1px solid rgba(37,99,235,.3)}
+.status-shoot{background:rgba(245,158,11,.2);color:#fbbf24;border:1px solid rgba(245,158,11,.3)}
+.status-edit{background:rgba(249,115,22,.2);color:#fb923c;border:1px solid rgba(249,115,22,.3)}
+.status-seo{background:rgba(16,185,129,.2);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+.status-done{background:rgba(255,0,0,.2);color:#ff6b6b;border:1px solid rgba(255,0,0,.3)}
+
+/* Video card */
+.video-card{background:#16181f;border:1px solid #1e2130;border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;transition:.15s}
+.video-card:hover{border-color:#2a2d3a;background:#1a1c24}
+.video-card.selected{border-color:#7c3aed}
+
+/* Checklist */
+.check-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1a1c24}
+.check-item:last-child{border-bottom:none}
+.checkbox{width:18px;height:18px;border-radius:4px;border:1.5px solid #2a2d3a;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+.checkbox.checked{background:#7c3aed;border-color:#7c3aed}
+
+/* Progress bar */
+.progress-bar{height:6px;background:#1e2130;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#7c3aed,#ff0000);transition:width .4s}
+
+/* Grid */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:20px}
+.stat-box{background:#16181f;border:1px solid #1e2130;border-radius:10px;padding:14px;text-align:center}
+
+/* Calendar */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day{background:#1e2130;border-radius:6px;padding:6px;min-height:60px;font-size:11px}
+.cal-day-num{color:#444;margin-bottom:4px}
+.cal-event{background:#7c3aed22;border-left:2px solid #7c3aed;color:#a78bfa;padding:2px 5px;border-radius:3px;font-size:10px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-event.done{background:#ff000022;border-left-color:#ff6b6b;color:#ff6b6b}
+
+/* Textarea */
+textarea.inp{resize:vertical;min-height:80px;line-height:1.6}
+
+/* Tooltip/help */
+.help-text{color:#444;font-size:12px;margin-top:5px;line-height:1.5}
+
+/* Pulse animation */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.live{animation:pulse 2s infinite;display:inline-block;width:6px;height:6px;background:#ff0000;border-radius:50%}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+  <div style="padding:16px 14px 12px;border-bottom:1px solid #1e2130">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#ff0000,#cc0000);display:flex;align-items:center;justify-content:center;font-size:14px">▶</div>
+        <div>
+          <div style="color:#fff;font-weight:700;font-size:13px">YT 자동화</div>
+          <div style="display:flex;align-items:center;gap:4px;margin-top:1px">
+            <span class="live"></span>
+            <span style="color:#444;font-size:10px">시스템 가동중</span>
+          </div>
+        </div>
+      </div>
+      <button onclick="toggleSidebar()" style="background:none;border:none;color:#333;cursor:pointer;font-size:16px">←</button>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow:auto;padding:10px 0">
+    <div style="padding:8px 14px 4px">
+      <div class="section-title">메뉴</div>
+    </div>
+    <button class="nav-item active" id="nav-dashboard" onclick="goPage('dashboard')">
+      <span class="nav-icon">📊</span>대시보드
+    </button>
+    <button class="nav-item" id="nav-videos" onclick="goPage('videos')">
+      <span class="nav-icon">🎬</span>영상 관리
+    </button>
+    <button class="nav-item" id="nav-script" onclick="goPage('script')">
+      <span class="nav-icon">✍️</span>스크립트 생성기
+    </button>
+    <button class="nav-item" id="nav-seo" onclick="goPage('seo')">
+      <span class="nav-icon">🔍</span>SEO 최적화
+    </button>
+    <button class="nav-item" id="nav-calendar" onclick="goPage('calendar')">
+      <span class="nav-icon">📅</span>업로드 캘린더
+    </button>
+    <button class="nav-item" id="nav-checklist" onclick="goPage('checklist')">
+      <span class="nav-icon">✅</span>제작 체크리스트
+    </button>
+    <button class="nav-item" id="nav-ideas" onclick="goPage('ideas')">
+      <span class="nav-icon">💡</span>아이디어 뱅크
+    </button>
+
+    <div style="padding:12px 14px 4px;margin-top:8px">
+      <div class="section-title">빠른 실행</div>
+    </div>
+    <button class="nav-item" onclick="openAddVideoModal()">
+      <span class="nav-icon">➕</span>영상 추가
+    </button>
+    <a href="index.html" class="nav-item" style="text-decoration:none">
+      <span class="nav-icon">⚡</span>VibeDash 이동
+    </a>
+  </div>
+
+  <div style="padding:10px 14px 14px;border-top:1px solid #1e2130">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#1e2130;border-radius:8px">
+      <span style="color:#555;font-size:11px">총 영상</span>
+      <span style="color:#fff;font-weight:700" id="sb-total">0</span>
+    </div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main" id="main">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+    <button id="menu-btn" onclick="toggleSidebar()" style="display:none;background:#1e2130;border:1px solid #2a2d3a;color:#aaa;font-size:16px;border-radius:8px;padding:6px 10px;cursor:pointer">☰</button>
+    <h1 id="page-title" style="color:#fff;font-size:18px;font-weight:700;flex:1">📊 대시보드</h1>
+    <button onclick="openAddVideoModal()" class="btn" style="background:linear-gradient(135deg,#ff0000,#cc0000);color:#fff;font-weight:600;display:flex;align-items:center;gap:6px">
+      ▶ 새 영상 추가
+    </button>
+  </div>
+
+  <div id="page-content"></div>
+</div>
+
+<!-- Add Video Modal -->
+<div class="modal-bg" id="add-modal" style="display:none">
+  <div class="modal">
+    <h2 style="color:#fff;font-size:16px;margin-bottom:18px">🎬 새 영상 추가</h2>
+    <div style="margin-bottom:12px">
+      <div class="section-title">제목 *</div>
+      <input class="inp" id="vm-title" placeholder="영상 제목을 입력하세요"/>
+    </div>
+    <div style="margin-bottom:12px">
+      <div class="section-title">주제/카테고리</div>
+      <input class="inp" id="vm-topic" placeholder="예: 개발, 리뷰, 튜토리얼, 브이로그"/>
+    </div>
+    <div style="margin-bottom:12px">
+      <div class="section-title">상태</div>
+      <select class="inp" id="vm-status">
+        <option value="idea">💡 아이디어</option>
+        <option value="plan">📋 기획중</option>
+        <option value="shoot">🎥 촬영중</option>
+        <option value="edit">✂️ 편집중</option>
+        <option value="seo">🔍 SEO 작업중</option>
+        <option value="done">✅ 업로드 완료</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div>
+        <div class="section-title">계획 업로드일</div>
+        <input class="inp" type="date" id="vm-date"/>
+      </div>
+      <div>
+        <div class="section-title">예상 길이 (분)</div>
+        <input class="inp" type="number" id="vm-length" placeholder="10"/>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <div class="section-title">키워드 (쉼표 구분)</div>
+      <input class="inp" id="vm-keywords" placeholder="유튜브, 자동화, AI"/>
+    </div>
+    <div style="margin-bottom:18px">
+      <div class="section-title">메모</div>
+      <textarea class="inp" id="vm-memo" placeholder="영상에 대한 메모..."></textarea>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" onclick="addVideo()" style="flex:1;background:linear-gradient(135deg,#ff0000,#cc0000);color:#fff;font-weight:600;padding:12px">추가</button>
+      <button class="btn" onclick="closeAddModal()" style="flex:1;background:#1e2130;border:1px solid #2a2d3a;color:#666;padding:12px">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- Video Detail Modal -->
+<div class="modal-bg" id="detail-modal" style="display:none">
+  <div class="modal" style="max-width:560px">
+    <div id="detail-content"></div>
+    <div style="margin-top:16px">
+      <button class="btn" onclick="closeDetailModal()" style="background:#1e2130;border:1px solid #2a2d3a;color:#666;width:100%;padding:11px">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA STRUCTURES =====
+var STATUSES = {
+  idea:  {label:'💡 아이디어', cls:'status-idea',  order:0},
+  plan:  {label:'📋 기획중',   cls:'status-plan',  order:1},
+  shoot: {label:'🎥 촬영중',   cls:'status-shoot', order:2},
+  edit:  {label:'✂️ 편집중',   cls:'status-edit',  order:3},
+  seo:   {label:'🔍 SEO작업',  cls:'status-seo',   order:4},
+  done:  {label:'✅ 완료',     cls:'status-done',  order:5}
+};
+
+var CHECKLIST_TEMPLATES = {
+  idea:  ['📌 아이디어 문서화', '🎯 타겟 시청자 설정', '📊 경쟁 영상 분석'],
+  plan:  ['📝 스크립트 초안 작성', '🗂️ 참고 자료 수집', '📐 영상 구조 기획', '🖼️ 썸네일 컨셉 기획'],
+  shoot: ['💡 조명 세팅', '🎙️ 마이크 테스트', '📷 카메라 각도 설정', '🎬 촬영 완료', '💾 파일 백업'],
+  edit:  ['✂️ 1차 컷 편집', '🎵 BGM 삽입', '📝 자막 추가', '🖼️ 썸네일 제작', '🔊 오디오 믹싱', '🎨 색보정'],
+  seo:   ['🔍 키워드 리서치', '📋 제목 최적화 (60자 이내)', '📄 설명문 작성 (1000자+)', '🏷️ 태그 15개 추가', '📌 섹션/타임스탬프 추가', '🃏 카드/최종화면 설정'],
+  done:  ['⬆️ 영상 업로드', '📅 예약 발행 설정', '📣 SNS 공유', '💬 댓글 모니터링', '📊 초기 성과 체크']
+};
+
+var SCRIPT_TEMPLATES = {
+  tutorial: {
+    name: '📚 튜토리얼 영상',
+    sections: [
+      {title:'🎣 후킹 인트로 (0~30초)', template:'오늘 이 영상에서는 [주제]를 단 [시간]만에 완벽하게 마스터하는 방법을 알려드릴게요. 이 영상을 보고 나면 [결과]를 얻을 수 있어요. 그럼 바로 시작해볼게요!'},
+      {title:'🙋 소개 & 목적 (30초~1분)', template:'안녕하세요, [채널명]입니다. 오늘은 [주제]에 대해 알아볼 건데요. 이 영상은 [타겟]을 위한 내용이에요.'},
+      {title:'📝 본론 Step 1', template:'첫 번째로 [단계 1]을 해보겠습니다. [상세 설명...]'},
+      {title:'📝 본론 Step 2', template:'다음으로 [단계 2]입니다. 여기서 중요한 점은 [핵심 포인트]예요.'},
+      {title:'📝 본론 Step 3', template:'마지막으로 [단계 3]을 해볼게요. [상세 설명...]'},
+      {title:'🎯 마무리 & CTA', template:'오늘 [주제]에 대해 알아봤는데요, 도움이 되셨나요? 좋아요와 구독 부탁드리고, 댓글로 궁금한 점 남겨주세요! 다음 영상에서 만나요 👋'}
+    ]
+  },
+  review: {
+    name: '⭐ 리뷰 영상',
+    sections: [
+      {title:'🎣 후킹 인트로', template:'[제품/서비스] 진짜 써봤습니다. 광고 아닙니다. [충격적 사실/발견]을 먼저 말씀드릴게요.'},
+      {title:'📦 제품 소개', template:'[제품명]은 [설명]으로, 가격은 [가격]입니다. 제가 [기간]동안 써봤는데요...'},
+      {title:'✅ 장점', template:'먼저 장점을 말씀드리면, 첫째로 [장점1], 둘째로 [장점2], 셋째로 [장점3]입니다.'},
+      {title:'❌ 단점', template:'단점도 솔직하게 말씀드릴게요. [단점1]과 [단점2]가 좀 아쉬웠어요.'},
+      {title:'🏆 총평 & 추천', template:'총점은 [X/10]점이고, [이런 분]에게 추천드립니다. [구매 링크는 댓글에 남겨드릴게요]'},
+      {title:'🎯 마무리 & CTA', template:'이 영상이 도움이 되셨다면 좋아요 꾹 눌러주시고, 구독하시면 이런 정직한 리뷰 계속 올려드려요!'}
+    ]
+  },
+  vlog: {
+    name: '🎥 브이로그',
+    sections: [
+      {title:'🌅 오프닝', template:'안녕하세요! 오늘은 [날짜/장소/이벤트]에 다녀왔어요. 같이 구경해봐요~'},
+      {title:'🚗 이동/준비', template:'[준비 과정/이동 장면] 설명...'},
+      {title:'🎉 메인 이벤트', template:'드디어 [메인 장소/활동]에 도착했어요! [상세 묘사...]'},
+      {title:'🍽️ 중간 에피소드', template:'[재미있는 에피소드나 장면 설명...]'},
+      {title:'💭 마무리 소감', template:'오늘 [장소/활동]은 정말 [감상]이었어요. 특히 [기억에 남는 것]이 좋았는데...'},
+      {title:'👋 아웃트로 & CTA', template:'오늘 영상 어떠셨나요? 다음에는 [예고]도 올릴 예정이에요. 구독하시고 놓치지 마세요!'}
+    ]
+  },
+  shorts: {
+    name: '⚡ 쇼츠 (Shorts)',
+    sections: [
+      {title:'⚡ 첫 1~2초 후킹', template:'[충격적 사실/질문/액션]으로 바로 시작! (텍스트 오버레이 필수)'},
+      {title:'💡 핵심 내용 (5~30초)', template:'[핵심 팁 또는 내용] - 짧고 임팩트 있게!'},
+      {title:'🎯 마무리 (30~60초)', template:'이거 몰랐으면 어쩔뻔! 좋아요 & 팔로우로 더 받아가세요 👍'}
+    ]
+  }
+};
+
+var IDEA_KEYWORDS = {
+  '개발': ['코딩 100일 챌린지', 'ChatGPT로 앱 만들기', '주니어 개발자 일상', '개발자 월급 현실', 'VS Code 꿀팁'],
+  '리뷰': ['최신 맥북 한달 사용기', '가성비 키보드 TOP5', '개발자 책상 셋업', '노이즈캔슬링 이어폰 비교', '스탠딩 데스크 후기'],
+  '튜토리얼': ['React 30분 완성', 'Python 자동화 입문', 'Figma 디자인 기초', 'Git 사용법 완전정복', 'n8n 자동화 만들기'],
+  '라이프': ['개발자 퇴근 루틴', '재택근무 1년 후기', '프리랜서 수입 공개', '사이드 프로젝트 수익화', '개발자 번아웃 극복기']
+};
+
+// ===== STATE =====
+var videos = [];
+var currentPage = 'dashboard';
+var selectedVideo = null;
+var sidebarOpen = true;
+
+// ===== STORAGE =====
+function loadData() {
+  try {
+    var d = localStorage.getItem('yt_auto_v1');
+    videos = d ? JSON.parse(d) : getSampleData();
+  } catch(e) { videos = getSampleData(); }
+}
+
+function saveData() {
+  try { localStorage.setItem('yt_auto_v1', JSON.stringify(videos)); } catch(e) {}
+}
+
+function getSampleData() {
+  var today = new Date();
+  var fmt = function(d) { return d.toISOString().split('T')[0]; };
+  return [
+    {id:1, title:'YouTube 자동화 시스템 구축 완전 가이드', topic:'튜토리얼', status:'edit', date:fmt(new Date(today.getTime()+7*86400000)), length:15, keywords:['유튜브','자동화','n8n'], memo:'편집 70% 완료', checklist:{idea:[true,true,true],plan:[true,true,true,true],shoot:[true,true,true,true,true],edit:[true,false,false,false,false,false],seo:[],done:[]}, script:'', description:'', tags:''},
+    {id:2, title:'AI로 유튜브 쇼츠 하루 10개 만드는 법', topic:'쇼츠', status:'seo', date:fmt(new Date(today.getTime()+3*86400000)), length:1, keywords:['쇼츠','AI','ChatGPT'], memo:'업로드 D-3', checklist:{idea:[true,true,true],plan:[true,true,true,true],shoot:[true,true,true,true,true],edit:[true,true,true,true,true,true],seo:[false,false,false,false,false,false],done:[]}, script:'', description:'', tags:''},
+    {id:3, title:'Claude AI로 스크립트 자동 생성하기', topic:'튜토리얼', status:'plan', date:fmt(new Date(today.getTime()+14*86400000)), length:12, keywords:['Claude','AI','스크립트'], memo:'키워드 리서치 중', checklist:{idea:[true,true,false],plan:[false,false,false,false],shoot:[],edit:[],seo:[],done:[]}, script:'', description:'', tags:''},
+    {id:4, title:'수익형 유튜브 채널 1년 수익 공개', topic:'라이프', status:'idea', date:fmt(new Date(today.getTime()+21*86400000)), length:20, keywords:['수익','유튜브','수익화'], memo:'아이디어 단계', checklist:{idea:[false,false,false],plan:[],shoot:[],edit:[],seo:[],done:[]}, script:'', description:'', tags:''},
+    {id:5, title:'리액트 30분 완성 - 입문자용', topic:'튜토리얼', status:'done', date:fmt(new Date(today.getTime()-5*86400000)), length:30, keywords:['React','튜토리얼','입문'], memo:'1.2만 조회수', checklist:{idea:[true,true,true],plan:[true,true,true,true],shoot:[true,true,true,true,true],edit:[true,true,true,true,true,true],seo:[true,true,true,true,true,true],done:[true,true,true,true,true]}, script:'', description:'', tags:''}
+  ];
+}
+
+// ===== NAVIGATION =====
+function goPage(page) {
+  currentPage = page;
+  var navIds = ['dashboard','videos','script','seo','calendar','checklist','ideas'];
+  for (var i=0; i<navIds.length; i++) {
+    var el = document.getElementById('nav-'+navIds[i]);
+    if (el) el.classList.toggle('active', navIds[i]===page);
+  }
+  var titles = {
+    dashboard:'📊 대시보드', videos:'🎬 영상 관리', script:'✍️ 스크립트 생성기',
+    seo:'🔍 SEO 최적화 도구', calendar:'📅 업로드 캘린더', checklist:'✅ 제작 체크리스트', ideas:'💡 아이디어 뱅크'
+  };
+  document.getElementById('page-title').textContent = titles[page] || '';
+  renderPage();
+}
+
+function renderPage() {
+  var c = document.getElementById('page-content');
+  if (currentPage === 'dashboard')  c.innerHTML = renderDashboard();
+  if (currentPage === 'videos')     c.innerHTML = renderVideos();
+  if (currentPage === 'script')     c.innerHTML = renderScript();
+  if (currentPage === 'seo')        c.innerHTML = renderSEO();
+  if (currentPage === 'calendar')   c.innerHTML = renderCalendar();
+  if (currentPage === 'checklist')  c.innerHTML = renderChecklistPage();
+  if (currentPage === 'ideas')      c.innerHTML = renderIdeas();
+  updateSidebarCount();
+  bindCheckboxes();
+}
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+  var counts = {};
+  Object.keys(STATUSES).forEach(function(s){ counts[s] = 0; });
+  videos.forEach(function(v){ counts[v.status]++; });
+
+  var total = videos.length;
+  var done = counts.done;
+  var inProgress = counts.plan + counts.shoot + counts.edit + counts.seo;
+  var upcoming = videos.filter(function(v){
+    if (!v.date) return false;
+    var d = new Date(v.date);
+    var now = new Date();
+    return d >= now && (v.status !== 'done');
+  }).sort(function(a,b){ return new Date(a.date)-new Date(b.date); });
+
+  var html = '';
+
+  // Stats
+  html += '<div class="stat-grid">';
+  html += '<div class="stat-box"><div style="font-size:28px;font-weight:800;color:#fff">'+total+'</div><div style="color:#444;font-size:11px;margin-top:4px">전체 영상</div></div>';
+  html += '<div class="stat-box" style="border-color:rgba(255,0,0,.3)"><div style="font-size:28px;font-weight:800;color:#ff6b6b">'+done+'</div><div style="color:#444;font-size:11px;margin-top:4px">업로드 완료</div></div>';
+  html += '<div class="stat-box" style="border-color:rgba(96,165,250,.3)"><div style="font-size:28px;font-weight:800;color:#60a5fa">'+inProgress+'</div><div style="color:#444;font-size:11px;margin-top:4px">제작중</div></div>';
+  html += '<div class="stat-box" style="border-color:rgba(167,139,250,.3)"><div style="font-size:28px;font-weight:800;color:#a78bfa">'+counts.idea+'</div><div style="color:#444;font-size:11px;margin-top:4px">아이디어</div></div>';
+  html += '</div>';
+
+  // Pipeline visualization
+  html += '<div class="card">';
+  html += '<div class="section-title">🚀 제작 파이프라인</div>';
+  html += '<div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">';
+  var statusOrder = ['idea','plan','shoot','edit','seo','done'];
+  statusOrder.forEach(function(s) {
+    var n = counts[s];
+    html += '<div style="flex:1;min-width:80px;text-align:center;background:#1e2130;border-radius:8px;padding:10px 6px">';
+    html += '<div class="badge '+STATUSES[s].cls+'" style="margin-bottom:6px;font-size:10px">'+STATUSES[s].label+'</div>';
+    html += '<div style="font-size:22px;font-weight:800;color:#fff">'+n+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  // Pipeline flow arrow
+  html += '<div style="display:flex;align-items:center;gap:2px;overflow-x:auto;padding:4px 0">';
+  statusOrder.forEach(function(s, i) {
+    var n = counts[s];
+    var pct = total ? (n/total*100) : 0;
+    html += '<div style="flex:1;min-width:40px">';
+    html += '<div style="height:8px;background:#1e2130;border-radius:4px;overflow:hidden">';
+    html += '<div style="height:100%;width:'+pct+'%;background:'+getPipelineColor(s)+';border-radius:4px;transition:.4s"></div>';
+    html += '</div>';
+    html += '</div>';
+    if (i < statusOrder.length-1) html += '<div style="color:#333;font-size:10px;flex-shrink:0">→</div>';
+  });
+  html += '</div>';
+  html += '</div>';
+
+  // Upcoming uploads
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
+
+  html += '<div class="card">';
+  html += '<div class="section-title">📅 다가오는 업로드</div>';
+  if (upcoming.length === 0) {
+    html += '<div style="color:#333;font-size:13px;padding:10px 0">예정된 업로드가 없습니다</div>';
+  } else {
+    upcoming.slice(0,4).forEach(function(v) {
+      var daysLeft = Math.ceil((new Date(v.date)-new Date())/(1000*60*60*24));
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1a1c24">';
+      html += '<div style="width:36px;height:36px;background:#1e2130;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:'+(daysLeft<=3?'#ff6b6b':daysLeft<=7?'#fbbf24':'#60a5fa')+'">D-'+daysLeft+'</div>';
+      html += '<div style="flex:1;min-width:0"><div style="color:#ccc;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+v.title+'</div>';
+      html += '<div><span class="badge '+STATUSES[v.status].cls+'" style="font-size:10px">'+STATUSES[v.status].label+'</span></div></div>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  // Recent activity
+  html += '<div class="card">';
+  html += '<div class="section-title">🔥 최근 추가 영상</div>';
+  var recent = videos.slice().sort(function(a,b){return b.id-a.id;}).slice(0,4);
+  recent.forEach(function(v) {
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #1a1c24;cursor:pointer" onclick="openDetail('+v.id+')">';
+    html += '<span class="badge '+STATUSES[v.status].cls+'" style="font-size:10px;flex-shrink:0">'+STATUSES[v.status].label+'</span>';
+    html += '<span style="color:#ccc;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">'+v.title+'</span>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '</div>'; // grid
+
+  // Quick tips
+  html += '<div class="card" style="margin-top:14px;border-color:rgba(124,58,237,.2);background:rgba(124,58,237,.05)">';
+  html += '<div class="section-title" style="color:#7c3aed">⚡ 자동화 꿀팁</div>';
+  var tips = [
+    '📌 영상 업로드 최적 시간: 화/수/목 오후 6~9시 (한국 기준)',
+    '🎯 제목은 반드시 60자 이내, 핵심 키워드를 앞에 배치하세요',
+    '🏷️ 태그는 관련 키워드 15개, 첫 3개가 가장 중요합니다',
+    '📝 설명문 첫 200자가 검색 결과에 노출됩니다 — 핵심 키워드 포함!'
+  ];
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  tips.forEach(function(tip) {
+    html += '<div style="background:#1e2130;border-radius:8px;padding:10px;font-size:12px;color:#888;line-height:1.5">'+tip+'</div>';
+  });
+  html += '</div>';
+  html += '</div>';
+
+  return html;
+}
+
+function getPipelineColor(s) {
+  var colors = {idea:'#a78bfa',plan:'#60a5fa',shoot:'#fbbf24',edit:'#fb923c',seo:'#34d399',done:'#ff6b6b'};
+  return colors[s] || '#444';
+}
+
+// ===== VIDEOS =====
+function renderVideos() {
+  var html = '';
+
+  // Filter buttons
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">';
+  html += '<button onclick="filterVideos(\'all\')" id="vf-all" class="btn" style="background:#ff0000;color:#fff;font-size:12px">전체 ('+videos.length+')</button>';
+  Object.keys(STATUSES).forEach(function(s) {
+    var n = videos.filter(function(v){return v.status===s;}).length;
+    html += '<button onclick="filterVideos(\''+s+'\')" id="vf-'+s+'" class="btn" style="background:#1e2130;border:1px solid #2a2d3a;color:#666;font-size:12px">'+STATUSES[s].label+' ('+n+')</button>';
+  });
+  html += '</div>';
+
+  // Video list
+  html += '<div id="video-list">';
+  videos.forEach(function(v) {
+    html += renderVideoCard(v);
+  });
+  html += '</div>';
+
+  return html;
+}
+
+function renderVideoCard(v) {
+  var progress = calcProgress(v);
+  return '<div class="video-card" id="vc-'+v.id+'" onclick="openDetail('+v.id+')">' +
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px">' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="color:#e0e0e0;font-size:14px;font-weight:600;margin-bottom:4px;line-height:1.4">'+v.title+'</div>' +
+        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+          '<span class="badge '+STATUSES[v.status].cls+'">'+STATUSES[v.status].label+'</span>' +
+          (v.topic?'<span class="tag-chip">'+v.topic+'</span>':'') +
+          (v.date?'<span style="color:#444;font-size:11px">📅 '+v.date+'</span>':'') +
+          (v.length?'<span style="color:#444;font-size:11px">⏱️ '+v.length+'분</span>':'') +
+        '</div>' +
+      '</div>' +
+      '<button onclick="event.stopPropagation();deleteVideo('+v.id+')" style="background:none;border:none;color:#333;cursor:pointer;font-size:14px;flex-shrink:0;padding:2px 6px" title="삭제">✕</button>' +
+    '</div>' +
+    '<div style="display:flex;align-items:center;gap:8px">' +
+      '<div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:'+progress+'%"></div></div>' +
+      '<span style="color:#555;font-size:11px;flex-shrink:0">'+progress+'%</span>' +
+    '</div>' +
+    (v.memo?'<div style="color:#444;font-size:11px;margin-top:6px">💬 '+v.memo+'</div>':'') +
+  '</div>';
+}
+
+function filterVideos(status) {
+  var list = document.getElementById('video-list');
+  if (!list) return;
+  var all = status === 'all' ? videos : videos.filter(function(v){return v.status===status;});
+  list.innerHTML = all.map(renderVideoCard).join('');
+}
+
+function calcProgress(v) {
+  var statusOrder = ['idea','plan','shoot','edit','seo','done'];
+  var idx = statusOrder.indexOf(v.status);
+  if (idx < 0) return 0;
+  return Math.round((idx / (statusOrder.length-1)) * 100);
+}
+
+// ===== DETAIL MODAL =====
+function openDetail(id) {
+  for (var i=0; i<videos.length; i++) {
+    if (videos[i].id === id) { selectedVideo = videos[i]; break; }
+  }
+  if (!selectedVideo) return;
+  var v = selectedVideo;
+  var checks = v.checklist[v.status] || [];
+  var tmpl = CHECKLIST_TEMPLATES[v.status] || [];
+  var progress = calcProgress(v);
+
+  var html = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">';
+  html += '<h3 style="color:#fff;font-size:15px;font-weight:700;flex:1;padding-right:10px;line-height:1.4">'+v.title+'</h3>';
+  html += '</div>';
+
+  html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';
+  html += '<span class="badge '+STATUSES[v.status].cls+'">'+STATUSES[v.status].label+'</span>';
+  if(v.topic) html += '<span class="tag-chip">'+v.topic+'</span>';
+  if(v.date) html += '<span style="color:#555;font-size:12px">📅 '+v.date+'</span>';
+  if(v.length) html += '<span style="color:#555;font-size:12px">⏱️ '+v.length+'분</span>';
+  html += '</div>';
+
+  // Progress
+  html += '<div style="margin-bottom:16px">';
+  html += '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:#555;font-size:12px">전체 진행률</span><span style="color:#fff;font-size:12px;font-weight:700">'+progress+'%</span></div>';
+  html += '<div class="progress-bar"><div class="progress-fill" style="width:'+progress+'%"></div></div>';
+  html += '</div>';
+
+  // Status changer
+  html += '<div style="margin-bottom:14px"><div class="section-title">상태 변경</div>';
+  html += '<div style="display:flex;gap:5px;flex-wrap:wrap">';
+  Object.keys(STATUSES).forEach(function(s) {
+    var active = v.status === s;
+    html += '<button onclick="changeVideoStatus('+v.id+',\''+s+'\')" class="badge '+STATUSES[s].cls+'" style="cursor:pointer;border:none;font-family:inherit;opacity:'+(active?'1':'0.4')+';transform:scale('+(active?'1.05':'1')+')">'+STATUSES[s].label+'</button>';
+  });
+  html += '</div></div>';
+
+  // Current checklist
+  html += '<div style="margin-bottom:14px"><div class="section-title">현재 단계 체크리스트 — '+STATUSES[v.status].label+'</div>';
+  html += '<div id="detail-checklist">';
+  tmpl.forEach(function(item, i) {
+    var checked = checks[i] === true;
+    html += '<div class="check-item">';
+    html += '<div class="checkbox'+(checked?' checked':'')+'" onclick="toggleCheck('+v.id+',\''+v.status+'\','+i+')" id="chk-'+v.id+'-'+v.status+'-'+i+'">'+(checked?'<span style="color:#fff;font-size:12px">✓</span>':'')+'</div>';
+    html += '<span style="color:'+(checked?'#555':'#ccc')+';font-size:13px;'+(checked?'text-decoration:line-through':'')+'">'+item+'</span>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  var checkedCount = checks.filter(Boolean).length;
+  html += '<div style="margin-top:8px"><div class="progress-bar"><div class="progress-fill" style="width:'+(tmpl.length?Math.round(checkedCount/tmpl.length*100):0)+'%"></div></div>';
+  html += '<div style="color:#444;font-size:11px;margin-top:4px">'+checkedCount+' / '+tmpl.length+' 완료</div></div>';
+  html += '</div>';
+
+  // Keywords
+  if (v.keywords && v.keywords.length) {
+    html += '<div style="margin-bottom:12px"><div class="section-title">키워드</div>';
+    html += v.keywords.map(function(k){return '<span class="tag-chip">'+k+'</span>';}).join('');
+    html += '</div>';
+  }
+
+  // Memo
+  html += '<div><div class="section-title">메모</div>';
+  html += '<textarea class="inp" id="detail-memo" style="min-height:60px">'+escHtml(v.memo||'')+'</textarea>';
+  html += '<button onclick="saveMemo('+v.id+')" class="btn" style="background:#7c3aed;color:#fff;margin-top:8px;width:100%">메모 저장</button>';
+  html += '</div>';
+
+  document.getElementById('detail-content').innerHTML = html;
+  document.getElementById('detail-modal').style.display = 'flex';
+}
+
+function closeDetailModal() {
+  document.getElementById('detail-modal').style.display = 'none';
+  selectedVideo = null;
+  renderPage();
+}
+
+function changeVideoStatus(id, status) {
+  for (var i=0; i<videos.length; i++) {
+    if (videos[i].id === id) {
+      videos[i].status = status;
+      selectedVideo = videos[i];
+      break;
+    }
+  }
+  saveData();
+  openDetail(id);
+}
+
+function toggleCheck(id, status, idx) {
+  for (var i=0; i<videos.length; i++) {
+    if (videos[i].id === id) {
+      if (!videos[i].checklist[status]) videos[i].checklist[status] = [];
+      videos[i].checklist[status][idx] = !videos[i].checklist[status][idx];
+      break;
+    }
+  }
+  saveData();
+  openDetail(id);
+}
+
+function saveMemo(id) {
+  var val = document.getElementById('detail-memo').value;
+  for (var i=0; i<videos.length; i++) {
+    if (videos[i].id === id) { videos[i].memo = val; break; }
+  }
+  saveData();
+  var btn = document.querySelector('#detail-content .btn');
+  if (btn) { btn.textContent = '✓ 저장됨'; setTimeout(function(){btn.textContent='메모 저장';},1500); }
+}
+
+function deleteVideo(id) {
+  if (!confirm('이 영상을 삭제할까요?')) return;
+  videos = videos.filter(function(v){return v.id!==id;});
+  saveData();
+  renderPage();
+}
+
+// ===== SCRIPT GENERATOR =====
+function renderScript() {
+  var html = '<div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start">';
+
+  // Template list
+  html += '<div>';
+  html += '<div class="section-title">템플릿 선택</div>';
+  Object.keys(SCRIPT_TEMPLATES).forEach(function(key) {
+    var t = SCRIPT_TEMPLATES[key];
+    html += '<button onclick="loadScriptTemplate(\''+key+'\')" class="btn" style="width:100%;background:#1e2130;border:1px solid #2a2d3a;color:#aaa;margin-bottom:6px;text-align:left;padding:10px 12px">'+t.name+'</button>';
+  });
+  html += '<div style="margin-top:16px"><div class="section-title">내 영상 제목</div>';
+  html += '<input class="inp" id="script-title" placeholder="영상 제목 입력 후 적용"/>';
+  html += '<button onclick="applyTitle()" class="btn" style="width:100%;background:#7c3aed;color:#fff;margin-top:6px">제목 적용</button>';
+  html += '</div></div>';
+
+  // Script editor
+  html += '<div>';
+  html += '<div class="card" id="script-output">';
+  html += '<div style="color:#333;text-align:center;padding:40px 0;font-size:14px">← 왼쪽에서 템플릿을 선택하세요</div>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '</div>';
+  return html;
+}
+
+function loadScriptTemplate(key) {
+  var t = SCRIPT_TEMPLATES[key];
+  var title = (document.getElementById('script-title') && document.getElementById('script-title').value) || '[영상 제목]';
+  var out = document.getElementById('script-output');
+  if (!out) return;
+
+  var html = '<div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">';
+  html += '<div style="color:#fff;font-size:14px;font-weight:700">'+t.name+' 스크립트</div>';
+  html += '<button onclick="copyAllScript()" class="btn" style="background:#1e2130;border:1px solid #2a2d3a;color:#aaa;font-size:12px">📋 전체 복사</button>';
+  html += '</div>';
+
+  t.sections.forEach(function(sec, i) {
+    html += '<div style="margin-bottom:14px">';
+    html += '<div style="color:#7c3aed;font-size:12px;font-weight:700;margin-bottom:6px">'+sec.title+'</div>';
+    html += '<textarea class="inp script-section" style="min-height:70px;resize:vertical" id="script-sec-'+i+'" placeholder="'+sec.title+'...">'+sec.template.replace(/\[영상 제목\]/g,title)+'</textarea>';
+    html += '</div>';
+  });
+
+  html += '<button onclick="copyAllScript()" class="btn" style="width:100%;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;font-weight:600;margin-top:8px">📋 전체 스크립트 복사</button>';
+  out.innerHTML = html;
+}
+
+function applyTitle() {
+  var title = document.getElementById('script-title').value || '[영상 제목]';
+  document.querySelectorAll('.script-section').forEach(function(ta) {
+    ta.value = ta.value.replace(/\[영상 제목\]/g, title);
+  });
+}
+
+function copyAllScript() {
+  var sections = document.querySelectorAll('.script-section');
+  var text = '';
+  sections.forEach(function(s, i) {
+    text += '=== 섹션 '+(i+1)+' ===\n' + s.value + '\n\n';
+  });
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function() { alert('스크립트가 클립보드에 복사됐어요! 📋'); });
+  } else {
+    alert('복사할 내용:\n\n'+text.slice(0,200)+'...');
+  }
+}
+
+// ===== SEO OPTIMIZER =====
+function renderSEO() {
+  var html = '';
+
+  // Title optimizer
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
+
+  html += '<div class="card">';
+  html += '<div class="section-title">📝 제목 최적화</div>';
+  html += '<textarea class="inp" id="seo-title" style="min-height:60px" placeholder="영상 제목을 입력하세요..." oninput="analyzeSEOTitle()"></textarea>';
+  html += '<div id="title-analysis" style="margin-top:10px"></div>';
+  html += '<div style="margin-top:14px"><div class="section-title">💡 제목 공식</div>';
+  var formulas = [
+    '[숫자] + [키워드] + [결과/이점]  예: "5분 만에 마스터하는 Python"',
+    '"방법" 포맷: "[주제]로 [목표] 달성하는 법"',
+    '"비밀" 포맷: "[분야] 고수들이 절대 안 알려주는 [주제]"',
+    '"비교" 포맷: "[A] vs [B] — 2025년 최종 결론"'
+  ];
+  formulas.forEach(function(f) {
+    html += '<div style="background:#1e2130;border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:12px;color:#888;cursor:pointer;border:1px solid transparent" onclick="insertFormula(this)" data-formula="'+escHtml(f)+'">'+f+'</div>';
+  });
+  html += '</div></div>';
+
+  html += '<div>';
+
+  // Description template
+  html += '<div class="card">';
+  html += '<div class="section-title">📄 설명문 자동 생성</div>';
+  html += '<input class="inp" id="seo-topic" placeholder="주제 (예: 유튜브 자동화)" style="margin-bottom:6px"/>';
+  html += '<input class="inp" id="seo-mainpoint" placeholder="핵심 내용 (예: n8n, AI, 쇼츠 제작)" style="margin-bottom:6px"/>';
+  html += '<input class="inp" id="seo-cta" placeholder="CTA (예: 구독 & 좋아요)" style="margin-bottom:10px"/>';
+  html += '<button onclick="generateDescription()" class="btn" style="width:100%;background:#ff0000;color:#fff;font-weight:600;margin-bottom:10px">설명문 생성</button>';
+  html += '<textarea class="inp" id="seo-desc-output" style="min-height:140px;font-size:12px" readonly placeholder="위 버튼을 누르면 설명문이 생성됩니다..."></textarea>';
+  html += '<button onclick="copyDesc()" class="btn" style="width:100%;background:#1e2130;border:1px solid #2a2d3a;color:#aaa;margin-top:6px;font-size:12px">📋 설명문 복사</button>';
+  html += '</div>';
+
+  // Tags generator
+  html += '<div class="card">';
+  html += '<div class="section-title">🏷️ 태그 생성기</div>';
+  html += '<input class="inp" id="seo-keyword" placeholder="메인 키워드 입력 (예: 유튜브 자동화)"/>';
+  html += '<button onclick="generateTags()" class="btn" style="width:100%;background:#7c3aed;color:#fff;font-weight:600;margin-top:8px;margin-bottom:10px">태그 생성</button>';
+  html += '<div id="tag-output" style="min-height:40px"></div>';
+  html += '</div>';
+
+  html += '</div>';
+  html += '</div>'; // grid
+
+  return html;
+}
+
+function analyzeSEOTitle() {
+  var title = document.getElementById('seo-title').value;
+  var out = document.getElementById('title-analysis');
+  if (!title) { out.innerHTML = ''; return; }
+
+  var issues = [];
+  var good = [];
+
+  if (title.length <= 60) good.push('✅ 길이 적절 ('+title.length+'자)');
+  else issues.push('⚠️ 제목이 너무 길어요 ('+title.length+'자 / 60자 권장)');
+
+  var hasNumber = /\d/.test(title);
+  if (hasNumber) good.push('✅ 숫자 포함 — CTR 향상');
+  else issues.push('💡 숫자 추가 권장 (예: "5가지", "10분")');
+
+  var powerWords = ['완벽','완전','꿀팁','비밀','충격','공개','직접','솔직','무료','쉬운'];
+  var hasPower = powerWords.some(function(w){return title.includes(w);});
+  if (hasPower) good.push('✅ 파워워드 포함');
+  else issues.push('💡 파워워드 추가 권장 (완벽, 비밀, 꿀팁 등)');
+
+  var emojiRegex = /[\u{1F300}-\u{1F9FF}]/u;
+  if (emojiRegex.test(title)) good.push('✅ 이모지 포함 — 시선 집중');
+
+  var score = Math.min(100, Math.round((good.length / (good.length + issues.length)) * 100));
+  var color = score >= 80 ? '#34d399' : score >= 50 ? '#fbbf24' : '#f87171';
+
+  out.innerHTML = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
+    '<div style="font-size:24px;font-weight:800;color:'+color+'">'+score+'</div>' +
+    '<div><div style="font-size:12px;font-weight:700;color:'+color+'">SEO 점수</div>' +
+    '<div class="progress-bar" style="width:100px;margin-top:3px"><div class="progress-fill" style="width:'+score+'%;background:'+color+'"></div></div></div>' +
+    '</div>' +
+    good.map(function(g){return '<div style="font-size:12px;color:#34d399;margin-bottom:3px">'+g+'</div>';}).join('') +
+    issues.map(function(i){return '<div style="font-size:12px;color:#fbbf24;margin-bottom:3px">'+i+'</div>';}).join('');
+}
+
+function insertFormula(el) {
+  var titleInput = document.getElementById('seo-title');
+  if (titleInput) titleInput.value = el.dataset.formula.split('  예:')[0];
+  analyzeSEOTitle();
+}
+
+function generateDescription() {
+  var topic = document.getElementById('seo-topic').value || '이 영상';
+  var main = document.getElementById('seo-mainpoint').value || '핵심 내용';
+  var cta = document.getElementById('seo-cta').value || '구독과 좋아요';
+
+  var desc =
+'📌 이 영상에서는 '+topic+'에 대해 알아봅니다.\n\n' +
+'🔥 핵심 내용\n' +
+'✔️ '+main.split(',').map(function(s){return s.trim();}).join('\n✔️ ')+'\n\n' +
+'⏱️ 타임스탬프\n' +
+'00:00 인트로\n' +
+'01:00 주요 내용 시작\n' +
+'[직접 추가해 주세요]\n\n' +
+'👇 더 많은 내용이 필요하다면\n' +
+cta+' 해주시면 더 좋은 영상으로 보답하겠습니다!\n\n' +
+'📣 SNS & 연락처\n' +
+'• 문의: [이메일]\n' +
+'• 인스타: [계정]\n\n' +
+'#'+topic.replace(/\s/g,'') +' #유튜브자동화 #'+main.split(',')[0].replace(/\s/g,'');
+
+  document.getElementById('seo-desc-output').value = desc;
+}
+
+function copyDesc() {
+  var ta = document.getElementById('seo-desc-output');
+  if (!ta || !ta.value) return;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(ta.value).then(function(){ alert('설명문이 복사됐어요! 📋'); });
+  }
+}
+
+function generateTags() {
+  var keyword = document.getElementById('seo-keyword').value;
+  if (!keyword) return;
+  var base = keyword.trim();
+  var tags = [
+    base, base+' 방법', base+' 하는법', base+' 추천', base+' 2025',
+    base+' 입문', base+' 초보', base+' 튜토리얼', base+' 무료', base+' 꿀팁',
+    '유튜브 '+base, base+' 완전정복', base+' 가이드', '한국어 '+base, base+' 최신'
+  ];
+
+  var out = document.getElementById('tag-output');
+  out.innerHTML = tags.map(function(t) {
+    return '<span class="tag-chip" onclick="copyTag(\''+t+'\')">'+t+'</span>';
+  }).join('') +
+  '<div style="margin-top:10px"><button onclick="copyAllTags()" class="btn" style="background:#1e2130;border:1px solid #2a2d3a;color:#aaa;font-size:12px">📋 전체 태그 복사</button></div>';
+  document.getElementById('seo-keyword').dataset.tags = tags.join(', ');
+}
+
+function copyTag(tag) {
+  if (navigator.clipboard) navigator.clipboard.writeText(tag);
+}
+
+function copyAllTags() {
+  var keyword = document.getElementById('seo-keyword');
+  if (keyword && keyword.dataset.tags) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(keyword.dataset.tags).then(function(){ alert('태그 전체 복사 완료! 📋'); });
+    }
+  }
+}
+
+// ===== CALENDAR =====
+function renderCalendar() {
+  var now = new Date();
+  var year = now.getFullYear();
+  var month = now.getMonth();
+
+  var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
+  html += '<button onclick="changeMonth(-1)" class="btn" style="background:#1e2130;border:1px solid #2a2d3a;color:#aaa">← 이전</button>';
+  html += '<div style="color:#fff;font-size:16px;font-weight:700">'+year+'년 '+(month+1)+'월</div>';
+  html += '<button onclick="changeMonth(1)" class="btn" style="background:#1e2130;border:1px solid #2a2d3a;color:#aaa">다음 →</button>';
+  html += '</div>';
+
+  var days = ['일','월','화','수','목','금','토'];
+  html += '<div class="cal-grid" style="margin-bottom:8px">';
+  days.forEach(function(d) {
+    html += '<div style="text-align:center;color:#444;font-size:11px;font-weight:700;padding:4px">'+d+'</div>';
+  });
+  html += '</div>';
+
+  var firstDay = new Date(year, month, 1).getDay();
+  var lastDate = new Date(year, month+1, 0).getDate();
+
+  var videosByDate = {};
+  videos.forEach(function(v) {
+    if (v.date) {
+      if (!videosByDate[v.date]) videosByDate[v.date] = [];
+      videosByDate[v.date].push(v);
+    }
+  });
+
+  html += '<div class="cal-grid" id="cal-grid">';
+
+  for (var i=0; i<firstDay; i++) {
+    html += '<div style="min-height:60px"></div>';
+  }
+
+  var todayStr = now.toISOString().split('T')[0];
+  for (var d=1; d<=lastDate; d++) {
+    var dateStr = year+'-'+(month+1<10?'0':'')+(month+1)+'-'+(d<10?'0':'')+d;
+    var isToday = dateStr === todayStr;
+    var dayVideos = videosByDate[dateStr] || [];
+
+    html += '<div class="cal-day" style="'+(isToday?'border:1px solid #7c3aed;background:#1e2130':'')+'">';
+    html += '<div class="cal-day-num" style="'+(isToday?'color:#a78bfa;font-weight:700':'')+'">'+d+'</div>';
+    dayVideos.forEach(function(v) {
+      html += '<div class="cal-event'+(v.status==='done'?' done':'')+'" title="'+v.title+'">'+v.title.slice(0,12)+(v.title.length>12?'...':'')+'</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+
+  // Legend
+  html += '<div style="display:flex;gap:12px;margin-top:12px">';
+  html += '<div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;background:#7c3aed22;border-left:2px solid #7c3aed;border-radius:2px"></div><span style="color:#555;font-size:11px">예정</span></div>';
+  html += '<div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;background:#ff000022;border-left:2px solid #ff6b6b;border-radius:2px"></div><span style="color:#555;font-size:11px">완료</span></div>';
+  html += '<div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:4px;background:#7c3aed;border-radius:2px"></div><span style="color:#555;font-size:11px">오늘</span></div>';
+  html += '</div>';
+
+  return html;
+}
+
+var calOffset = 0;
+function changeMonth(dir) {
+  calOffset += dir;
+  var now = new Date();
+  now.setMonth(now.getMonth() + calOffset);
+  document.getElementById('page-content').innerHTML = renderCalendarWithOffset(now);
+}
+
+function renderCalendarWithOffset(date) {
+  var year = date.getFullYear();
+  var month = date.getMonth();
+
+  var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
+  html += '<button onclick="changeMonth(-1)" class="btn" style="background:#1e2130;border:1px solid #2a2d3a;color:#aaa">← 이전</button>';
+  html += '<div style="color:#fff;font-size:16px;font-weight:700">'+year+'년 '+(month+1)+'월</div>';
+  html += '<button onclick="changeMonth(1)" class="btn" style="background:#1e2130;border:1px solid #2a2d3a;color:#aaa">다음 →</button>';
+  html += '</div>';
+
+  var days = ['일','월','화','수','목','금','토'];
+  html += '<div class="cal-grid" style="margin-bottom:8px">';
+  days.forEach(function(d) { html += '<div style="text-align:center;color:#444;font-size:11px;font-weight:700;padding:4px">'+d+'</div>'; });
+  html += '</div>';
+
+  var firstDay = new Date(year, month, 1).getDay();
+  var lastDate = new Date(year, month+1, 0).getDate();
+
+  var videosByDate = {};
+  videos.forEach(function(v) {
+    if (v.date) {
+      if (!videosByDate[v.date]) videosByDate[v.date] = [];
+      videosByDate[v.date].push(v);
+    }
+  });
+
+  var todayStr = new Date().toISOString().split('T')[0];
+  html += '<div class="cal-grid">';
+  for (var i=0; i<firstDay; i++) html += '<div style="min-height:60px"></div>';
+  for (var d=1; d<=lastDate; d++) {
+    var dateStr = year+'-'+(month+1<10?'0':'')+(month+1)+'-'+(d<10?'0':'')+d;
+    var isToday = dateStr === todayStr;
+    var dayVideos = videosByDate[dateStr] || [];
+    html += '<div class="cal-day" style="'+(isToday?'border:1px solid #7c3aed;background:#1e2130':'')+'">';
+    html += '<div class="cal-day-num" style="'+(isToday?'color:#a78bfa;font-weight:700':'')+'">'+d+'</div>';
+    dayVideos.forEach(function(v) {
+      html += '<div class="cal-event'+(v.status==='done'?' done':'')+'" title="'+v.title+'">'+v.title.slice(0,12)+(v.title.length>12?'...':'')+'</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+// ===== CHECKLIST PAGE =====
+function renderChecklistPage() {
+  var html = '';
+
+  if (videos.length === 0) {
+    return '<div style="color:#444;text-align:center;padding:60px">영상을 먼저 추가해주세요</div>';
+  }
+
+  videos.filter(function(v){return v.status!=='done';}).forEach(function(v) {
+    var tmpl = CHECKLIST_TEMPLATES[v.status] || [];
+    var checks = v.checklist[v.status] || [];
+    var checkedCount = checks.filter(Boolean).length;
+    var pct = tmpl.length ? Math.round(checkedCount/tmpl.length*100) : 0;
+
+    html += '<div class="card">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+    html += '<div>';
+    html += '<div style="color:#e0e0e0;font-size:13px;font-weight:600;margin-bottom:4px">'+v.title+'</div>';
+    html += '<span class="badge '+STATUSES[v.status].cls+'">'+STATUSES[v.status].label+'</span>';
+    html += '</div>';
+    html += '<div style="text-align:right"><div style="color:#fff;font-size:18px;font-weight:800">'+pct+'%</div><div style="color:#444;font-size:11px">'+checkedCount+'/'+tmpl.length+'</div></div>';
+    html += '</div>';
+
+    html += '<div class="progress-bar" style="margin-bottom:12px"><div class="progress-fill" style="width:'+pct+'%"></div></div>';
+
+    tmpl.forEach(function(item, i) {
+      var checked = checks[i] === true;
+      html += '<div class="check-item" id="ci-'+v.id+'-'+i+'">';
+      html += '<div class="checkbox'+(checked?' checked':'')+'" onclick="pageToggleCheck('+v.id+',\''+v.status+'\','+i+')">'+(checked?'<span style="color:#fff;font-size:11px">✓</span>':'')+'</div>';
+      html += '<span style="color:'+(checked?'#444':'#ccc')+';font-size:13px;'+(checked?'text-decoration:line-through':'')+'">'+item+'</span>';
+      html += '</div>';
+    });
+
+    html += '</div>';
+  });
+
+  if (!html) html = '<div style="color:#444;text-align:center;padding:60px">🎉 모든 영상 제작이 완료됐어요!</div>';
+  return html;
+}
+
+function pageToggleCheck(id, status, idx) {
+  for (var i=0; i<videos.length; i++) {
+    if (videos[i].id === id) {
+      if (!videos[i].checklist[status]) videos[i].checklist[status] = [];
+      videos[i].checklist[status][idx] = !videos[i].checklist[status][idx];
+      break;
+    }
+  }
+  saveData();
+  renderPage();
+}
+
+// ===== IDEAS BANK =====
+function renderIdeas() {
+  var html = '';
+
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">';
+
+  Object.keys(IDEA_KEYWORDS).forEach(function(cat) {
+    html += '<div class="card">';
+    html += '<div class="section-title">'+cat+' 아이디어</div>';
+    IDEA_KEYWORDS[cat].forEach(function(idea) {
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #1a1c24">';
+      html += '<span style="color:#bbb;font-size:13px">'+idea+'</span>';
+      html += '<button onclick="addFromIdea(\''+escHtml(idea)+'\',\''+cat+'\')" class="btn" style="background:#1e2130;border:1px solid #2a2d3a;color:#666;font-size:11px;padding:4px 8px">+ 추가</button>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+
+  html += '</div>';
+
+  // Custom idea form
+  html += '<div class="card" style="border-color:rgba(124,58,237,.2)">';
+  html += '<div class="section-title">✏️ 나만의 아이디어 추가</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">';
+  html += '<input class="inp" id="idea-title" placeholder="영상 아이디어 제목"/>';
+  html += '<input class="inp" id="idea-cat" placeholder="카테고리 (예: 개발)"/>';
+  html += '</div>';
+  html += '<textarea class="inp" id="idea-memo" placeholder="아이디어 메모..." style="min-height:60px;margin-bottom:10px"></textarea>';
+  html += '<button onclick="addCustomIdea()" class="btn" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;font-weight:600;width:100%">아이디어를 영상으로 추가</button>';
+  html += '</div>';
+
+  return html;
+}
+
+function addFromIdea(title, topic) {
+  var v = {
+    id: Date.now(),
+    title: title,
+    topic: topic,
+    status: 'idea',
+    date: '',
+    length: 10,
+    keywords: [topic],
+    memo: '아이디어 뱅크에서 추가됨',
+    checklist: {idea:[],plan:[],shoot:[],edit:[],seo:[],done:[]},
+    script: '',
+    description: '',
+    tags: ''
+  };
+  videos.push(v);
+  saveData();
+  alert('"'+title+'" 영상이 추가됐어요! 🎬');
+  updateSidebarCount();
+}
+
+function addCustomIdea() {
+  var title = document.getElementById('idea-title').value;
+  var cat = document.getElementById('idea-cat').value || '기타';
+  var memo = document.getElementById('idea-memo').value;
+  if (!title) { alert('제목을 입력해주세요!'); return; }
+  var v = {
+    id: Date.now(),
+    title: title,
+    topic: cat,
+    status: 'idea',
+    date: '',
+    length: 10,
+    keywords: [cat],
+    memo: memo,
+    checklist: {idea:[],plan:[],shoot:[],edit:[],seo:[],done:[]},
+    script: '',
+    description: '',
+    tags: ''
+  };
+  videos.push(v);
+  saveData();
+  document.getElementById('idea-title').value = '';
+  document.getElementById('idea-cat').value = '';
+  document.getElementById('idea-memo').value = '';
+  alert('"'+title+'" 영상이 추가됐어요! 🎬');
+  updateSidebarCount();
+}
+
+// ===== ADD VIDEO MODAL =====
+function openAddVideoModal() {
+  document.getElementById('add-modal').style.display = 'flex';
+}
+
+function closeAddModal() {
+  document.getElementById('add-modal').style.display = 'none';
+}
+
+function addVideo() {
+  var title = document.getElementById('vm-title').value;
+  if (!title) { alert('제목을 입력해주세요!'); return; }
+  var v = {
+    id: Date.now(),
+    title: title,
+    topic: document.getElementById('vm-topic').value,
+    status: document.getElementById('vm-status').value,
+    date: document.getElementById('vm-date').value,
+    length: parseInt(document.getElementById('vm-length').value) || 10,
+    keywords: document.getElementById('vm-keywords').value.split(',').map(function(k){return k.trim();}).filter(Boolean),
+    memo: document.getElementById('vm-memo').value,
+    checklist: {idea:[],plan:[],shoot:[],edit:[],seo:[],done:[]},
+    script: '',
+    description: '',
+    tags: ''
+  };
+  videos.push(v);
+  saveData();
+  closeAddModal();
+
+  // Reset form
+  ['vm-title','vm-topic','vm-date','vm-length','vm-keywords','vm-memo'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('vm-status').value = 'idea';
+
+  renderPage();
+}
+
+// ===== HELPERS =====
+function bindCheckboxes() { /* checkboxes use onclick inline */ }
+
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  document.getElementById('sidebar').classList.toggle('hidden', !sidebarOpen);
+  document.getElementById('main').classList.toggle('full', !sidebarOpen);
+  document.getElementById('menu-btn').style.display = sidebarOpen ? 'none' : 'block';
+}
+
+function updateSidebarCount() {
+  var el = document.getElementById('sb-total');
+  if (el) el.textContent = videos.length;
+}
+
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===== INIT =====
+loadData();
+goPage('dashboard');
+</script>
+</body>
+</html>
