@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ko">
 <head>
 <meta charset="UTF-8"/>
@@ -21,21 +20,45 @@ body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#0f
 .tag{background:#1e2130;border:1px solid #2a2d3a;color:#888;font-size:11px;border-radius:5px;padding:3px 9px;display:inline-block;margin:2px}
 .proj-btn{display:flex;align-items:center;gap:9px;width:100%;background:transparent;border:none;border-left:3px solid transparent;padding:8px 10px;cursor:pointer;margin-bottom:2px;text-align:left;color:#ccc;font-family:inherit}
 .proj-btn.active{background:#1e2130}
-.inp{background:#1e2130;border:1px solid #2a2d3a;border-radius:8px;color:#ddd;font-size:14px;padding:9px 12px;outline:none;width:100%;font-family:inherit}
+.inp{background:#1e2130;border:1px solid #2a2d3a;border-radius:8px;color:#ddd;font-size:14px;padding:9px 12px;outline:none;width:100%;font-family:inherit;transition:border .15s}
+.inp:focus{border-color:#7c3aed}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
-.modal{background:#16181f;border:1px solid #2a2d3a;border-radius:16px;padding:24px;width:100%;max-width:400px;max-height:90vh;overflow:auto}
+.modal{background:#16181f;border:1px solid #2a2d3a;border-radius:16px;padding:24px;width:100%;max-width:420px;max-height:90vh;overflow:auto}
 .stat-card{background:#1e2130;border-radius:8px;padding:8px 10px}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 .status-btn{border:none;border-radius:20px;padding:5px 14px;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit}
 .file-row{display:flex;align-items:center;gap:9px;padding:7px 10px;background:#1e2130;border-radius:7px;margin-bottom:5px}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:#2a2d3a;border-radius:2px}
+
+/* ===== YouTube Mode ===== */
+.tab-btn{flex:1;background:transparent;border:none;border-bottom:2px solid transparent;padding:10px 6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;color:#444;transition:.15s;letter-spacing:.3px}
+.tab-btn.active{color:#fff}
+.tab-btn.tab-proj.active{border-bottom-color:#7c3aed;color:#a78bfa}
+.tab-btn.tab-yt.active{border-bottom-color:#ff0000;color:#ff6b6b}
+.yt-topic-btn{display:flex;align-items:center;gap:9px;width:100%;background:transparent;border:none;border-left:3px solid transparent;padding:8px 10px;cursor:pointer;margin-bottom:2px;text-align:left;color:#ccc;font-family:inherit;transition:.1s}
+.yt-topic-btn:hover{background:#1a1c24}
+.yt-topic-btn.active{background:#1e2130}
+.kit-card{background:#16181f;border:1px solid #2a2d3a;border-radius:12px;padding:16px;margin-bottom:12px}
+.kit-label{color:#444;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px}
+.title-row{background:#1e2130;border:1px solid #2a2d3a;border-radius:9px;padding:13px 14px;margin-bottom:8px;cursor:pointer;transition:.15s}
+.title-row:hover{border-color:#7c3aed;background:#1a1c24}
+.outline-step{border-left:2px solid #7c3aed;padding:9px 12px;margin-bottom:9px;background:#1e2130;border-radius:0 8px 8px 0}
+.kw-chip{background:#1e2130;border:1px solid #2a2d3a;color:#888;font-size:11px;border-radius:5px;padding:3px 9px;display:inline-block;margin:2px;cursor:pointer;transition:.1s}
+.kw-chip:hover{color:#a78bfa;border-color:#7c3aed}
+.thumb-card{border-radius:10px;padding:20px 14px;cursor:pointer;text-align:center;border:2px solid transparent;transition:.15s}
+.thumb-card:hover{border-color:rgba(255,255,255,.4);transform:scale(1.03)}
+.chk-box{width:18px;height:18px;border-radius:4px;border:1.5px solid #2a2d3a;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+.chk-box.done{background:#7c3aed;border-color:#7c3aed}
+.toast-msg{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#7c3aed;color:#fff;padding:9px 22px;border-radius:22px;font-size:13px;font-weight:700;z-index:9999;font-family:inherit;pointer-events:none;animation:fadeup .2s ease}
+@keyframes fadeup{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 </style>
 </head>
 <body>
 
 <div class="sidebar" id="sidebar">
-  <div style="padding:18px 20px 14px;border-bottom:1px solid #2a2d3a;display:flex;align-items:center;justify-content:space-between">
+  <!-- Logo header -->
+  <div style="padding:16px 20px 14px;border-bottom:1px solid #2a2d3a;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
     <div style="display:flex;align-items:center;gap:10px">
       <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#2563eb);display:flex;align-items:center;justify-content:center;font-size:16px">⚡</div>
       <div>
@@ -45,60 +68,93 @@ body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#0f
     </div>
     <button onclick="toggleSidebar()" style="background:none;border:none;color:#444;font-size:18px;cursor:pointer">←</button>
   </div>
-  <div style="padding:12px 20px;border-bottom:1px solid #2a2d3a">
-    <div id="stats" style="display:grid;grid-template-columns:1fr 1fr;gap:7px"></div>
+
+  <!-- Mode Tabs -->
+  <div style="display:flex;border-bottom:1px solid #2a2d3a;flex-shrink:0">
+    <button class="tab-btn tab-proj active" id="tab-proj" onclick="setMode('proj')">⚡ 프로젝트</button>
+    <button class="tab-btn tab-yt" id="tab-yt" onclick="setMode('yt')">▶ 유튜브</button>
   </div>
-  <div style="padding:10px 20px 4px">
-    <div style="color:#333;font-size:10px;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">필터</div>
-    <div id="filters"></div>
+
+  <!-- ===== PROJECT SIDEBAR ===== -->
+  <div id="proj-sidebar" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div style="padding:12px 20px;border-bottom:1px solid #2a2d3a;flex-shrink:0">
+      <div id="stats" style="display:grid;grid-template-columns:1fr 1fr;gap:7px"></div>
+    </div>
+    <div style="padding:10px 20px 4px;flex-shrink:0">
+      <div style="color:#333;font-size:10px;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">필터</div>
+      <div id="filters"></div>
+    </div>
+    <div style="flex:1;overflow:auto;padding:8px 20px">
+      <div style="color:#333;font-size:10px;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">프로젝트</div>
+      <div id="proj-list"></div>
+    </div>
+    <div style="padding:10px 20px 16px;flex-shrink:0">
+      <button class="btn" onclick="openModal()" style="width:100%;background:#1e2130;border:1px solid rgba(124,58,237,.3);color:#a78bfa;font-weight:600">+ 프로젝트 추가</button>
+    </div>
   </div>
-  <div style="flex:1;overflow:auto;padding:8px 20px">
-    <div style="color:#333;font-size:10px;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">프로젝트</div>
-    <div id="proj-list"></div>
-  </div>
-  <div style="padding:10px 20px 16px;display:flex;flex-direction:column;gap:7px">
-    <button class="btn" onclick="openModal()" style="width:100%;background:#1e2130;border:1px solid rgba(124,58,237,.3);color:#a78bfa;font-weight:600">+ 프로젝트 추가</button>
-    <a href="youtube-automation.html" style="display:block;text-align:center;background:#1e2130;border:1px solid rgba(255,0,0,.3);color:#ff6b6b;font-size:13px;font-weight:600;border-radius:8px;padding:8px 14px;text-decoration:none">▶ YouTube 자동화 시스템</a>
+
+  <!-- ===== YOUTUBE SIDEBAR ===== -->
+  <div id="yt-sidebar" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div style="padding:10px 14px 6px;flex-shrink:0">
+      <div style="color:#333;font-size:10px;font-weight:600;margin-bottom:2px;text-transform:uppercase;letter-spacing:1px">주제 목록</div>
+      <div style="color:#2a2d3a;font-size:10px" id="yt-count-label"></div>
+    </div>
+    <div style="flex:1;overflow:auto;padding:4px 10px">
+      <div id="yt-topic-list"></div>
+    </div>
+    <div style="padding:10px 14px 16px;flex-shrink:0">
+      <button onclick="openYTModal()" style="width:100%;background:#1e2130;border:1px solid rgba(255,0,0,.3);color:#ff6b6b;font-weight:700;border-radius:8px;padding:10px;cursor:pointer;font-family:inherit;font-size:13px">+ 주제 추가</button>
+    </div>
   </div>
 </div>
 
+<!-- ===== MAIN AREA ===== -->
 <div class="main" id="main">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-    <button id="menu-btn" onclick="toggleSidebar()" style="display:none;background:#1e2130;border:1px solid #2a2d3a;color:#aaa;font-size:16px;border-radius:8px;padding:6px 10px;cursor:pointer">☰</button>
-    <h1 id="proj-title" style="color:#fff;font-size:18px;font-weight:700;flex:1"></h1>
-    <button onclick="deleteProject()" style="background:#2a1a1a;border:1px solid #4a2020;color:#f87171;font-size:12px;border-radius:7px;padding:5px 10px;cursor:pointer">삭제</button>
-  </div>
-  <div id="status-btns" style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap"></div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:12px">
+
+  <!-- Project main -->
+  <div id="proj-main">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <button id="menu-btn" onclick="toggleSidebar()" style="display:none;background:#1e2130;border:1px solid #2a2d3a;color:#aaa;font-size:16px;border-radius:8px;padding:6px 10px;cursor:pointer">☰</button>
+      <h1 id="proj-title" style="color:#fff;font-size:18px;font-weight:700;flex:1"></h1>
+      <button onclick="deleteProject()" style="background:#2a1a1a;border:1px solid #4a2020;color:#f87171;font-size:12px;border-radius:7px;padding:5px 10px;cursor:pointer">삭제</button>
+    </div>
+    <div id="status-btns" style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap"></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:12px">
+      <div class="card">
+        <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">🔗 링크</div>
+        <div id="proj-link"></div>
+      </div>
+      <div class="card">
+        <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">📁 파일</div>
+        <div id="proj-filecount" style="color:#fff;font-size:26px;font-weight:700"></div>
+        <div style="color:#333;font-size:11px">개 파일</div>
+      </div>
+      <div class="card">
+        <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">📊 상태</div>
+        <div id="proj-status-display"></div>
+      </div>
+    </div>
+    <div id="proj-tags" style="margin-bottom:12px"></div>
     <div class="card">
-      <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">🔗 링크</div>
-      <div id="proj-link"></div>
+      <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">📂 코드 파일 목록</div>
+      <div id="proj-files"></div>
     </div>
-    <div class="card">
-      <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">📁 파일</div>
-      <div id="proj-filecount" style="color:#fff;font-size:26px;font-weight:700"></div>
-      <div style="color:#333;font-size:11px">개 파일</div>
-    </div>
-    <div class="card">
-      <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">📊 상태</div>
-      <div id="proj-status-display"></div>
+    <div class="card" style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="color:#444;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px">📝 메모</div>
+        <div id="memo-btns"></div>
+      </div>
+      <div id="memo-view"></div>
+      <textarea id="memo-edit" class="inp" style="display:none;min-height:100px;resize:vertical"></textarea>
     </div>
   </div>
-  <div id="proj-tags" style="margin-bottom:12px"></div>
-  <div class="card">
-    <div style="color:#444;font-size:10px;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">📂 코드 파일 목록</div>
-    <div id="proj-files"></div>
-  </div>
-  <div class="card" style="margin-top:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="color:#444;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px">📝 메모</div>
-      <div id="memo-btns"></div>
-    </div>
-    <div id="memo-view"></div>
-    <textarea id="memo-edit" class="inp" style="display:none;min-height:100px;resize:vertical"></textarea>
-  </div>
+
+  <!-- ===== YouTube main ===== -->
+  <div id="yt-main" style="display:none"></div>
+
 </div>
 
+<!-- Project Add Modal -->
 <div class="modal-bg" id="modal" style="display:none">
   <div class="modal">
     <h2 style="color:#fff;margin:0 0 16px;font-size:16px">새 프로젝트 추가</h2>
@@ -119,7 +175,41 @@ body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#0f
   </div>
 </div>
 
+<!-- YouTube Add Topic Modal -->
+<div class="modal-bg" id="yt-modal" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <h2 style="color:#fff;margin:0 0 16px;font-size:16px">🎬 새 유튜브 주제 추가</h2>
+    <div style="margin-bottom:10px">
+      <div style="color:#555;font-size:12px;margin-bottom:4px">주제 *</div>
+      <input class="inp" id="yt-topic-input" placeholder="예: 리액트 입문, 재테크 기초, 맛집 리뷰..."/>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="color:#555;font-size:12px;margin-bottom:4px">카테고리</div>
+      <select class="inp" id="yt-cat-select">
+        <option value="튜토리얼">🎓 튜토리얼</option>
+        <option value="리뷰">⭐ 리뷰</option>
+        <option value="브이로그">🎥 브이로그</option>
+        <option value="정보·팁">💡 정보·팁</option>
+        <option value="엔터테인먼트">🎭 엔터테인먼트</option>
+        <option value="분석·정리">📊 분석·정리</option>
+        <option value="쇼츠">⚡ 쇼츠</option>
+      </select>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="color:#555;font-size:12px;margin-bottom:4px">메모 (선택)</div>
+      <textarea class="inp" id="yt-topic-memo" style="min-height:70px;resize:vertical" placeholder="아이디어 메모, 참고 링크 등..."></textarea>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="addYTTopic()" style="flex:1;background:linear-gradient(135deg,#ff0000,#cc0000);color:#fff;font-weight:700;border:none;border-radius:8px;padding:12px;cursor:pointer;font-family:inherit;font-size:14px">추가</button>
+      <button onclick="closeYTModal()" style="flex:1;background:#1e2130;border:1px solid #2a2d3a;color:#666;border-radius:8px;padding:12px;cursor:pointer;font-family:inherit">취소</button>
+    </div>
+  </div>
+</div>
+
 <script>
+// ============================================================
+//  PROJECT MODE (기존 로직 그대로)
+// ============================================================
 var STATUS = {
   '완료':   {dot:'#34d399', bg:'#059669'},
   '진행중': {dot:'#60a5fa', bg:'#2563eb'},
@@ -150,9 +240,7 @@ function loadData() {
   try {
     var d = localStorage.getItem('vibe_v1');
     projects = d ? JSON.parse(d) : DEFAULT_PROJECTS.slice();
-  } catch(e) {
-    projects = DEFAULT_PROJECTS.slice();
-  }
+  } catch(e) { projects = DEFAULT_PROJECTS.slice(); }
 }
 
 function saveData() {
@@ -160,9 +248,7 @@ function saveData() {
 }
 
 function render() {
-  renderStats();
-  renderFilters();
-  renderList();
+  renderStats(); renderFilters(); renderList();
   if (selected) renderMain();
 }
 
@@ -212,7 +298,6 @@ function renderList() {
 
 function renderMain() {
   document.getElementById('proj-title').textContent = selected.emoji + ' ' + selected.name;
-
   var sbHtml = '';
   var keys = Object.keys(STATUS);
   for (var i=0; i<keys.length; i++) {
@@ -220,23 +305,17 @@ function renderMain() {
     sbHtml += '<button class="status-btn" onclick="setStatus(\''+s+'\')" style="background:'+(selected.status===s?STATUS[s].bg:'#1e2130')+';color:'+(selected.status===s?'#fff':'#555')+'">'+s+'</button>';
   }
   document.getElementById('status-btns').innerHTML = sbHtml;
-
   document.getElementById('proj-link').innerHTML = selected.link
     ? '<a href="'+selected.link+'" target="_blank" style="color:#60a5fa;font-size:12px;word-break:break-all;text-decoration:none">'+selected.link+'</a>'
     : '<span style="color:#333;font-size:12px">없음</span>';
-
   document.getElementById('proj-filecount').textContent = selected.files.length;
-
   document.getElementById('proj-status-display').innerHTML =
     '<span class="dot" style="background:'+STATUS[selected.status].dot+'"></span>' +
     '<span style="color:#fff;font-size:15px;font-weight:600;margin-left:6px">'+selected.status+'</span>';
-
   document.getElementById('proj-tags').innerHTML = selected.tags.map(function(t){return '<span class="tag">'+t+'</span>';}).join('');
-
   document.getElementById('proj-files').innerHTML = selected.files.length===0
     ? '<span style="color:#333;font-size:13px">파일 없음</span>'
     : selected.files.map(function(f){return '<div class="file-row"><span>'+fileIcon(f)+'</span><span style="color:#bbb;font-size:13px;font-family:monospace">'+f+'</span></div>';}).join('');
-
   document.getElementById('memo-view').innerHTML = '<div style="color:'+(selected.memo?'#aaa':'#333')+';font-size:13px;line-height:1.7;min-height:60px">'+(selected.memo||'메모를 추가해보세요...')+'</div>';
   document.getElementById('memo-edit').value = selected.memo;
   document.getElementById('memo-edit').style.display = 'none';
@@ -313,10 +392,398 @@ function addProject() {
   saveData(); closeModal(); render();
 }
 
+
+// ============================================================
+//  YOUTUBE MODE
+// ============================================================
+var mode = 'proj';
+var ytTopics = [];
+var selectedTopic = null;
+var currentKit = null;
+
+var YT_CAT_EMOJI = {
+  '튜토리얼':'🎓', '리뷰':'⭐', '브이로그':'🎥',
+  '정보·팁':'💡', '엔터테인먼트':'🎭', '분석·정리':'📊', '쇼츠':'⚡'
+};
+
+function loadYTData() {
+  try {
+    var d = localStorage.getItem('vibe_yt_v1');
+    ytTopics = d ? JSON.parse(d) : [];
+  } catch(e) { ytTopics = []; }
+}
+
+function saveYTData() {
+  try { localStorage.setItem('vibe_yt_v1', JSON.stringify(ytTopics)); } catch(e){}
+}
+
+// ----- Mode switching -----
+function setMode(m) {
+  mode = m;
+  var ps = document.getElementById('proj-sidebar');
+  var ys = document.getElementById('yt-sidebar');
+  var pm = document.getElementById('proj-main');
+  var ym = document.getElementById('yt-main');
+  var tp = document.getElementById('tab-proj');
+  var ty = document.getElementById('tab-yt');
+
+  if (m === 'proj') {
+    ps.style.display = 'flex'; ps.style.flexDirection = 'column';
+    ys.style.display = 'none';
+    pm.style.display = 'block';
+    ym.style.display = 'none';
+    tp.classList.add('active'); ty.classList.remove('active');
+    render();
+  } else {
+    ps.style.display = 'none';
+    ys.style.display = 'flex'; ys.style.flexDirection = 'column';
+    pm.style.display = 'none';
+    ym.style.display = 'block';
+    tp.classList.remove('active'); ty.classList.add('active');
+    renderYTSidebar();
+    if (selectedTopic) renderYTMain(selectedTopic);
+    else renderYTEmpty();
+  }
+}
+
+// ----- Sidebar -----
+function renderYTSidebar() {
+  var label = document.getElementById('yt-count-label');
+  if (label) label.textContent = ytTopics.length + '개 주제';
+
+  if (ytTopics.length === 0) {
+    document.getElementById('yt-topic-list').innerHTML =
+      '<div style="color:#333;font-size:12px;text-align:center;padding:30px 10px;line-height:1.8">아직 주제가 없어요!<br>아래 버튼으로 추가해보세요 🎬</div>';
+    return;
+  }
+
+  var statusColor = {'아이디어':'#a78bfa','제작중':'#60a5fa','완료':'#34d399'};
+  var html = '';
+  ytTopics.forEach(function(t) {
+    var active = selectedTopic && selectedTopic.id === t.id;
+    var em = YT_CAT_EMOJI[t.category] || '🎬';
+    html += '<button class="yt-topic-btn'+(active?' active':'')+'" onclick="selectTopic('+t.id+')" style="border-left-color:'+(active?'#ff0000':'transparent')+'">';
+    html += '<span style="font-size:15px">'+em+'</span>';
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div style="color:#ccc;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(t.topic)+'</div>';
+    html += '<div style="display:flex;align-items:center;gap:5px;margin-top:2px">';
+    html += '<span style="width:6px;height:6px;border-radius:50%;background:'+(statusColor[t.status]||'#444')+';display:inline-block;flex-shrink:0"></span>';
+    html += '<span style="font-size:11px;color:#444">'+t.status+'</span>';
+    html += '</div></div></button>';
+  });
+  document.getElementById('yt-topic-list').innerHTML = html;
+}
+
+// ----- Topic select -----
+function selectTopic(id) {
+  for (var i=0; i<ytTopics.length; i++) {
+    if (ytTopics[i].id === id) { selectedTopic = ytTopics[i]; break; }
+  }
+  renderYTSidebar();
+  renderYTMain(selectedTopic);
+}
+
+// ----- Empty state -----
+function renderYTEmpty() {
+  document.getElementById('yt-main').innerHTML =
+    '<div style="text-align:center;padding:80px 20px">' +
+    '<div style="font-size:52px;margin-bottom:16px">🎬</div>' +
+    '<div style="color:#666;font-size:17px;font-weight:700;margin-bottom:8px">유튜브 주제를 추가해보세요</div>' +
+    '<div style="color:#333;font-size:13px;margin-bottom:28px;line-height:1.8">주제를 누르면<br>제목 아이디어, 스크립트, SEO 키워드, 썸네일까지<br>자동으로 만들어드려요!</div>' +
+    '<button onclick="openYTModal()" style="background:linear-gradient(135deg,#ff0000,#cc0000);color:#fff;font-weight:700;border:none;border-radius:10px;padding:14px 28px;cursor:pointer;font-size:15px;font-family:inherit">+ 첫 번째 주제 추가하기</button>' +
+    '</div>';
+}
+
+// ----- Full Video Kit Renderer -----
+function renderYTMain(t) {
+  currentKit = generateVideoKit(t);
+  var sColor = {'아이디어':'#a78bfa','제작중':'#60a5fa','완료':'#34d399'};
+  var sBg    = {'아이디어':'rgba(124,58,237,.18)','제작중':'rgba(37,99,235,.18)','완료':'rgba(16,185,129,.18)'};
+  var em = YT_CAT_EMOJI[t.category] || '🎬';
+
+  var html = '';
+
+  // ----- Header -----
+  html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap">';
+  html += '<div>';
+  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+  html += '<span style="font-size:22px">'+em+'</span>';
+  html += '<h1 style="color:#fff;font-size:20px;font-weight:800;line-height:1.3">'+esc(t.topic)+'</h1>';
+  html += '</div>';
+  html += '<span style="background:#1e2130;border:1px solid #2a2d3a;color:#555;font-size:11px;border-radius:5px;padding:3px 9px">'+esc(t.category)+'</span>';
+  if (t.memo) html += '<div style="color:#444;font-size:12px;margin-top:6px">💬 '+esc(t.memo)+'</div>';
+  html += '</div>';
+  // Status + delete
+  html += '<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">';
+  ['아이디어','제작중','완료'].forEach(function(s) {
+    var on = t.status === s;
+    html += '<button onclick="setTopicStatus('+t.id+',\''+s+'\')" style="border:1px solid '+(on?sColor[s]:'#2a2d3a')+';background:'+(on?sBg[s]:'transparent')+';color:'+(on?sColor[s]:'#444')+';border-radius:20px;padding:5px 13px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:.15s">'+s+'</button>';
+  });
+  html += '<button onclick="deleteTopic('+t.id+')" style="background:#2a1a1a;border:1px solid #4a2020;color:#f87171;font-size:11px;border-radius:7px;padding:5px 10px;cursor:pointer;margin-left:2px">삭제</button>';
+  html += '</div>';
+  html += '</div>'; // header
+
+  // ----- 1. 제목 아이디어 -----
+  html += '<div class="kit-card">';
+  html += '<div class="kit-label">🎯 제목 아이디어 — 클릭하면 복사</div>';
+  currentKit.titles.forEach(function(item, idx) {
+    html += '<div class="title-row" onclick="copyKitItem(\'title\','+idx+')">';
+    html += '<div style="color:#e8e8e8;font-size:14px;font-weight:600;line-height:1.4;margin-bottom:7px">'+esc(item.title)+'</div>';
+    html += '<div style="display:flex;align-items:center;gap:8px">';
+    html += '<span style="background:#7c3aed22;color:#a78bfa;border:1px solid #7c3aed44;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:800">'+item.formula+'</span>';
+    html += '<span style="color:#444;font-size:11px">'+item.tip+'</span>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  // ----- 2 + 3 in grid -----
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">';
+
+  // 스크립트 아웃라인
+  html += '<div class="kit-card" style="margin-bottom:0">';
+  html += '<div class="kit-label">✍️ 스크립트 아웃라인</div>';
+  currentKit.script.forEach(function(sec) {
+    html += '<div class="outline-step">';
+    html += '<div style="color:#a78bfa;font-size:10px;font-weight:800;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">'+sec.label+'</div>';
+    html += '<div style="color:#bbb;font-size:12px;line-height:1.65">'+sec.content+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // SEO 키워드
+  html += '<div class="kit-card" style="margin-bottom:0">';
+  html += '<div class="kit-label">🔍 SEO 키워드 & 태그</div>';
+  html += '<div style="margin-bottom:10px">';
+  currentKit.keywords.forEach(function(k, idx) {
+    html += '<span class="kw-chip" onclick="copyKitItem(\'kw\','+idx+')">'+esc(k)+'</span>';
+  });
+  html += '</div>';
+  html += '<button onclick="copyKitItem(\'allkw\',0)" style="width:100%;background:#1e2130;border:1px solid #2a2d3a;color:#555;font-size:12px;border-radius:7px;padding:7px;cursor:pointer;font-family:inherit;transition:.1s" onmouseover="this.style.color=\'#aaa\'" onmouseout="this.style.color=\'#555\'">📋 전체 태그 복사</button>';
+  html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid #1e2130">';
+  html += '<div style="color:#444;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px">📝 설명문 첫 줄</div>';
+  html += '<div onclick="copyKitItem(\'desc\',0)" style="background:#1e2130;border:1px solid #2a2d3a;border-radius:8px;padding:10px;cursor:pointer;color:#bbb;font-size:12px;line-height:1.65;transition:.15s" onmouseover="this.style.borderColor=\'#7c3aed\'" onmouseout="this.style.borderColor=\'#2a2d3a\'">'+esc(currentKit.descFirstLine)+'</div>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '</div>'; // grid
+
+  // ----- 4. 썸네일 아이디어 -----
+  html += '<div class="kit-card">';
+  html += '<div class="kit-label">🖼️ 썸네일 텍스트 아이디어 — 클릭하면 복사</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">';
+  currentKit.thumbnails.forEach(function(th, idx) {
+    html += '<div class="thumb-card" style="background:'+th.bg+'" onclick="copyKitItem(\'thumb\','+idx+')">';
+    html += '<div style="font-size:15px;font-weight:900;color:#fff;line-height:1.3;margin-bottom:8px">'+esc(th.text)+'</div>';
+    html += '<div style="font-size:10px;color:rgba(255,255,255,.45);font-weight:600">'+th.style+'</div>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+
+  // ----- 5. 제작 체크리스트 -----
+  html += '<div class="kit-card">';
+  html += '<div class="kit-label">✅ 제작 체크리스트</div>';
+  if (!t.checklist) t.checklist = {};
+  var checkedCnt = 0;
+  currentKit.checklist.forEach(function(item, idx) {
+    var checked = t.checklist[idx] === true;
+    if (checked) checkedCnt++;
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #1a1c24">';
+    html += '<div class="chk-box'+(checked?' done':'')+'" onclick="toggleTopicCheck('+t.id+','+idx+')">'+(checked?'<span style="color:#fff;font-size:11px;font-weight:700">✓</span>':'')+'</div>';
+    html += '<span style="font-size:13px;color:'+(checked?'#3a3d4a':'#ccc')+';'+(checked?'text-decoration:line-through':'')+'">'+item+'</span>';
+    html += '</div>';
+  });
+  var pct = Math.round(checkedCnt / currentKit.checklist.length * 100);
+  html += '<div style="display:flex;align-items:center;gap:10px;margin-top:10px">';
+  html += '<div style="flex:1;height:5px;background:#1e2130;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#7c3aed,#34d399);border-radius:3px;transition:.3s"></div></div>';
+  html += '<span style="color:#444;font-size:11px;flex-shrink:0">'+checkedCnt+' / '+currentKit.checklist.length+'</span>';
+  html += '</div>';
+  html += '</div>';
+
+  document.getElementById('yt-main').innerHTML = html;
+}
+
+// ----- Video Kit Generator -----
+function generateVideoKit(t) {
+  var topic = t.topic;
+  var isSHORTS = t.category === '쇼츠';
+
+  var titles = isSHORTS ? [
+    {title: topic + ' 1분 만에 정리', formula: '쇼츠 핵심형', tip: '짧고 강렬, "1분 만에" 시간 약속'},
+    {title: '이거 모르면 손해 — ' + topic, formula: '긴박감 유발형', tip: '호기심 & FOMO 자극'},
+    {title: topic + ' 꿀팁 (저장필수)', formula: '저장 유도형', tip: '"저장필수" 문구로 재방문 유도'}
+  ] : [
+    {title: '완전 처음부터 배우는 ' + topic + ' — 2025 완벽 가이드', formula: '완성형 가이드', tip: '"완전", "완벽" 파워워드 + 연도로 최신성 강조'},
+    {title: topic + ' 잘하는 사람들이 절대 안 알려주는 핵심 비법', formula: '비밀 공개형', tip: '호기심 극대화 — 클릭률 최고 포맷'},
+    {title: '10분 만에 끝내는 ' + topic + ' 핵심 총정리', formula: '시간 절약형', tip: '"X분 만에" 형식 — 바쁜 시청자 타겟'}
+  ];
+
+  var script = isSHORTS ? [
+    {label: '⚡ 첫 1~2초 후킹', content: '"'+topic+', 이거 진짜입니다." — 텍스트 오버레이로 즉시 눈길 잡기. 말보다 시각적 임팩트가 먼저!'},
+    {label: '💡 핵심 내용 (5~40초)', content: topic+'의 핵심을 최대한 짧게. 한 포인트에 집중, 시각 자료(화면 공유·자막) 필수.'},
+    {label: '🎯 마무리 CTA (40~60초)', content: '"이거 몰랐으면 어쩔뻔! 좋아요 & 팔로우로 이런 팁 계속 받아가세요 👍"'}
+  ] : [
+    {label: '🎣 후킹 인트로 (0~30초)', content: '"'+topic+', 사실 대부분의 사람들이 이 한 가지를 모릅니다." — 강렬한 한 문장 오프닝. 오늘 영상으로 얻을 것을 명확히 약속하세요.'},
+    {label: '🙋 채널 소개 & 목차 (30초~1분)', content: '간단 자기소개 후 "오늘은 '+topic+'을 [포인트1], [포인트2], [포인트3] 순서로 알아볼게요."'},
+    {label: '📌 본론 1 — 개념/기초', content: topic+'이란 무엇인지 가장 쉬운 말로 정의. 초보자도 이해할 비유나 실생활 예시 활용.'},
+    {label: '📌 본론 2 — 핵심/실전', content: topic+'의 실제 사용법 또는 핵심 원리. 스크린샷·데모·비교 등 시각 자료 적극 활용.'},
+    {label: '📌 본론 3 — 심화/차별화 팁', content: '고수들만 아는 '+topic+' 꿀팁 또는 흔한 실수와 주의사항. 다른 영상에 없는 차별화 포인트!'},
+    {label: '🎯 마무리 & CTA', content: '핵심 3줄 요약 → "도움 됐다면 좋아요 꾹! 구독 & 알림 설정으로 다음 영상도 놓치지 마세요" → 다음 영상 예고'}
+  ];
+
+  var keywords = [
+    topic, topic+' 방법', topic+' 하는법', topic+' 입문', topic+' 기초',
+    topic+' 튜토리얼', topic+' 꿀팁', topic+' 2025', '한국어 '+topic,
+    topic+' 완전정복', topic+' 핵심', topic+' 추천', topic+' 가이드',
+    topic+' 무료', topic+' 초보'
+  ];
+
+  var descFirstLine = '📌 이 영상에서는 '+topic+'에 대해 핵심만 쏙 빼서 알려드립니다. 입문자부터 실전 활용까지, 이 영상 하나로 끝내세요!';
+
+  var shortTitle = topic.length > 6 ? topic.slice(0,6) : topic;
+  var thumbnails = [
+    {text: shortTitle+'\n완전정복', bg:'linear-gradient(135deg,#7c3aed,#2563eb)', style:'파워풀 퍼플 · 신뢰감'},
+    {text: '비법 공개\n'+shortTitle, bg:'linear-gradient(135deg,#dc2626,#7f1d1d)', style:'강렬한 레드 · 긴박감'},
+    {text: '10분 완성\n'+shortTitle, bg:'linear-gradient(135deg,#059669,#064e3b)', style:'신뢰의 그린 · 안정감'}
+  ];
+
+  var checklist = isSHORTS ? [
+    '📌 트렌드/훅 아이디어 선정',
+    '📝 15초 스크립트 작성',
+    '🖼️ 첫 프레임 시각 기획',
+    '🎬 세로 촬영 (9:16 비율)',
+    '💾 원본 파일 백업',
+    '✂️ 쇼츠 편집 (1분 이내)',
+    '🎵 트렌드 BGM 삽입',
+    '📝 자막 & 텍스트 오버레이',
+    '🔍 제목 & 태그 작성',
+    '⬆️ 유튜브 쇼츠 업로드',
+    '📣 인스타 릴스 크로스포스팅'
+  ] : [
+    '📌 주제 리서치 & 경쟁 영상 분석',
+    '📝 스크립트 초안 작성',
+    '🖼️ 썸네일 컨셉 기획',
+    '💡 조명 & 카메라 세팅',
+    '🎬 촬영 완료',
+    '💾 원본 파일 백업',
+    '✂️ 컷 편집',
+    '🎵 BGM & 효과음 삽입',
+    '📝 자막 추가',
+    '🎨 썸네일 제작 완료',
+    '🔍 제목 & 설명문 작성 (SEO 최적화)',
+    '🏷️ 태그 15개 추가',
+    '⬆️ 유튜브 업로드 & 예약 설정',
+    '📣 SNS 홍보 (인스타, 트위터 등)',
+    '💬 초반 24시간 댓글 관리'
+  ];
+
+  return {titles:titles, script:script, keywords:keywords, descFirstLine:descFirstLine, thumbnails:thumbnails, checklist:checklist};
+}
+
+// ----- Kit copy actions -----
+function copyKitItem(type, idx) {
+  if (!currentKit) return;
+  var text = '';
+  if (type === 'title')  text = currentKit.titles[idx].title;
+  if (type === 'kw')     text = currentKit.keywords[idx];
+  if (type === 'allkw')  text = currentKit.keywords.join(', ');
+  if (type === 'desc')   text = currentKit.descFirstLine;
+  if (type === 'thumb')  text = currentKit.thumbnails[idx].text;
+  copyText(text);
+}
+
+// ----- Topic status -----
+function setTopicStatus(id, status) {
+  for (var i=0; i<ytTopics.length; i++) {
+    if (ytTopics[i].id === id) { ytTopics[i].status = status; selectedTopic = ytTopics[i]; break; }
+  }
+  saveYTData();
+  renderYTSidebar();
+  renderYTMain(selectedTopic);
+}
+
+// ----- Checklist toggle -----
+function toggleTopicCheck(id, idx) {
+  for (var i=0; i<ytTopics.length; i++) {
+    if (ytTopics[i].id === id) {
+      if (!ytTopics[i].checklist) ytTopics[i].checklist = {};
+      ytTopics[i].checklist[idx] = !ytTopics[i].checklist[idx];
+      selectedTopic = ytTopics[i];
+      break;
+    }
+  }
+  saveYTData();
+  renderYTMain(selectedTopic);
+}
+
+// ----- Delete topic -----
+function deleteTopic(id) {
+  if (!confirm('이 주제를 삭제할까요?')) return;
+  ytTopics = ytTopics.filter(function(t){ return t.id !== id; });
+  selectedTopic = ytTopics.length > 0 ? ytTopics[0] : null;
+  saveYTData();
+  renderYTSidebar();
+  if (selectedTopic) renderYTMain(selectedTopic);
+  else renderYTEmpty();
+}
+
+// ----- Add topic modal -----
+function openYTModal() { document.getElementById('yt-modal').style.display = 'flex'; }
+function closeYTModal() { document.getElementById('yt-modal').style.display = 'none'; }
+
+function addYTTopic() {
+  var topicVal = (document.getElementById('yt-topic-input').value||'').trim();
+  if (!topicVal) { alert('주제를 입력해주세요!'); return; }
+  var t = {
+    id: Date.now(),
+    topic: topicVal,
+    category: document.getElementById('yt-cat-select').value,
+    memo: document.getElementById('yt-topic-memo').value,
+    status: '아이디어',
+    checklist: {}
+  };
+  ytTopics.push(t);
+  selectedTopic = t;
+  saveYTData();
+  closeYTModal();
+  document.getElementById('yt-topic-input').value = '';
+  document.getElementById('yt-topic-memo').value = '';
+  renderYTSidebar();
+  renderYTMain(selectedTopic);
+}
+
+// ----- Utilities -----
+function copyText(text) {
+  if (!text) return;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function(){ showToast('복사됨 📋'); });
+  } else {
+    showToast('복사 지원 안됨');
+  }
+}
+
+function showToast(msg) {
+  var old = document.querySelector('.toast-msg');
+  if (old) old.remove();
+  var el = document.createElement('div');
+  el.className = 'toast-msg';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 1800);
+}
+
+function esc(str) {
+  return String(str||'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ----- Init -----
 loadData();
-if (projects.length>0) selected=projects[0];
+loadYTData();
+if (projects.length > 0) selected = projects[0];
 render();
 </script>
-
 </body>
 </html>
