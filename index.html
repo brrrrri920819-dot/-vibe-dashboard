@@ -151,7 +151,7 @@ textarea.form-inp{resize:vertical;min-height:76px}
   .menu-btn{display:flex;align-items:center;justify-content:center}
   .stat-grid{grid-template-columns:1fr 1fr;gap:10px}
   .dash-grid{grid-template-columns:1fr !important}
-  #fx-grid{grid-template-columns:repeat(5,1fr) !important;gap:6px}
+  #fx-grid,#fx-convert{grid-template-columns:repeat(5,1fr) !important;gap:6px}
   .section{padding:14px}
   .page-header{margin-bottom:16px}
   .page-title{font-size:17px}
@@ -262,6 +262,17 @@ textarea.form-inp{resize:vertical;min-height:76px}
           <button onclick="fetchRates(true)" id="fx-refresh" style="background:transparent;border:1px solid #1e2235;color:#3a4060;font-size:11px;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit">새로고침</button>
         </div>
         <div id="fx-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
+        <div style="border-top:1px solid #1e2235;margin-top:14px;padding-top:14px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <div style="position:relative;flex:1">
+              <input type="number" id="krw-input" placeholder="원 금액 입력"
+                oninput="convertKRW()"
+                style="width:100%;background:#1e2235;border:1px solid #252840;border-radius:9px;color:#e2e8f0;font-size:15px;padding:10px 44px 10px 14px;outline:none;font-family:inherit;-webkit-appearance:none;appearance:none"/>
+              <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#5a6090;font-size:13px;font-weight:600;pointer-events:none">원</span>
+            </div>
+          </div>
+          <div id="fx-convert" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="dash-grid">
         <div class="section">
@@ -418,12 +429,13 @@ function enterApp() {
 // ---- EXCHANGE RATES ----
 var FX_CACHE_KEY = 'wdash_fx_v1';
 var FX_CURRENCIES = [
-  { code:'USD', name:'달러', flag:'🇺🇸', per:1 },
-  { code:'EUR', name:'유로', flag:'🇪🇺', per:1 },
-  { code:'JPY', name:'엔화', flag:'🇯🇵', per:100 },
-  { code:'CNY', name:'위안', flag:'🇨🇳', per:1 },
-  { code:'GBP', name:'파운드', flag:'🇬🇧', per:1 },
+  { code:'USD', name:'달러',  flag:'🇺🇸', per:1,   symbol:'$',  decimals:2 },
+  { code:'EUR', name:'유로',  flag:'🇪🇺', per:1,   symbol:'€',  decimals:2 },
+  { code:'JPY', name:'엔화',  flag:'🇯🇵', per:100, symbol:'¥',  decimals:0 },
+  { code:'CNY', name:'위안',  flag:'🇨🇳', per:1,   symbol:'¥',  decimals:2 },
+  { code:'GBP', name:'파운드',flag:'🇬🇧', per:1,   symbol:'£',  decimals:2 },
 ];
+var fxRates = null;
 
 async function fetchRates(force) {
   var fxGrid = document.getElementById('fx-grid');
@@ -449,6 +461,7 @@ async function fetchRates(force) {
 }
 
 function renderRates(obj) {
+  fxRates = obj.rates;
   var krw = obj.rates.KRW;
   var html = '';
   FX_CURRENCIES.forEach(function(c) {
@@ -465,6 +478,31 @@ function renderRates(obj) {
   var d = new Date(obj.ts);
   var el = document.getElementById('fx-time');
   if (el) el.textContent = (d.getMonth()+1)+'.'+(d.getDate())+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0')+' 기준';
+  convertKRW();
+}
+
+function convertKRW() {
+  var el = document.getElementById('fx-convert');
+  if (!el) return;
+  var krwAmt = parseFloat((document.getElementById('krw-input')||{}).value) || 0;
+  if (!fxRates || krwAmt <= 0) {
+    el.innerHTML = '';
+    return;
+  }
+  var krw = fxRates.KRW;
+  var html = '';
+  FX_CURRENCIES.forEach(function(c) {
+    var converted = krwAmt / krw * fxRates[c.code];
+    var fmt = converted >= 100
+      ? converted.toLocaleString('ko-KR', { maximumFractionDigits: 0 })
+      : converted.toLocaleString('ko-KR', { minimumFractionDigits: c.decimals, maximumFractionDigits: c.decimals });
+    html += '<div style="background:#1a1d30;border:1px solid #252840;border-radius:9px;padding:11px 10px;text-align:center">' +
+      '<div style="font-size:18px;line-height:1;margin-bottom:4px">'+c.flag+'</div>' +
+      '<div style="color:#3a4060;font-size:10px;font-weight:600;margin-bottom:4px">'+c.name+'</div>' +
+      '<div style="color:#a5b4fc;font-size:13px;font-weight:700;line-height:1">'+c.symbol+' '+fmt+'</div>' +
+      '</div>';
+  });
+  el.innerHTML = html;
 }
 
 function lockApp() {
