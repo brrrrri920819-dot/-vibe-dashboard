@@ -138,14 +138,39 @@ textarea.form-inp{resize:vertical;min-height:76px}
 .m-cancel{flex:1;background:#1e2235;border:1px solid #252840;color:#5a6090;border-radius:9px;padding:11px;font-size:14px;cursor:pointer;font-family:inherit}
 .m-cancel:hover{color:#a0aec0}
 
+/* ---- sidebar overlay backdrop ---- */
+#sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99;backdrop-filter:blur(2px)}
+#sidebar-overlay.show{display:block}
+
 /* ---- responsive ---- */
 @media(max-width:720px){
-  .sidebar{transform:translateX(-100%)}
-  .sidebar.open{transform:none;box-shadow:8px 0 30px rgba(0,0,0,.5)}
-  .main{margin-left:0;padding:18px 16px 32px}
-  .menu-btn{display:block}
-  .stat-grid{grid-template-columns:1fr 1fr}
+  .lock-card{width:calc(100vw - 40px);max-width:340px;padding:32px 24px}
+  .sidebar{transform:translateX(-240px)}
+  .sidebar.open{transform:translateX(0);box-shadow:10px 0 40px rgba(0,0,0,.6)}
+  .main{margin-left:0;padding:16px 14px 90px}
+  .menu-btn{display:flex;align-items:center;justify-content:center}
+  .stat-grid{grid-template-columns:1fr 1fr;gap:10px}
   .dash-grid{grid-template-columns:1fr !important}
+  .section{padding:14px}
+  .page-header{margin-bottom:16px}
+  .page-title{font-size:17px}
+  .add-btn{padding:8px 14px;font-size:12px}
+  .form-row{grid-template-columns:1fr}
+  .filter-bar{gap:6px}
+  .f-tab{padding:6px 11px;font-size:12px}
+  .search-inp{width:100%;min-width:unset}
+  .task-item{padding:12px 12px}
+  .t-check{width:24px;height:24px;border-radius:7px;font-size:13px}
+  .icon-btn{padding:6px 7px;font-size:15px}
+  .modal{border-radius:16px 16px 0 0;max-height:92vh;padding:22px 18px}
+  .modal-bg{align-items:flex-end;padding:0}
+  .modal-btns button{padding:13px}
+  .sc-val{font-size:24px}
+}
+@media(max-width:380px){
+  .stat-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .sc-val{font-size:20px}
+  .sc-label{font-size:9px}
 }
 
 /* ---- scrollbar ---- */
@@ -171,6 +196,9 @@ textarea.form-inp{resize:vertical;min-height:76px}
     <div class="lock-err" id="lock-err"></div>
   </div>
 </div>
+
+<!-- Sidebar overlay for mobile -->
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
 
 <!-- App -->
 <div id="app">
@@ -434,11 +462,16 @@ function fmtDate(d) {
 function openSidebar() {
   sidebarOpen = true;
   document.getElementById('sidebar').classList.add('open');
-  document.getElementById('sidebar').classList.remove('hidden');
+  if (window.innerWidth <= 720) {
+    document.getElementById('sidebar-overlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
 }
 
 function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+  document.body.style.overflow = '';
   if (window.innerWidth <= 720) sidebarOpen = false;
 }
 
