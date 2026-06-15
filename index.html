@@ -151,6 +151,7 @@ textarea.form-inp{resize:vertical;min-height:76px}
   .menu-btn{display:flex;align-items:center;justify-content:center}
   .stat-grid{grid-template-columns:1fr 1fr;gap:10px}
   .dash-grid{grid-template-columns:1fr !important}
+  #fx-grid{grid-template-columns:repeat(5,1fr) !important;gap:6px}
   .section{padding:14px}
   .page-header{margin-bottom:16px}
   .page-title{font-size:17px}
@@ -255,6 +256,13 @@ textarea.form-inp{resize:vertical;min-height:76px}
         <button class="add-btn" onclick="openModal()">+ 업무 추가</button>
       </div>
       <div class="stat-grid" id="stat-grid"></div>
+      <div class="section" style="margin-bottom:14px">
+        <div class="sec-title" style="justify-content:space-between;margin-bottom:12px">
+          <span>💱 오늘의 환율 <span style="color:#3a4060;font-size:10px;font-weight:400;margin-left:4px" id="fx-time"></span></span>
+          <button onclick="fetchRates(true)" id="fx-refresh" style="background:transparent;border:1px solid #1e2235;color:#3a4060;font-size:11px;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit">새로고침</button>
+        </div>
+        <div id="fx-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="dash-grid">
         <div class="section">
           <div class="sec-title">☀️ 오늘 할 일 <span class="sec-cnt" id="today-cnt"></span></div>
@@ -404,6 +412,59 @@ function enterApp() {
   document.getElementById('app').style.display = 'block';
   loadData();
   render();
+  fetchRates();
+}
+
+// ---- EXCHANGE RATES ----
+var FX_CACHE_KEY = 'wdash_fx_v1';
+var FX_CURRENCIES = [
+  { code:'USD', name:'달러', flag:'🇺🇸', per:1 },
+  { code:'EUR', name:'유로', flag:'🇪🇺', per:1 },
+  { code:'JPY', name:'엔화', flag:'🇯🇵', per:100 },
+  { code:'CNY', name:'위안', flag:'🇨🇳', per:1 },
+  { code:'GBP', name:'파운드', flag:'🇬🇧', per:1 },
+];
+
+async function fetchRates(force) {
+  var fxGrid = document.getElementById('fx-grid');
+  if (!fxGrid) return;
+
+  if (!force) {
+    try {
+      var cached = JSON.parse(localStorage.getItem(FX_CACHE_KEY)||'null');
+      if (cached && Date.now() - cached.ts < 3600000) { renderRates(cached); return; }
+    } catch(e) {}
+  }
+
+  fxGrid.innerHTML = '<div style="grid-column:1/-1;color:#3a4060;font-size:12px;padding:4px 0">환율 불러오는 중...</div>';
+  try {
+    var res = await fetch('https://open.er-api.com/v6/latest/USD');
+    var data = await res.json();
+    var obj = { ts: Date.now(), rates: data.rates };
+    localStorage.setItem(FX_CACHE_KEY, JSON.stringify(obj));
+    renderRates(obj);
+  } catch(e) {
+    fxGrid.innerHTML = '<div style="grid-column:1/-1;color:#f87171;font-size:12px;padding:4px 0">환율 정보를 불러올 수 없습니다</div>';
+  }
+}
+
+function renderRates(obj) {
+  var krw = obj.rates.KRW;
+  var html = '';
+  FX_CURRENCIES.forEach(function(c) {
+    var rate = Math.round(krw / obj.rates[c.code] * c.per);
+    var label = c.per > 1 ? c.per + ' ' + c.code : '1 ' + c.code;
+    html += '<div style="background:#1e2235;border-radius:9px;padding:11px 10px;text-align:center">' +
+      '<div style="font-size:22px;line-height:1;margin-bottom:5px">'+c.flag+'</div>' +
+      '<div style="color:#5a6090;font-size:10px;font-weight:600;letter-spacing:.3px;margin-bottom:3px">'+label+'</div>' +
+      '<div style="color:#fff;font-size:14px;font-weight:700;line-height:1">'+rate.toLocaleString()+'</div>' +
+      '<div style="color:#3a4060;font-size:10px;margin-top:2px">원</div>' +
+      '</div>';
+  });
+  document.getElementById('fx-grid').innerHTML = html;
+  var d = new Date(obj.ts);
+  var el = document.getElementById('fx-time');
+  if (el) el.textContent = (d.getMonth()+1)+'.'+(d.getDate())+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0')+' 기준';
 }
 
 function lockApp() {
