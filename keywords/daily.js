@@ -17,19 +17,27 @@ const { notifyPublished }   = require('../telegram');
 
 const ACCOUNTS_FILE    = path.join(__dirname, '..', 'data', 'accounts.json');
 const KW_HISTORY_FILE  = path.join(__dirname, '..', 'data', 'kw_history.json');
+const isCloud = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RENDER || process.env.FLY_APP_NAME);
+
+let memAccounts = [];
+let memHistory  = {};
 
 // ── 계정 목록 I/O ────────────────────────────────────────
 function readAccounts() {
+  if (isCloud) return memAccounts;
   try { return JSON.parse(fs.readFileSync(ACCOUNTS_FILE, 'utf8')); }
   catch { return []; }
 }
 
 function writeAccounts(accounts) {
+  if (isCloud) { memAccounts = accounts; return; }
+  if (!fs.existsSync(path.dirname(ACCOUNTS_FILE))) fs.mkdirSync(path.dirname(ACCOUNTS_FILE), { recursive: true });
   fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2));
 }
 
 // ── 키워드 사용 이력 (중복 발행 방지) ───────────────────
 function readHistory() {
+  if (isCloud) return memHistory;
   try { return JSON.parse(fs.readFileSync(KW_HISTORY_FILE, 'utf8')); }
   catch { return {}; }
 }
@@ -38,8 +46,8 @@ function markUsed(accountId, keyword) {
   const h = readHistory();
   if (!h[accountId]) h[accountId] = [];
   h[accountId].push({ keyword, usedAt: new Date().toISOString() });
-  // 30일치만 보관
   h[accountId] = h[accountId].slice(-90);
+  if (isCloud) { memHistory = h; return; }
   fs.writeFileSync(KW_HISTORY_FILE, JSON.stringify(h, null, 2));
 }
 

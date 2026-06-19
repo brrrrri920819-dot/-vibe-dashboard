@@ -1,58 +1,50 @@
 /**
  * scheduler/queue.js
- * 예약 발행 큐 관리 (파일 기반 간단한 JSON 큐)
- * - 서버 재시작해도 유지됨
+ * 예약 발행 큐 관리
+ * - 로컬: 파일 기반 (data/queue.json)
+ * - Railway/클라우드: 메모리 기반 (재시작 시 초기화, 텔레그램으로 보완)
  */
 
 const fs   = require('fs');
 const path = require('path');
 const cron = require('node-cron');
 
-const QUEUE_FILE = path.join(__dirname, '..', 'data', 'queue.json');
-const LOG_FILE   = path.join(__dirname, '..', 'data', 'publish_log.json');
+const DATA_DIR   = path.join(__dirname, '..', 'data');
+const QUEUE_FILE = path.join(DATA_DIR, 'queue.json');
+const LOG_FILE   = path.join(DATA_DIR, 'publish_log.json');
 
-// data 디렉토리 자동 생성
-const dataDir = path.dirname(QUEUE_FILE);
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+// 클라우드 환경에서는 메모리 폴백 사용
+let memQueue = [];
+let memLog   = [];
+const isCloud = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RENDER || process.env.FLY_APP_NAME);
+
+if (!isCloud) {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+}
 
 function readQueue() {
-  try {
-    return JSON.parse(fs.readFileSync(QUEUE_FILE, 'utf8'));
-  } catch {
-    return [];
-  }
+  if (isCloud) return memQueue;
+  try { return JSON.parse(fs.readFileSync(QUEUE_FILE, 'utf8')); } catch { return []; }
 }
 
 function writeQueue(queue) {
+  if (isCloud) { memQueue = queue; return; }
   fs.writeFileSync(QUEUE_FILE, JSON.stringify(queue, null, 2));
 }
 
 function readLog() {
-  try {
-    return JSON.parse(fs.readFileSync(LOG_FILE, 'utf8'));
-  } catch {
-    return [];
-  }
+  if (isCloud) return memLog;
+  try { return JSON.parse(fs.readFileSync(LOG_FILE, 'utf8')); } catch { return []; }
 }
 
 function appendLog(entry) {
   const log = readLog();
   log.unshift({ ...entry, loggedAt: new Date().toISOString() });
-  fs.writeFileSync(LOG_FILE, JSON.stringify(log.slice(0, 500), null, 2)); // 최대 500개 보관
+  const trimmed = log.slice(0, 500);
+  if (isCloud) { memLog = trimmed; return; }
+  fs.writeFileSync(LOG_FILE, JSON.stringify(trimmed, null, 2));
 }
 
-/**
- * 큐에 작업 추가
- * @param {object} job
- * @param {string}   job.id         - 고유 ID
- * @param {string}   job.title      - 포스트 제목
- * @param {string}   job.content    - HTML 본문
- * @param {string[]} job.tags
- * @param {string[]} job.imagePaths
- * @param {string[]} job.platforms  - ['naver','tistory','blogger'] 중 선택
- * @param {string}   job.scheduledAt - ISO 날짜 문자열 (없으면 즉시)
- * @param {string}   job.status     - 'pending'|'running'|'done'|'failed'
- */
 function enqueue(job) {
   const queue = readQueue();
   queue.push({
@@ -65,9 +57,7 @@ function enqueue(job) {
 }
 
 function dequeue(id) {
-  const queue = readQueue();
-  const updated = queue.filter(j => j.id !== id);
-  writeQueue(updated);
+  writeQueue(readQueue().filter(j => j.id !== id));
 }
 
 function updateJobStatus(id, status, result = {}) {
@@ -81,11 +71,8 @@ function updateJobStatus(id, status, result = {}) {
   }
 }
 
-/**
- * 실행 엔진 — 1분마다 pending 작업 확인 후 실행
- */
 function startScheduler(publishFn) {
-  console.log('[Scheduler] 시작됨 (1분 간격 체크)');
+  console.log(`[Scheduler] 시작됨 (1분 간격, 환경: ${isCloud ? '클라우드' : '로컬'})`);
 
   cron.schedule('* * * * *', async () => {
     const queue = readQueue();
