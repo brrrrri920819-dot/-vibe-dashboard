@@ -226,6 +226,29 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.6}
 .bp-spinner{display:inline-block;width:14px;height:14px;border:2px solid #252840;border-top-color:#6366f1;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:720px){.bp-grid{grid-template-columns:1fr 1fr}.bp-datetime-row{grid-template-columns:1fr}}
+
+/* ---- account cards ---- */
+.acc-card{background:#1e2235;border:1px solid #252840;border-radius:12px;padding:16px 18px;margin-bottom:12px;transition:.15s}
+.acc-card:hover{border-color:#3a3d70}
+.acc-card.disabled{opacity:.5}
+.acc-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.acc-toggle{position:relative;width:36px;height:20px;flex-shrink:0}
+.acc-toggle input{opacity:0;width:0;height:0}
+.acc-slider{position:absolute;inset:0;background:#252840;border-radius:20px;cursor:pointer;transition:.2s}
+.acc-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#5a6090;border-radius:50%;transition:.2s}
+.acc-toggle input:checked+.acc-slider{background:#6366f1}
+.acc-toggle input:checked+.acc-slider:before{transform:translateX(16px);background:#fff}
+.acc-title{color:#e2e8f0;font-size:14px;font-weight:600;flex:1}
+.acc-plat-badge{font-size:11px;padding:3px 9px;border-radius:6px;background:#252840;color:#a0aec0}
+.acc-del{background:transparent;border:none;color:#2a3050;cursor:pointer;font-size:14px;padding:4px 6px;border-radius:5px;transition:.1s}
+.acc-del:hover{background:#1a1030;color:#f87171}
+.acc-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.acc-seed-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.acc-seed-input{background:#161929;border:1px solid #1e2235;border-radius:7px;color:#e2e8f0;font-size:12px;padding:5px 10px;outline:none;font-family:inherit;width:100%;margin-top:6px;transition:.2s}
+.acc-seed-input:focus{border-color:#6366f1}
+.kw-chip{background:#252840;color:#a5b4fc;font-size:11px;border-radius:20px;padding:4px 12px;cursor:default}
+.kw-chip.hot{background:#2d1a0e;color:#fb923c}
+@media(max-width:720px){.acc-fields{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -292,8 +315,11 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.6}
       <button class="nav-item" id="nav-blog-log" onclick="showView('blog-log')">
         <span class="ni">📜</span> 발행 이력
       </button>
+      <button class="nav-item" id="nav-blog-accounts" onclick="showView('blog-accounts')">
+        <span class="ni">👤</span> 계정·주제 관리
+      </button>
       <button class="nav-item" id="nav-blog-setup" onclick="showView('blog-setup')">
-        <span class="ni">⚙️</span> 계정 설정
+        <span class="ni">⚙️</span> 서버 설정
       </button>
     </div>
     <div class="s-footer">
@@ -469,6 +495,31 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.6}
       <div class="section">
         <div id="bp-log-list"><div class="empty-state"><div class="ei">📜</div><div class="et">발행 이력이 없습니다</div></div></div>
       </div>
+    </div>
+
+    <!-- Blog Accounts View -->
+    <div id="view-blog-accounts" style="display:none">
+      <div class="page-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="page-title-wrap">
+          <div class="page-title">계정·주제 관리</div>
+          <div class="page-date">아이디별 주제 설정 → 매일 자동 키워드 매칭</div>
+        </div>
+        <button class="add-btn" onclick="bpAddAccount()">+ 계정 추가</button>
+      </div>
+
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">🔥 오늘 트렌딩 키워드 <span style="color:#3a4060;font-size:11px;font-weight:400" id="kw-fetched-time"></span></div>
+        <div id="kw-trending-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+          <span style="color:#3a4060;font-size:12px">서버에서 불러오는 중...</span>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="bp-pub-btn" style="max-width:160px;font-size:13px;padding:9px 14px" onclick="bpFetchTrending()">키워드 새로고침</button>
+          <button class="bp-sch-btn" style="max-width:180px;font-size:13px;padding:9px 14px" onclick="bpRunNow()">▶ 지금 즉시 실행</button>
+        </div>
+      </div>
+
+      <div id="bp-accounts-list"></div>
     </div>
 
     <!-- Blog Setup View -->
@@ -965,7 +1016,7 @@ function showView(v) {
     if (el) el.classList.toggle('active', id===v);
   });
 
-  var blogViews = ['blog','blog-log','blog-setup'];
+  var blogViews = ['blog','blog-log','blog-setup','blog-accounts'];
   var isBlog = blogViews.indexOf(v) !== -1;
 
   document.getElementById('view-dashboard').style.display = v==='dashboard' ? 'block' : 'none';
@@ -973,6 +1024,7 @@ function showView(v) {
   document.getElementById('view-blog').style.display = v==='blog' ? 'block' : 'none';
   document.getElementById('view-blog-log').style.display = v==='blog-log' ? 'block' : 'none';
   document.getElementById('view-blog-setup').style.display = v==='blog-setup' ? 'block' : 'none';
+  document.getElementById('view-blog-accounts').style.display = v==='blog-accounts' ? 'block' : 'none';
 
   if (!isBlog && v !== 'dashboard') {
     var titles = {all:'전체 업무', today:'오늘 할 일', inprog:'진행 중', done:'완료'};
@@ -991,6 +1043,7 @@ function showView(v) {
     if (v === 'blog') { bpCheckServerStatus(); bpLoadQueue(); }
     if (v === 'blog-log') loadBlogLog();
     if (v === 'blog-setup') bpLoadServerSettings();
+    if (v === 'blog-accounts') { bpLoadAccounts(); bpFetchTrending(); }
   }
 
   if (window.innerWidth <= 720) closeSidebar();
@@ -1107,6 +1160,10 @@ initLock();
 // ========================================================
 // BLOG PUBLISHER
 // ========================================================
+
+// ── 계정 관리 ────────────────────────────────────────────
+var bpAccounts = [];
+var bpTrending = [];
 
 var BP_SERVER   = localStorage.getItem('bp_server') || 'http://localhost:3000';
 var BP_PASSWORD = localStorage.getItem('bp_password') || '';
@@ -1412,6 +1469,196 @@ function bpResetForm() {
   document.getElementById('bp-schedule-toggle').checked = false;
   bpImageFiles = [];
   toggleSchedule();
+}
+
+// ── 계정 CRUD ────────────────────────────────────────────
+async function bpLoadAccounts() {
+  try {
+    bpAccounts = await bpFetch('/api/accounts');
+  } catch {
+    bpAccounts = JSON.parse(localStorage.getItem('bp_accounts') || '[]');
+  }
+  renderAccountCards();
+}
+
+async function bpSaveAccounts() {
+  localStorage.setItem('bp_accounts', JSON.stringify(bpAccounts));
+  try {
+    await bpFetch('/api/accounts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-dashboard-password': BP_PASSWORD },
+      body: JSON.stringify(bpAccounts),
+    });
+  } catch { /* 서버 없으면 로컬만 저장 */ }
+}
+
+var PLATFORM_OPTS = [
+  { value: 'naver',   label: '🟢 네이버' },
+  { value: 'tistory', label: '🟠 티스토리' },
+  { value: 'blogger', label: '🔵 블로그스팟' },
+];
+
+function bpAddAccount() {
+  bpAccounts.push({
+    id:         'acc_' + Date.now(),
+    name:       '새 계정',
+    platform:   'naver',
+    platforms:  ['naver'],
+    topic:      '',
+    topicSeeds: [],
+    tone:       '친근하고 자연스러운',
+    exclude:    [],
+    enabled:    true,
+  });
+  renderAccountCards();
+  bpSaveAccounts();
+}
+
+function bpDeleteAccount(id) {
+  if (!confirm('이 계정을 삭제할까요?')) return;
+  bpAccounts = bpAccounts.filter(a => a.id !== id);
+  renderAccountCards();
+  bpSaveAccounts();
+}
+
+function bpUpdateAccount(id, field, value) {
+  var acc = bpAccounts.find(a => a.id === id);
+  if (!acc) return;
+  if (field === 'platforms') {
+    // 체크박스 토글
+    var idx = acc.platforms.indexOf(value);
+    if (idx === -1) acc.platforms.push(value);
+    else if (acc.platforms.length > 1) acc.platforms.splice(idx, 1);
+  } else {
+    acc[field] = value;
+  }
+  bpSaveAccounts();
+}
+
+function bpAddSeed(id, inputEl) {
+  var val = inputEl.value.trim();
+  if (!val) return;
+  var acc = bpAccounts.find(a => a.id === id);
+  if (!acc) return;
+  if (!acc.topicSeeds.includes(val)) {
+    acc.topicSeeds.push(val);
+    bpSaveAccounts();
+    renderAccountCards();
+  }
+  inputEl.value = '';
+}
+
+function bpRemoveSeed(id, seed) {
+  var acc = bpAccounts.find(a => a.id === id);
+  if (!acc) return;
+  acc.topicSeeds = acc.topicSeeds.filter(s => s !== seed);
+  renderAccountCards();
+  bpSaveAccounts();
+}
+
+function renderAccountCards() {
+  var wrap = document.getElementById('bp-accounts-list');
+  if (!wrap) return;
+
+  if (bpAccounts.length === 0) {
+    wrap.innerHTML = '<div class="empty-state"><div class="ei">👤</div><div class="et">계정을 추가하고 주제를 설정하세요</div></div>';
+    return;
+  }
+
+  wrap.innerHTML = bpAccounts.map(function(acc) {
+    var platChecks = PLATFORM_OPTS.map(function(p) {
+      var checked = acc.platforms.includes(p.value) ? 'checked' : '';
+      return '<label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#a0aec0">'
+        + '<input type="checkbox" ' + checked + ' style="accent-color:#6366f1" '
+        + 'onchange="bpUpdateAccount(\'' + acc.id + '\',\'platforms\',\'' + p.value + '\')">'
+        + p.label + '</label>';
+    }).join('');
+
+    var seeds = (acc.topicSeeds || []).map(function(s) {
+      return '<span class="bp-tag" style="cursor:pointer" onclick="bpRemoveSeed(\'' + acc.id + '\',\'' + escHtml(s) + '\')" title="클릭해서 삭제">'
+        + escHtml(s) + ' ✕</span>';
+    }).join('');
+
+    return '<div class="section acc-card' + (acc.enabled ? '' : ' disabled') + '" id="acccard-' + acc.id + '">'
+      + '<div class="acc-header">'
+      + '<label class="acc-toggle"><input type="checkbox" ' + (acc.enabled ? 'checked' : '')
+      + ' onchange="bpUpdateAccount(\'' + acc.id + '\',\'enabled\',this.checked)"><span class="acc-slider"></span></label>'
+      + '<input class="acc-title" style="background:transparent;border:none;border-bottom:1px solid #252840;color:#e2e8f0;font-size:14px;font-weight:600;outline:none;padding:2px 4px;font-family:inherit;flex:1" '
+      + 'value="' + escHtml(acc.name) + '" onchange="bpUpdateAccount(\'' + acc.id + '\',\'name\',this.value)" placeholder="계정 이름"/>'
+      + '<button class="acc-del" onclick="bpDeleteAccount(\'' + acc.id + '\')">🗑️</button>'
+      + '</div>'
+      + '<div class="acc-fields">'
+      + '<div class="form-grp" style="margin-bottom:0">'
+      + '<label class="form-label">주제 (예: 맛집 리뷰)</label>'
+      + '<input class="bp-inp" style="margin-bottom:0" value="' + escHtml(acc.topic) + '" '
+      + 'onchange="bpUpdateAccount(\'' + acc.id + '\',\'topic\',this.value)" placeholder="이 블로그의 주제"/>'
+      + '</div>'
+      + '<div class="form-grp" style="margin-bottom:0">'
+      + '<label class="form-label">글 톤</label>'
+      + '<select class="bp-inp" style="margin-bottom:0" onchange="bpUpdateAccount(\'' + acc.id + '\',\'tone\',this.value)">'
+      + ['친근하고 자연스러운','전문적이고 정보 전달','감성적이고 공감하는','유머러스하고 가벼운'].map(function(t) {
+          return '<option value="' + t + '"' + (acc.tone === t ? ' selected' : '') + '>' + t + '</option>';
+        }).join('')
+      + '</select>'
+      + '</div>'
+      + '</div>'
+      + '<div style="margin-top:12px">'
+      + '<label class="form-label">발행 플랫폼</label>'
+      + '<div style="display:flex;gap:14px;flex-wrap:wrap">' + platChecks + '</div>'
+      + '</div>'
+      + '<div style="margin-top:12px">'
+      + '<label class="form-label">키워드 필터 시드 <span style="color:#2a3050;font-weight:400">(이 단어 포함 키워드만 매칭)</span></label>'
+      + '<div class="acc-seed-tags">' + (seeds || '<span style="color:#2a3050;font-size:11px">시드 없음 → 모든 트렌딩 키워드 후보</span>') + '</div>'
+      + '<div style="display:flex;gap:8px;margin-top:8px">'
+      + '<input class="acc-seed-input" id="seed-inp-' + acc.id + '" placeholder="예: 맛집  (Enter로 추가)" '
+      + 'onkeydown="if(event.key===\'Enter\')bpAddSeed(\'' + acc.id + '\',this)"/>'
+      + '<button class="bp-sch-btn" style="flex-shrink:0;padding:6px 14px;font-size:12px" '
+      + 'onclick="bpAddSeed(\'' + acc.id + '\',document.getElementById(\'seed-inp-' + acc.id + '\'))">추가</button>'
+      + '</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// ── 트렌딩 키워드 표시 ──────────────────────────────────
+async function bpFetchTrending() {
+  var wrap = document.getElementById('kw-trending-list');
+  var timeEl = document.getElementById('kw-fetched-time');
+  if (!wrap) return;
+  wrap.innerHTML = '<span class="bp-spinner"></span><span style="color:#3a4060;font-size:12px">수집 중...</span>';
+
+  try {
+    // 서버 없으면 Google Trends RSS 직접 시도
+    var data = await bpFetch('/api/trending').catch(() => null);
+
+    if (!data) {
+      // 클라이언트에서 대체 표시
+      wrap.innerHTML = '<span style="color:#3a4060;font-size:12px">서버 실행 후 확인 가능합니다</span>';
+      return;
+    }
+
+    bpTrending = data;
+    if (timeEl) timeEl.textContent = '(' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'}) + ' 기준)';
+
+    wrap.innerHTML = data.slice(0, 20).map(function(k, i) {
+      var cls = i < 5 ? 'kw-chip hot' : 'kw-chip';
+      return '<span class="' + cls + '">' + (i < 5 ? '🔥 ' : '') + escHtml(k.keyword) + '</span>';
+    }).join('');
+  } catch {
+    wrap.innerHTML = '<span style="color:#3a4060;font-size:12px">키워드 로드 실패</span>';
+  }
+}
+
+// ── 데일리 파이프라인 즉시 실행 ─────────────────────────
+async function bpRunNow() {
+  if (!confirm('지금 즉시 데일리 파이프라인을 실행하시겠어요?\n(키워드 수집 → AI 글 생성 → 예약 큐 등록)')) return;
+  try {
+    await bpFetch('/api/accounts/run-now', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-dashboard-password': BP_PASSWORD }, body: '{}' });
+    bpToast('파이프라인 시작됨! 잠시 후 예약 탭에서 확인하세요', 'ok');
+    setTimeout(function() { bpLoadQueue(); }, 15000);
+  } catch (e) {
+    bpToast('실행 실패: ' + e.message, 'err');
+  }
 }
 
 function escHtml(str) {

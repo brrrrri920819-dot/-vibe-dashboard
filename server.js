@@ -16,6 +16,7 @@ const { publishToBlogger, getBloggerAuthUrl, exchangeBloggerToken, getBloggerBlo
 const { humanizeHtml, humanizeTitle, humanizePostTime, variantForPlatform } = require('./humanizer');
 const { notifyPublished } = require('./telegram');
 const { enqueue, readQueue, readLog, startScheduler } = require('./scheduler/queue');
+const { startDailyCron, runDailyPipeline, readAccounts, writeAccounts } = require('./keywords/daily');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -172,6 +173,44 @@ app.get('/api/log', auth, (req, res) => {
   res.json(readLog());
 });
 
+// ── 트렌딩 키워드 API ────────────────────────────────────
+const { fetchAllTrending } = require('./keywords/fetcher');
+let trendingCache = { data: [], fetchedAt: 0 };
+
+app.get('/api/trending', auth, async (req, res) => {
+  const now = Date.now();
+  // 30분 캐시
+  if (now - trendingCache.fetchedAt < 30 * 60 * 1000 && trendingCache.data.length > 0) {
+    return res.json(trendingCache.data);
+  }
+  const accounts = readAccounts();
+  const seeds = [...new Set(accounts.flatMap(a => a.topicSeeds || []))];
+  const data = await fetchAllTrending({
+    naverClientId:     process.env.NAVER_CLIENT_ID,
+    naverClientSecret: process.env.NAVER_CLIENT_SECRET,
+    seedKeywords:      seeds,
+  });
+  trendingCache = { data, fetchedAt: now };
+  res.json(data);
+});
+
+// ── 계정 관리 API ─────────────────────────────────────────
+app.get('/api/accounts', auth, (req, res) => {
+  res.json(readAccounts());
+});
+
+app.post('/api/accounts', auth, (req, res) => {
+  const accounts = req.body;
+  if (!Array.isArray(accounts)) return res.status(400).json({ error: 'array required' });
+  writeAccounts(accounts);
+  res.json({ success: true });
+});
+
+app.post('/api/accounts/run-now', auth, async (req, res) => {
+  res.json({ success: true, message: '데일리 파이프라인 시작됨' });
+  runDailyPipeline().catch(err => console.error('[API] 파이프라인 오류:', err.message));
+});
+
 // ── Tistory OAuth ────────────────────────────────────────
 app.get('/oauth/tistory', (req, res) => {
   const url = getTistoryAuthUrl(
@@ -219,4 +258,5 @@ app.listen(PORT, () => {
   console.log(`   티스토리 인증: http://localhost:${PORT}/oauth/tistory`);
   console.log(`   Blogger 인증: http://localhost:${PORT}/oauth/blogger\n`);
   startScheduler(publishJob);
+  startDailyCron();
 });
