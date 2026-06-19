@@ -14,6 +14,7 @@ const { publishToNaver }   = require('./publisher/naver');
 const { publishToTistory, getTistoryAuthUrl, exchangeTistoryToken, getTistoryCategories } = require('./publisher/tistory');
 const { publishToBlogger, getBloggerAuthUrl, exchangeBloggerToken, getBloggerBlogId }     = require('./publisher/blogger');
 const { humanizeHtml, humanizeTitle, humanizePostTime, variantForPlatform } = require('./humanizer');
+const { notifyPublished } = require('./telegram');
 const { enqueue, readQueue, readLog, startScheduler } = require('./scheduler/queue');
 
 const app  = express();
@@ -97,6 +98,7 @@ async function publishJob(job) {
     }
   }
 
+  await notifyPublished(title, results);
   return results;
 }
 
