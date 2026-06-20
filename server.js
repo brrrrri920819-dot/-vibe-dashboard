@@ -211,6 +211,42 @@ app.post('/api/accounts/run-now', auth, async (req, res) => {
   runDailyPipeline().catch(err => console.error('[API] 파이프라인 오류:', err.message));
 });
 
+// ── 공개 통계 API (인증 불필요) ──────────────────────────
+app.get('/api/public', (req, res) => {
+  const log = readLog();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const todayPosts = log.filter(j => j.loggedAt && j.loggedAt.startsWith(today));
+  const donePosts  = log.filter(j => j.status === 'done');
+  const successRate = log.length > 0 ? Math.round(donePosts.length / log.length * 100) : 0;
+
+  const recentPosts = log.slice(0, 20).map(j => ({
+    title:     j.title,
+    status:    j.status,
+    platforms: j.platforms || [],
+    loggedAt:  j.loggedAt,
+    keyword:   j.keyword,
+    urls: j.results
+      ? Object.entries(j.results)
+          .filter(([, r]) => r && r.url)
+          .reduce((acc, [p, r]) => { acc[p] = r.url; return acc; }, {})
+      : {},
+  }));
+
+  res.json({
+    ok: true,
+    stats: {
+      total:       log.length,
+      today:       todayPosts.length,
+      successRate,
+      done:        donePosts.length,
+    },
+    recentPosts,
+    trending: trendingCache.data.slice(0, 10).map(k => k.keyword),
+    fetchedAt: new Date().toISOString(),
+  });
+});
+
 // ── Tistory OAuth ────────────────────────────────────────
 app.get('/oauth/tistory', (req, res) => {
   const url = getTistoryAuthUrl(
