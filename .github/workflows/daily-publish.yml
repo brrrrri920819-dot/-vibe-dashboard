@@ -1,0 +1,60 @@
+name: 데일리 블로그 자동 발행
+
+on:
+  schedule:
+    - cron: '0 21 * * *'   # 매일 KST 06:00 (UTC 21:00 전날)
+  workflow_dispatch:         # 폰에서 수동 실행 버튼
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 패키지 설치
+        run: npm install
+
+      - name: Playwright Chromium 설치 (네이버용)
+        run: npx playwright install chromium --with-deps
+
+      - name: 데일리 파이프라인 실행
+        env:
+          # Claude AI
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          # 네이버
+          NAVER_ID:      ${{ secrets.NAVER_ID }}
+          NAVER_PW:      ${{ secrets.NAVER_PW }}
+          NAVER_BLOG_ID: ${{ secrets.NAVER_BLOG_ID }}
+
+          # 티스토리
+          TISTORY_ACCESS_TOKEN: ${{ secrets.TISTORY_ACCESS_TOKEN }}
+          TISTORY_BLOG_NAME:    ${{ secrets.TISTORY_BLOG_NAME }}
+
+          # 블로그스팟
+          BLOGGER_CLIENT_ID:     ${{ secrets.BLOGGER_CLIENT_ID }}
+          BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+          BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+          BLOGGER_BLOG_ID:       ${{ secrets.BLOGGER_BLOG_ID }}
+
+          # 네이버 DataLab (선택)
+          NAVER_CLIENT_ID:     ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+
+          # 텔레그램
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+
+          # 계정 설정 (JSON)
+          ACCOUNTS_JSON: ${{ secrets.ACCOUNTS_JSON }}
+
+        run: node scripts/run-daily.js
