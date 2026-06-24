@@ -269,20 +269,22 @@ app.get('/oauth/tistory/callback', async (req, res) => {
 
 // ── Blogger OAuth ────────────────────────────────────────
 app.get('/oauth/blogger', (req, res) => {
+  const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
   const url = getBloggerAuthUrl(
     process.env.BLOGGER_CLIENT_ID,
-    `http://localhost:${PORT}/oauth/blogger/callback`,
+    `${baseUrl}/oauth/blogger/callback`,
   );
   res.redirect(url);
 });
 
 app.get('/oauth/blogger/callback', async (req, res) => {
+  const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
   const { code } = req.query;
   const { accessToken, refreshToken } = await exchangeBloggerToken(
     process.env.BLOGGER_CLIENT_ID,
     process.env.BLOGGER_CLIENT_SECRET,
     code,
-    `http://localhost:${PORT}/oauth/blogger/callback`,
+    `${baseUrl}/oauth/blogger/callback`,
   );
   res.send(`<h2>Blogger 인증 완료!</h2><p>BLOGGER_REFRESH_TOKEN:</p><code>${refreshToken}</code>`);
 });
