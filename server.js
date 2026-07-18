@@ -17,6 +17,8 @@ const { humanizeHtml, humanizeTitle, humanizePostTime, variantForPlatform } = re
 const { notifyPublished } = require('./telegram');
 const { enqueue, readQueue, readLog, startScheduler } = require('./scheduler/queue');
 const { startDailyCron, runDailyPipeline, readAccounts, writeAccounts } = require('./keywords/daily');
+const { generatePost } = require('./content/generator');
+const { crawlAffiliates } = require('./affiliates/crawler');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -51,6 +53,27 @@ function auth(req, res, next) {
 
 // ── 메인 발행 함수 ────────────────────────────────────────
 async function publishJob(job) {
+  // 한달 예약 자동생성: 발행 시점에 최신 트렌딩 키워드로 글 생성
+  if (job.autoGenerate && !job.content) {
+    const { fetchAllTrending } = require('./keywords/fetcher');
+    const accounts = readAccounts();
+    const account  = (job.accountId && accounts.find(a => a.id === job.accountId)) || accounts[0];
+    if (!account) throw new Error('계정 없음 — 계정·주제 관리에서 계정을 추가해주세요');
+
+    const trending = await fetchAllTrending({
+      naverClientId:     process.env.NAVER_CLIENT_ID,
+      naverClientSecret: process.env.NAVER_CLIENT_SECRET,
+      seedKeywords:      account.topicSeeds || [],
+    });
+    const keyword = trending[0]?.keyword || '오늘의 트렌드';
+    console.log(`[AutoGen] 키워드 "${keyword}" 로 글 생성 중...`);
+    const post = await generatePost(keyword, account);
+    job.title   = post.title;
+    job.content = post.content;
+    job.tags    = post.tags;
+    job.keyword = keyword;
+  }
+
   const results = {};
   const { title, content, tags, imagePaths = [], platforms } = job;
 
@@ -191,6 +214,76 @@ app.get('/api/trending', auth, async (req, res) => {
     seedKeywords:      seeds,
   });
   trendingCache = { data, fetchedAt: now };
+  res.json(data);
+});
+
+/** AI 글 즉시 생성 (발행 전 미리보기용) */
+app.post('/api/generate', auth, async (req, res) => {
+  const { keyword, accountId } = req.body;
+  if (!keyword) return res.status(400).json({ error: 'keyword 필수' });
+  const accounts = readAccounts();
+  const account = (accountId && accounts.find(a => a.id === accountId)) || accounts[0] || {};
+  try {
+    const post = await generatePost(keyword, {
+      topic:    account.topic    || '라이프스타일',
+      tone:     account.tone     || '친근한',
+      platform: (account.platforms || ['blogger'])[0],
+    });
+    res.json({ success: true, keyword, ...post });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/** 한달치 자동발행 예약 */
+app.post('/api/month-schedule', auth, (req, res) => {
+  const { startDate, postsPerDay = 1, postHours = [9, 19], accountId } = req.body;
+  const accounts = readAccounts();
+  const account  = (accountId && accounts.find(a => a.id === accountId)) || accounts[0];
+  if (!account) return res.status(400).json({ error: '계정을 먼저 설정해주세요' });
+
+  const start = startDate ? new Date(startDate) : new Date();
+  start.setHours(0, 0, 0, 0);
+  if (start <= new Date()) start.setDate(start.getDate() + 1);
+
+  const jobs = [];
+  const hours = postHours.slice(0, Math.min(postsPerDay, 3));
+  for (let day = 0; day < 30; day++) {
+    const dayDate = new Date(start);
+    dayDate.setDate(dayDate.getDate() + day);
+    for (const h of hours) {
+      const scheduledAt = new Date(dayDate);
+      const jitter = Math.floor(Math.random() * 20);
+      scheduledAt.setHours(h, jitter, 0, 0);
+      const job = {
+        id:           `month_${Date.now()}_d${day}_h${h}`,
+        title:        `[자동발행] ${dayDate.toLocaleDateString('ko-KR')} ${h}시`,
+        content:      '',
+        tags:         [],
+        imagePaths:   [],
+        platforms:    account.platforms || ['blogger'],
+        scheduledAt:  scheduledAt.toISOString(),
+        autoGenerate: true,
+        accountId:    account.id,
+        source:       'month_schedule',
+      };
+      enqueue(job);
+      jobs.push(job);
+    }
+  }
+  res.json({ success: true, count: jobs.length, firstPost: jobs[0]?.scheduledAt, lastPost: jobs[jobs.length - 1]?.scheduledAt });
+});
+
+/** 제휴 인텔리전스 */
+let affiliateCache = { data: null, fetchedAt: 0 };
+app.get('/api/affiliates', auth, async (req, res) => {
+  const now = Date.now();
+  const forceRefresh = req.query.refresh === '1';
+  if (!forceRefresh && affiliateCache.data && now - affiliateCache.fetchedAt < 60 * 60 * 1000) {
+    return res.json(affiliateCache.data);
+  }
+  const data = await crawlAffiliates().catch(() => affiliateCache.data || {});
+  affiliateCache = { data, fetchedAt: now };
   res.json(data);
 });
 

@@ -44,10 +44,11 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
   });
 }
 
-// Unsplash 무료 이미지 (API 키 불필요)
+// Unsplash 무료 이미지 — sig 파라미터로 매번 다른 사진
 function getImageUrl(keyword) {
   const encoded = encodeURIComponent(keyword.replace(/\s+/g, ','));
-  return `https://source.unsplash.com/1200x630/?${encoded}`;
+  const sig = Math.floor(Math.random() * 9999);
+  return `https://source.unsplash.com/1200x630/?${encoded}&sig=${sig}`;
 }
 
 // 이미지 HTML 태그 생성
@@ -85,21 +86,22 @@ async function generatePost(keyword, account) {
 이 키워드로 수익형 블로그 포스팅을 작성해주세요.
 
 요구사항:
-1. 제목: 클릭하고 싶게 만드는 제목 (궁금증 유발, 숫자/후기/비교 활용)
-2. 본문: HTML 형식, 1500~2000자
-   - 첫 문단: 독자 공감 or 충격적 사실로 시작
-   - 중간: 핵심 정보 2~3개 소제목으로 나누기
-   - 이미지 플레이스홀더 2곳에 [IMAGE:키워드] 형식으로 표시
-   - 마지막: 자연스러운 마무리 + 댓글 유도
-3. 태그: 검색량 높은 태그 7개
-4. 이미지 키워드: 영어로 2개 (Unsplash 검색용)
+1. 제목: 실제로 클릭하고 싶은 제목 (숫자/후기/비교/놀라운 사실 활용)
+2. 본문: HTML 형식, 1800~2200자
+   - 첫 문단: 공감 or 충격 사실로 시작 (독자를 잡아당겨야 함)
+   - 소제목 3개 (h3 태그)로 구성 — 각 섹션마다 실용 정보
+   - 이미지 플레이스홀더 3~4곳에 [IMAGE:영어키워드] 형식으로 각 섹션 사이에 배치
+   - 중간: 개인 경험담, 꿀팁, 비교 정보 섞기
+   - 마지막: 핵심 요약 + 댓글 유도
+3. 태그: 검색량 높은 태그 8개
+4. 이미지 키워드: 영어로 4개 (각각 달라야 함, Unsplash 검색용)
 
 JSON 형식으로만 응답:
 {
   "title": "제목",
-  "content": "HTML 본문 ([IMAGE:영어키워드] 포함)",
-  "tags": ["태그1", "태그2", ...],
-  "imageKeywords": ["english keyword 1", "english keyword 2"]
+  "content": "HTML 본문 ([IMAGE:영어키워드] 3~4개 포함)",
+  "tags": ["태그1", ..., "태그8"],
+  "imageKeywords": ["english keyword 1", "english keyword 2", "english keyword 3", "english keyword 4"]
 }`;
 
   const raw = await callClaude(prompt, SYSTEM_PROMPT, 4096);
