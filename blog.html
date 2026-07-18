@@ -445,6 +445,100 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
   .mobile-bottom-nav{display:block}
   .hustle-grid{grid-template-columns:1fr}
 }
+
+/* ── WORLD-CLASS DESIGN SYSTEM ────────────────── */
+/* Animated background depth layers */
+#app::before{content:'';position:fixed;width:700px;height:700px;background:radial-gradient(circle,rgba(236,72,153,.045) 0%,transparent 70%);top:-250px;right:-200px;pointer-events:none;z-index:0;animation:orb-drift1 18s ease-in-out infinite alternate}
+#app::after{content:'';position:fixed;width:600px;height:600px;background:radial-gradient(circle,rgba(139,92,246,.04) 0%,transparent 70%);bottom:-180px;left:-150px;pointer-events:none;z-index:0;animation:orb-drift2 22s ease-in-out infinite alternate}
+@keyframes orb-drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(40px,30px) scale(1.1)}}
+@keyframes orb-drift2{from{transform:translate(0,0) scale(1)}to{transform:translate(-30px,-40px) scale(1.08)}}
+
+/* View transitions */
+@keyframes view-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.view-anim{animation:view-in .28s cubic-bezier(.22,1,.36,1) both}
+
+/* Count-up pop */
+@keyframes stat-pop{0%{transform:scale(1)}40%{transform:scale(1.12);color:#f9a8d4}100%{transform:scale(1)}}
+.sc-val.pop{animation:stat-pop .35s cubic-bezier(.22,1,.36,1)}
+
+/* Enhanced section */
+.section{transition:.2s border-color,.2s box-shadow}
+.section:hover{border-color:rgba(255,255,255,.06);box-shadow:0 4px 24px rgba(0,0,0,.15)}
+
+/* Premium stat cards */
+.stat-card{transition:.2s transform,.2s box-shadow,.2s border-color}
+.stat-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.accent-pink:hover{border-color:rgba(236,72,153,.35);box-shadow:0 12px 40px rgba(236,72,153,.15)}
+.accent-green:hover{border-color:rgba(34,197,94,.35);box-shadow:0 12px 40px rgba(34,197,94,.1)}
+.accent-blue:hover{border-color:rgba(96,165,250,.35);box-shadow:0 12px 40px rgba(96,165,250,.1)}
+.accent-red:hover{border-color:rgba(239,68,68,.35);box-shadow:0 12px 40px rgba(239,68,68,.1)}
+
+/* Enhanced nav */
+.nav-item{transition:.18s background,.18s color,.18s padding-left}
+.nav-item:hover{padding-left:14px}
+.nav-item.active{padding-left:13px}
+
+/* ── CARD NEWS VIEW ───────────────────────────── */
+.cardnews-hero{background:linear-gradient(135deg,rgba(236,72,153,.12),rgba(244,63,94,.07),rgba(139,92,246,.06));border:1px solid rgba(236,72,153,.22);border-radius:16px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden}
+.cardnews-hero::after{content:'📱';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:56px;opacity:.1}
+.cardnews-toggle-row{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--s2);border:1px solid var(--bd2);border-radius:12px;margin-bottom:12px;transition:.2s}
+.cardnews-toggle-row:hover{border-color:rgba(236,72,153,.25)}
+.cardnews-toggle-label{flex:1}
+.cardnews-toggle-title{color:var(--t1);font-size:13px;font-weight:600}
+.cardnews-toggle-sub{color:var(--t3);font-size:11px;margin-top:2px}
+/* Cards preview horizontal scroll */
+.cards-preview-scroll{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 12px;scrollbar-width:thin;scrollbar-color:var(--bd2) transparent}
+.cards-preview-scroll::-webkit-scrollbar{height:3px}
+.cards-preview-scroll::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+.card-preview-slot{flex-shrink:0;width:180px;height:180px;border-radius:12px;overflow:hidden;cursor:pointer;border:1px solid var(--bd2);position:relative;transition:.2s}
+.card-preview-slot:hover{transform:scale(1.04);border-color:var(--ac);box-shadow:0 8px 24px rgba(236,72,153,.2)}
+.card-preview-slot .card-num-badge{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.6);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:#fff;backdrop-filter:blur(4px)}
+.card-preview-inner{transform:scale(0.333);transform-origin:top left;width:540px;height:540px;pointer-events:none}
+/* Card fullscreen modal */
+.card-full-bg{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.card-full-inner{position:relative;max-width:560px;width:100%}
+.card-full-close{position:absolute;top:-44px;right:0;background:rgba(255,255,255,.08);border:none;color:#fff;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-family:inherit}
+.card-nav-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:50%;width:40px;height:40px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:.15s;backdrop-filter:blur(8px)}
+.card-nav-btn:hover{background:rgba(236,72,153,.3)}
+.card-nav-prev{left:-52px}
+.card-nav-next{right:-52px}
+.card-download-bar{display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap}
+/* Hashtag display */
+.cn-hashtags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cn-hashtag{background:rgba(236,72,153,.1);color:#f9a8d4;font-size:11px;border-radius:20px;padding:4px 12px;border:1px solid rgba(236,72,153,.2)}
+
+/* ── SHORTS SCRIPT VIEW ───────────────────────── */
+.shorts-hero{background:linear-gradient(135deg,rgba(239,68,68,.1),rgba(245,158,11,.07));border:1px solid rgba(239,68,68,.2);border-radius:16px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden}
+.shorts-hero::after{content:'🎬';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:56px;opacity:.1}
+.script-segment{background:var(--s2);border:1px solid var(--bd2);border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:.15s}
+.script-segment:hover{border-color:rgba(255,255,255,.08)}
+.script-segment.seg-hook{border-left:3px solid #ef4444}
+.script-segment.seg-content{border-left:3px solid #60a5fa}
+.script-segment.seg-cta{border-left:3px solid #22c55e}
+.script-segment.seg-outro{border-left:3px solid var(--t3)}
+.script-timing-badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;margin-bottom:8px}
+.seg-hook .script-timing-badge{background:rgba(239,68,68,.12);color:#f87171}
+.seg-content .script-timing-badge{background:rgba(96,165,250,.12);color:#60a5fa}
+.seg-cta .script-timing-badge{background:rgba(34,197,94,.12);color:#4ade80}
+.seg-outro .script-timing-badge{background:rgba(255,255,255,.06);color:var(--t3)}
+.script-text{color:var(--t1);font-size:14px;line-height:1.8;margin-bottom:10px}
+.script-visual-cue{background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.15);border-radius:8px;padding:8px 12px;font-size:11px;color:#a78bfa;line-height:1.6}
+.script-visual-cue::before{content:'🎥 화면: '}
+.script-copy-all{width:100%;padding:11px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.2);color:#60a5fa;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.script-copy-all:hover{background:rgba(96,165,250,.18)}
+.shorts-meta{background:var(--s2);border:1px solid var(--bd2);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.shorts-title-display{color:#fff;font-size:14px;font-weight:700;margin-bottom:6px}
+.shorts-desc-display{color:var(--t2);font-size:12px;line-height:1.6}
+.shorts-tips{display:flex;flex-direction:column;gap:6px}
+.shorts-tip{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--t2);line-height:1.5}
+.shorts-tip::before{content:'💡';flex-shrink:0}
+
+/* ── ENHANCED RESPONSIVE ──────────────────────── */
+@media(max-width:720px){
+  .card-nav-btn{display:none}
+  .card-preview-slot{width:150px;height:150px}
+  .card-preview-inner{transform:scale(0.278);width:540px;height:540px}
+}
 </style>
 </head>
 <body>
@@ -500,6 +594,13 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
       </button>
       <button class="nav-item" id="nav-affiliate" onclick="showView('affiliate')">
         <span class="ni">💰</span> 제휴 인텔리전스
+      </button>
+      <div class="nav-section">콘텐츠 확장</div>
+      <button class="nav-item" id="nav-cardnews" onclick="showView('cardnews')">
+        <span class="ni">📱</span> 인스타 카드뉴스
+      </button>
+      <button class="nav-item" id="nav-shorts" onclick="showView('shorts')">
+        <span class="ni">🎬</span> 유튜브 숏츠 대본
       </button>
       <div class="nav-section">설정</div>
       <button class="nav-item" id="nav-write" onclick="showView('write')">
@@ -876,6 +977,128 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
       </div>
     </div>
 
+    <!-- 📱 인스타 카드뉴스 -->
+    <div id="view-cardnews" style="display:none">
+      <div class="page-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="page-title-wrap">
+          <div class="page-title">📱 인스타 카드뉴스</div>
+          <div class="page-date">블로그 글 → 6장 인스타 카드뉴스 자동 생성</div>
+        </div>
+        <button class="add-btn" id="cn-gen-btn" onclick="generateCardNewsFromLatest()">✨ 최신글로 생성</button>
+      </div>
+
+      <div class="cardnews-hero">
+        <div style="color:#fff;font-size:17px;font-weight:700;margin-bottom:4px">블로그 발행 → 인스타 카드뉴스 자동화</div>
+        <div style="color:var(--t2);font-size:13px;line-height:1.6">블로그 글이 발행될 때마다 자동으로 6장짜리 인스타 카드뉴스를 생성합니다.<br>클로드가 디자인까지 — 세계 최고 수준의 카드뉴스를 바로 인스타에 올리세요.</div>
+      </div>
+
+      <!-- 자동화 토글 -->
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">⚙️ 자동화 설정</div>
+        <div class="cardnews-toggle-row">
+          <div class="cardnews-toggle-label">
+            <div class="cardnews-toggle-title">📱 블로그 발행 시 카드뉴스 자동 생성</div>
+            <div class="cardnews-toggle-sub">글이 발행될 때마다 AI가 카드뉴스를 자동으로 만들어 저장</div>
+          </div>
+          <label class="acc-toggle">
+            <input type="checkbox" id="cn-auto-toggle" onchange="saveAutoSetting('cardnews', this.checked)"/>
+            <span class="acc-slider"></span>
+          </label>
+        </div>
+        <div class="cardnews-toggle-row">
+          <div class="cardnews-toggle-label">
+            <div class="cardnews-toggle-title">🤖 인스타그램 자동 업로드</div>
+            <div class="cardnews-toggle-sub">생성된 카드뉴스를 인스타그램에 자동 발행 (Instagram API 설정 필요)</div>
+          </div>
+          <label class="acc-toggle">
+            <input type="checkbox" id="cn-insta-toggle" onchange="saveAutoSetting('instagram', this.checked)"/>
+            <span class="acc-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 글 입력 / 선택 -->
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">📝 카드뉴스 소재</div>
+        <input class="bp-inp" id="cn-title-inp" type="text" placeholder="블로그 글 제목 (또는 최신 발행 글이 자동으로 들어와요)"/>
+        <textarea class="bp-inp" id="cn-content-inp" placeholder="블로그 본문 (HTML 포함 가능, 일부만 넣어도 OK)" style="min-height:100px;font-size:12px"></textarea>
+        <input class="bp-inp" id="cn-tags-inp" type="text" placeholder="태그 (쉼표 구분)"/>
+        <button class="bp-pub-btn" id="cn-generate-btn" onclick="triggerCardNewsGen()" style="max-width:200px">✨ 카드뉴스 생성</button>
+        <div id="cn-gen-status" style="color:var(--t3);font-size:12px;margin-top:10px"></div>
+      </div>
+
+      <!-- 카드뉴스 미리보기 -->
+      <div class="section" id="cn-preview-section" style="display:none">
+        <div class="bp-section-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span>🖼️ 카드뉴스 미리보기 <span id="cn-card-count" style="color:var(--t3);font-weight:400;font-size:11px"></span></span>
+          <button onclick="downloadAllCards()" style="background:rgba(236,72,153,.1);border:1px solid rgba(236,72,153,.2);color:#f9a8d4;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit">⬇ 전체 저장</button>
+        </div>
+        <div class="cards-preview-scroll" id="cn-cards-scroll"></div>
+        <div class="cn-hashtags" id="cn-hashtags"></div>
+      </div>
+    </div>
+
+    <!-- 🎬 유튜브 숏츠 대본 -->
+    <div id="view-shorts" style="display:none">
+      <div class="page-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="page-title-wrap">
+          <div class="page-title">🎬 유튜브 숏츠 대본</div>
+          <div class="page-date">블로그 글 → 60초 숏츠 대본 자동 생성</div>
+        </div>
+        <button class="add-btn" id="sh-gen-btn" onclick="generateShortsFromLatest()">🎬 최신글로 생성</button>
+      </div>
+
+      <div class="shorts-hero">
+        <div style="color:#fff;font-size:17px;font-weight:700;margin-bottom:4px">블로그 발행 → 숏츠 대본 자동 생성</div>
+        <div style="color:var(--t2);font-size:13px;line-height:1.6">블로그 글이 발행될 때마다 유튜브 숏츠 대본을 AI가 자동으로 씁니다.<br>훅 · 본문 · CTA · 비주얼 큐까지 — 찍기만 하면 됩니다.</div>
+      </div>
+
+      <!-- 자동화 토글 -->
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">⚙️ 자동화 설정</div>
+        <div class="cardnews-toggle-row">
+          <div class="cardnews-toggle-label">
+            <div class="cardnews-toggle-title">🎬 블로그 발행 시 숏츠 대본 자동 생성</div>
+            <div class="cardnews-toggle-sub">글이 발행될 때마다 AI가 숏츠 대본을 자동으로 작성해 저장</div>
+          </div>
+          <label class="acc-toggle">
+            <input type="checkbox" id="sh-auto-toggle" onchange="saveAutoSetting('shorts', this.checked)"/>
+            <span class="acc-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 글 입력 -->
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">📝 숏츠 소재</div>
+        <input class="bp-inp" id="sh-title-inp" type="text" placeholder="블로그 글 제목"/>
+        <textarea class="bp-inp" id="sh-content-inp" placeholder="블로그 본문 (일부만 넣어도 OK)" style="min-height:80px;font-size:12px"></textarea>
+        <input class="bp-inp" id="sh-tags-inp" type="text" placeholder="태그 (쉼표 구분)"/>
+        <button class="bp-pub-btn" id="sh-generate-btn" onclick="triggerShortsGen()" style="max-width:200px">🎬 대본 생성</button>
+        <div id="sh-gen-status" style="color:var(--t3);font-size:12px;margin-top:10px"></div>
+      </div>
+
+      <!-- 숏츠 대본 출력 -->
+      <div id="sh-script-section" style="display:none">
+        <div class="section" style="margin-bottom:14px">
+          <div class="bp-section-title">📋 메타 정보</div>
+          <div class="shorts-meta" id="sh-meta"></div>
+        </div>
+        <div class="section" style="margin-bottom:14px">
+          <div class="bp-section-title">🎭 대본 (세그먼트별)</div>
+          <div id="sh-script-body"></div>
+          <button class="script-copy-all" id="sh-copy-btn" onclick="copyFullScript()" style="margin-top:10px">📋 전체 대본 복사</button>
+          <textarea id="sh-full-text" style="position:absolute;left:-9999px;opacity:0"></textarea>
+        </div>
+        <div class="section">
+          <div class="bp-section-title">💡 제작 팁</div>
+          <div class="shorts-tips" id="sh-tips"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- 📈 부업 분석 리포트 -->
     <div id="view-income" style="display:none">
       <div class="page-header">
@@ -1096,11 +1319,14 @@ function showView(v) {
   // 키워드 뷰 벗어나면 타이머 정리
   if (v !== 'keywords' && kwRefreshTimer) { clearInterval(kwRefreshTimer); kwRefreshTimer = null; }
   currentView = v;
-  ['blog','keywords','month','affiliate','income','write','blog-log','blog-accounts','blog-setup'].forEach(function(id) {
+  ['blog','keywords','month','affiliate','income','cardnews','shorts','write','blog-log','blog-accounts','blog-setup'].forEach(function(id) {
     var btn = document.getElementById('nav-' + id);
     if (btn) btn.classList.toggle('active', id === v);
     var view = document.getElementById('view-' + id);
-    if (view) view.style.display = id === v ? 'block' : 'none';
+    if (view) {
+      view.style.display = id === v ? 'block' : 'none';
+      if (id === v) { view.classList.add('view-anim'); setTimeout(function(){ view.classList.remove('view-anim'); }, 300); }
+    }
   });
   // 모바일 바텀 탭 동기화
   ['blog','keywords','income','month','affiliate'].forEach(function(id) {
@@ -1113,6 +1339,8 @@ function showView(v) {
   if (v === 'month')     { loadMonthView(); }
   if (v === 'affiliate') { loadAffiliateView(false); }
   if (v === 'income')    { loadIncomeView(); }
+  if (v === 'cardnews')  { loadCardNewsView(); }
+  if (v === 'shorts')    { loadShortsView(); }
   if (v === 'blog-log')  { loadBlogLog(); }
   if (v === 'blog-setup'){ bpLoadServerSettings(); }
   if (v === 'blog-accounts') { bpLoadAccounts(); bpFetchTrending(); }
@@ -2096,6 +2324,247 @@ async function loadAffiliateView(forceRefresh) {
     if (affList) affList.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><div class="et">서버에 연결해주세요</div></div>';
     if (scChips) scChips.innerHTML = '<span style="color:var(--t3);font-size:12px">서버 연결 필요</span>';
   }
+}
+
+// ── AUTO SETTINGS ────────────────────────────────────────────
+var autoSettings = JSON.parse(localStorage.getItem('riri_auto_settings') || '{}');
+function saveAutoSetting(key, val) {
+  autoSettings[key] = val;
+  localStorage.setItem('riri_auto_settings', JSON.stringify(autoSettings));
+  bpToast((val ? '✅ ' : '⏸ ') + key + ' 자동화 ' + (val ? '켜짐' : '꺼짐'), val ? 'ok' : '');
+}
+function loadAutoSettings() {
+  var cnToggle = document.getElementById('cn-auto-toggle');
+  var cnInsta  = document.getElementById('cn-insta-toggle');
+  var shToggle = document.getElementById('sh-auto-toggle');
+  if (cnToggle) cnToggle.checked = !!autoSettings.cardnews;
+  if (cnInsta)  cnInsta.checked  = !!autoSettings.instagram;
+  if (shToggle) shToggle.checked = !!autoSettings.shorts;
+}
+
+// ── CARD NEWS VIEW ────────────────────────────────────────────
+var cnGeneratedData = null;
+var cnCurrentCard   = 0;
+
+function loadCardNewsView() {
+  loadAutoSettings();
+  // 최신 발행 글 가져와서 자동으로 제목/본문 채우기
+  bpFetch('/api/log').then(function(log) {
+    var latest = (log || [])[0];
+    if (latest && latest.title && !document.getElementById('cn-title-inp').value) {
+      document.getElementById('cn-title-inp').value = latest.title;
+      document.getElementById('cn-tags-inp').value = (latest.tags || []).join(', ');
+    }
+  }).catch(function(){});
+}
+
+async function generateCardNewsFromLatest() {
+  var log = await bpFetch('/api/log').catch(function(){ return []; });
+  var latest = (log || [])[0];
+  if (!latest) { bpToast('발행된 글이 없습니다', 'err'); return; }
+  document.getElementById('cn-title-inp').value   = latest.title || '';
+  document.getElementById('cn-tags-inp').value    = (latest.tags || []).join(', ');
+  document.getElementById('cn-content-inp').value = '';
+  triggerCardNewsGen();
+}
+
+async function triggerCardNewsGen() {
+  var title   = (document.getElementById('cn-title-inp').value || '').trim();
+  var content = (document.getElementById('cn-content-inp').value || '').trim();
+  var tags    = (document.getElementById('cn-tags-inp').value || '').split(',').map(function(t){ return t.trim(); }).filter(Boolean);
+  if (!title) { bpToast('제목을 입력해주세요', 'err'); return; }
+
+  var btn      = document.getElementById('cn-generate-btn');
+  var statusEl = document.getElementById('cn-gen-status');
+  btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>AI 디자인 중...';
+  statusEl.textContent = '클로드가 6장짜리 카드뉴스를 디자인하고 있어요 ✨';
+
+  try {
+    var data = await bpFetch('/api/card-news', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-dashboard-password': BP_PASSWORD },
+      body: JSON.stringify({ title, content, tags }),
+    });
+    cnGeneratedData = data;
+    renderCardNewsPreviews(data);
+    statusEl.textContent = '✅ ' + (data.cardCount || 6) + '장 생성 완료! 클릭해서 크게 보세요.';
+    statusEl.style.color = 'var(--ok)';
+  } catch (e) {
+    statusEl.textContent = '⚠️ ' + e.message;
+    statusEl.style.color = 'var(--err)';
+  } finally {
+    btn.disabled = false; btn.textContent = '✨ 카드뉴스 생성';
+  }
+}
+
+function renderCardNewsPreviews(data) {
+  var section = document.getElementById('cn-preview-section');
+  var scroll  = document.getElementById('cn-cards-scroll');
+  var countEl = document.getElementById('cn-card-count');
+  var hashEl  = document.getElementById('cn-hashtags');
+  if (!section || !scroll) return;
+
+  var cards = data.cards || [];
+  section.style.display = 'block';
+  if (countEl) countEl.textContent = '(' + cards.length + '장)';
+
+  scroll.innerHTML = cards.map(function(card, i) {
+    return '<div class="card-preview-slot" onclick="openCardFull(' + i + ')">'
+      + '<span class="card-num-badge">' + (i + 1) + ' / ' + cards.length + '</span>'
+      + '<div class="card-preview-inner">' + (card.html || '') + '</div>'
+      + '</div>';
+  }).join('');
+
+  if (hashEl && data.hashtags) {
+    hashEl.innerHTML = data.hashtags.map(function(h) {
+      return '<span class="cn-hashtag">' + escHtml(h) + '</span>';
+    }).join('');
+  }
+}
+
+function openCardFull(idx) {
+  if (!cnGeneratedData || !cnGeneratedData.cards) return;
+  cnCurrentCard = idx;
+  var cards = cnGeneratedData.cards;
+
+  var existing = document.getElementById('card-full-bg');
+  if (existing) existing.remove();
+
+  var bg = document.createElement('div');
+  bg.className = 'card-full-bg'; bg.id = 'card-full-bg';
+  bg.onclick = function(e) { if (e.target === bg) bg.remove(); };
+  bg.innerHTML = '<div class="card-full-inner">'
+    + '<button class="card-full-close" onclick="document.getElementById(\'card-full-bg\').remove()">✕ 닫기</button>'
+    + '<div id="card-full-display">' + (cards[idx].html || '') + '</div>'
+    + (cards.length > 1 ? '<button class="card-nav-btn card-nav-prev" onclick="navCard(-1)">‹</button><button class="card-nav-btn card-nav-next" onclick="navCard(1)">›</button>' : '')
+    + '<div class="card-download-bar">'
+    + '<button onclick="downloadCard(' + idx + ')" style="background:rgba(236,72,153,.12);border:1px solid rgba(236,72,153,.25);color:#f9a8d4;border-radius:9px;padding:8px 18px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">⬇ 이 장 저장</button>'
+    + '</div></div>';
+  document.body.appendChild(bg);
+}
+
+function navCard(dir) {
+  if (!cnGeneratedData || !cnGeneratedData.cards) return;
+  cnCurrentCard = (cnCurrentCard + dir + cnGeneratedData.cards.length) % cnGeneratedData.cards.length;
+  var display = document.getElementById('card-full-display');
+  if (display) display.innerHTML = cnGeneratedData.cards[cnCurrentCard].html || '';
+}
+
+function downloadCard(idx) {
+  var cards = (cnGeneratedData || {}).cards || [];
+  if (!cards[idx]) return;
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{margin:0;background:#080b14}</style></head><body>' + cards[idx].html + '</body></html>';
+  var blob = new Blob([html], { type: 'text/html' });
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'card_' + (idx+1) + '.html'; a.click();
+}
+
+function downloadAllCards() {
+  var cards = (cnGeneratedData || {}).cards || [];
+  cards.forEach(function(c, i) { setTimeout(function(){ downloadCard(i); }, i * 300); });
+}
+
+// ── SHORTS SCRIPT VIEW ────────────────────────────────────────
+var shGeneratedData = null;
+
+function loadShortsView() {
+  loadAutoSettings();
+  bpFetch('/api/log').then(function(log) {
+    var latest = (log || [])[0];
+    if (latest && latest.title && !document.getElementById('sh-title-inp').value) {
+      document.getElementById('sh-title-inp').value = latest.title || '';
+      document.getElementById('sh-tags-inp').value  = (latest.tags || []).join(', ');
+    }
+  }).catch(function(){});
+}
+
+async function generateShortsFromLatest() {
+  var log = await bpFetch('/api/log').catch(function(){ return []; });
+  var latest = (log || [])[0];
+  if (!latest) { bpToast('발행된 글이 없습니다', 'err'); return; }
+  document.getElementById('sh-title-inp').value   = latest.title || '';
+  document.getElementById('sh-tags-inp').value    = (latest.tags || []).join(', ');
+  document.getElementById('sh-content-inp').value = '';
+  triggerShortsGen();
+}
+
+async function triggerShortsGen() {
+  var title   = (document.getElementById('sh-title-inp').value || '').trim();
+  var content = (document.getElementById('sh-content-inp').value || '').trim();
+  var tags    = (document.getElementById('sh-tags-inp').value || '').split(',').map(function(t){ return t.trim(); }).filter(Boolean);
+  if (!title) { bpToast('제목을 입력해주세요', 'err'); return; }
+
+  var btn      = document.getElementById('sh-generate-btn');
+  var statusEl = document.getElementById('sh-gen-status');
+  btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>대본 생성 중...';
+  statusEl.textContent = '클로드가 60초 숏츠 대본을 작성하고 있어요 🎬';
+
+  try {
+    var data = await bpFetch('/api/shorts-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-dashboard-password': BP_PASSWORD },
+      body: JSON.stringify({ title, content, tags }),
+    });
+    shGeneratedData = data;
+    renderShortsScript(data);
+    statusEl.textContent = '✅ 대본 완성! 세그먼트별로 확인하고 바로 촬영하세요.';
+    statusEl.style.color = 'var(--ok)';
+  } catch (e) {
+    statusEl.textContent = '⚠️ ' + e.message;
+    statusEl.style.color = 'var(--err)';
+  } finally {
+    btn.disabled = false; btn.textContent = '🎬 대본 생성';
+  }
+}
+
+function renderShortsScript(data) {
+  var section  = document.getElementById('sh-script-section');
+  var metaEl   = document.getElementById('sh-meta');
+  var bodyEl   = document.getElementById('sh-script-body');
+  var tipsEl   = document.getElementById('sh-tips');
+  var fullText = document.getElementById('sh-full-text');
+  if (!section) return;
+  section.style.display = 'block';
+
+  if (metaEl) {
+    var tags = (data.hashtags || []).map(function(h){ return '<span class="cn-hashtag" style="background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);color:#f87171">' + escHtml(h) + '</span>'; }).join('');
+    metaEl.innerHTML = '<div class="shorts-title-display">' + escHtml(data.title || '') + '</div>'
+      + (data.description ? '<div class="shorts-desc-display">' + escHtml(data.description) + '</div>' : '')
+      + (data.hashtags ? '<div class="cn-hashtags" style="margin-top:10px">' + tags + '</div>' : '')
+      + '<div style="margin-top:10px;font-size:12px;color:var(--t3)">총 길이: ' + escHtml(data.totalDuration || '약 60초') + '</div>';
+  }
+
+  var segments = data.script || [];
+  var segClassMap = { HOOK:'seg-hook', POINT_1:'seg-content', POINT_2:'seg-content', POINT_3:'seg-content', POINT_4:'seg-content', CTA:'seg-cta', OUTRO:'seg-outro', INTRO:'seg-content' };
+  var segLabelMap = { HOOK:'🔥 HOOK', POINT_1:'📌 포인트 1', POINT_2:'📌 포인트 2', POINT_3:'📌 포인트 3', POINT_4:'📌 포인트 4', CTA:'💚 CTA', OUTRO:'🎬 아웃트로', INTRO:'👋 인트로' };
+
+  if (bodyEl) {
+    bodyEl.innerHTML = segments.map(function(seg) {
+      var cls   = segClassMap[seg.segment] || 'seg-content';
+      var label = segLabelMap[seg.segment] || seg.segment;
+      return '<div class="script-segment ' + cls + '">'
+        + '<div class="script-timing-badge">' + label + ' · ' + escHtml(seg.timing || '') + '</div>'
+        + '<div class="script-text">' + escHtml(seg.script || '') + '</div>'
+        + (seg.visual ? '<div class="script-visual-cue">' + escHtml(seg.visual) + '</div>' : '')
+        + '</div>';
+    }).join('');
+  }
+
+  var plain = segments.map(function(s) { return '[' + (s.segment||'') + ' · ' + (s.timing||'') + ']\n' + (s.script||'') + (s.visual ? '\n(화면: ' + s.visual + ')' : ''); }).join('\n\n');
+  if (fullText) fullText.value = plain;
+
+  if (tipsEl && data.tips) {
+    tipsEl.innerHTML = data.tips.map(function(t) {
+      return '<div class="shorts-tip">' + escHtml(t) + '</div>';
+    }).join('');
+  }
+}
+
+function copyFullScript() {
+  var ta = document.getElementById('sh-full-text');
+  if (!ta) return;
+  ta.select(); document.execCommand('copy');
+  navigator.clipboard.writeText(ta.value).catch(function(){});
+  bpToast('📋 대본이 클립보드에 복사되었습니다!', 'ok');
 }
 
 // ── INCOME VIEW ──────────────────────────────────────────────

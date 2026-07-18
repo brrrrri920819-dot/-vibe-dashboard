@@ -20,6 +20,8 @@ const { startDailyCron, runDailyPipeline, readAccounts, writeAccounts } = requir
 const { generatePost } = require('./content/generator');
 const { crawlAffiliates } = require('./affiliates/crawler');
 const { generateIncomeReport, SIDE_HUSTLES } = require('./income/analyzer');
+const { generateCardNews }                  = require('./content/card-news');
+const { generateShortsScript, renderScriptHtml } = require('./content/shorts-script');
 const cron = require('node-cron');
 
 const app  = express();
@@ -310,6 +312,31 @@ app.get('/api/income-report', auth, async (req, res) => {
 /** 부업 기본 데이터 (빠른 로딩용) */
 app.get('/api/income-hustles', auth, (req, res) => {
   res.json(SIDE_HUSTLES);
+});
+
+/** 인스타그램 카드뉴스 생성 */
+app.post('/api/card-news', auth, async (req, res) => {
+  const { title, content, tags } = req.body;
+  if (!title || !content) return res.status(400).json({ error: 'title, content 필수' });
+  try {
+    const result = await generateCardNews(title, content, Array.isArray(tags) ? tags : []);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/** 유튜브 숏츠 대본 생성 */
+app.post('/api/shorts-script', auth, async (req, res) => {
+  const { title, content, tags } = req.body;
+  if (!title || !content) return res.status(400).json({ error: 'title, content 필수' });
+  try {
+    const scriptData = await generateShortsScript(title, content, Array.isArray(tags) ? tags : []);
+    const html       = renderScriptHtml(scriptData);
+    res.json({ success: true, html, scriptData });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // ── 계정 관리 API ─────────────────────────────────────────
