@@ -294,7 +294,10 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
     <div class="s-nav">
       <div class="nav-section">블로그 자동화</div>
       <button class="nav-item active" id="nav-blog" onclick="showView('blog')">
-        <span class="ni">✍️</span> 블로그 발행
+        <span class="ni">📊</span> 발행 현황
+      </button>
+      <button class="nav-item" id="nav-write" onclick="showView('write')">
+        <span class="ni">✏️</span> 글 직접 작성
       </button>
       <button class="nav-item" id="nav-blog-log" onclick="showView('blog-log')">
         <span class="ni">📜</span> 발행 이력
@@ -313,64 +316,116 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 
   <div class="main" id="main">
 
-    <!-- Dashboard hero (blog stats) -->
+    <!-- 메인: 발행 현황 대시보드 -->
     <div id="view-blog">
       <div class="page-header">
         <button class="menu-btn" onclick="openSidebar()">☰</button>
         <div class="page-title-wrap">
-          <div class="page-title">블로그 발행</div>
-          <div class="page-date">네이버 · 티스토리 · 블로그스팟 동시 발행</div>
+          <div class="page-title">발행 현황</div>
+          <div class="page-date" id="dash-today-date"></div>
+        </div>
+        <button class="add-btn" onclick="bpRunNow()">▶ 지금 실행</button>
+      </div>
+
+      <!-- 오늘 통계 -->
+      <div class="stat-grid" style="margin-bottom:14px">
+        <div class="stat-card accent-pink">
+          <div class="sc-label">오늘 발행</div>
+          <div class="sc-val" id="stat-today">–</div>
+          <div class="sc-sub">건</div>
+        </div>
+        <div class="stat-card accent-green">
+          <div class="sc-label">성공</div>
+          <div class="sc-val" id="stat-done">–</div>
+          <div class="sc-sub">건</div>
+        </div>
+        <div class="stat-card accent-red">
+          <div class="sc-label">실패</div>
+          <div class="sc-val" id="stat-fail">–</div>
+          <div class="sc-sub">건</div>
+        </div>
+        <div class="stat-card accent-blue">
+          <div class="sc-label">누적</div>
+          <div class="sc-val" id="stat-total">–</div>
+          <div class="sc-sub">건</div>
         </div>
       </div>
 
-      <div class="dash-hero">
-        <div class="dash-hero-title">리리의 시크릿 대시보드 🌸</div>
-        <div class="dash-hero-sub">AI 자동 블로그 발행 시스템 — 오늘도 열심히!</div>
-        <div class="dash-hero-stats" id="dash-hero-stats"></div>
-      </div>
-
+      <!-- 플랫폼 상태 -->
       <div class="section" style="margin-bottom:14px">
-        <div class="bp-section-title">📡 발행 플랫폼 선택 <span style="color:var(--t3);font-size:11px;font-weight:400">(복수 선택 가능)</span></div>
+        <div class="bp-section-title">📡 플랫폼 연결 상태</div>
         <div class="bp-grid">
-          <div class="bp-platform selected p-naver" id="plat-naver" onclick="togglePlatform('naver')">
+          <div class="bp-platform p-naver" id="plat-naver" style="cursor:default;opacity:1">
             <div class="bp-plat-icon">N</div>
-            <div class="bp-name">네이버 블로그</div>
-            <div class="bp-status na" id="plat-naver-status">설정 확인 중...</div>
+            <div class="bp-name">네이버</div>
+            <div class="bp-status na" id="plat-naver-status">확인 중</div>
           </div>
-          <div class="bp-platform selected p-tistory" id="plat-tistory" onclick="togglePlatform('tistory')">
+          <div class="bp-platform p-tistory" id="plat-tistory" style="cursor:default;opacity:1">
             <div class="bp-plat-icon">T</div>
             <div class="bp-name">티스토리</div>
-            <div class="bp-status na" id="plat-tistory-status">설정 확인 중...</div>
+            <div class="bp-status na" id="plat-tistory-status">확인 중</div>
           </div>
-          <div class="bp-platform selected p-blogger" id="plat-blogger" onclick="togglePlatform('blogger')">
+          <div class="bp-platform p-blogger" id="plat-blogger" style="cursor:default;opacity:1">
             <div class="bp-plat-icon">B</div>
-            <div class="bp-name">블로그스팟</div>
-            <div class="bp-status na" id="plat-blogger-status">설정 확인 중...</div>
+            <div class="bp-name">블로거</div>
+            <div class="bp-status na" id="plat-blogger-status">확인 중</div>
           </div>
         </div>
       </div>
 
+      <!-- 최근 발행 글 -->
       <div class="section" style="margin-bottom:14px">
-        <div class="bp-section-title">✍️ 글 작성</div>
-        <div class="bp-humanize-tip">
-          <b>AI 티 안 나게 자동 처리:</b> 제목 변형, 문단 구조 변화, 플랫폼별 미세 차이 적용, 발행 시간 ±15분 랜덤화가 자동으로 적용됩니다.
+        <div class="bp-section-title">📋 최근 발행 내역 <button onclick="loadHeroStats()" style="background:none;border:none;color:var(--t3);font-size:11px;cursor:pointer;margin-left:4px">새로고침</button></div>
+        <div id="dash-recent-list"><div class="empty-state"><div class="ei">📋</div><div class="et">발행 내역이 없습니다</div></div></div>
+      </div>
+
+      <!-- 오늘 트렌딩 -->
+      <div class="section">
+        <div class="bp-section-title">🔥 오늘 트렌딩 키워드</div>
+        <div id="dash-trending-chips" style="display:flex;flex-wrap:wrap;gap:6px">
+          <span style="color:var(--t3);font-size:12px">불러오는 중...</span>
         </div>
-        <input class="bp-inp" id="bp-title" type="text" placeholder="글 제목을 입력하세요"/>
-        <textarea class="bp-inp" id="bp-content" placeholder="본문 내용을 입력하세요. HTML 사용 가능합니다.
+      </div>
 
-이미지는 [IMG:파일명.jpg] 형태로 삽입 위치를 지정할 수 있습니다.
-예) <p>이 사진을 보세요!</p>
-[IMG:photo1.jpg]
-<p>어떠신가요?</p>"></textarea>
+      <!-- 예약 큐 -->
+      <div class="section" id="bp-queue-section" style="margin-top:14px">
+        <div class="bp-section-title">🕐 예약 대기 <span class="sec-cnt" id="bp-queue-cnt"></span></div>
+        <div id="bp-queue-list"><div class="empty-state"><div class="ei">🕐</div><div class="et">예약된 글이 없습니다</div></div></div>
+      </div>
+    </div>
 
+    <!-- 글쓰기 (수동 발행) -->
+    <div id="view-write" style="display:none">
+      <div class="page-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="page-title-wrap">
+          <div class="page-title">글 작성</div>
+          <div class="page-date">수동 발행</div>
+        </div>
+      </div>
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">📡 발행 플랫폼</div>
+        <div class="bp-grid">
+          <div class="bp-platform selected p-naver" id="plat-naver2" onclick="togglePlatform('naver')">
+            <div class="bp-plat-icon">N</div><div class="bp-name">네이버</div>
+          </div>
+          <div class="bp-platform selected p-tistory" id="plat-tistory2" onclick="togglePlatform('tistory')">
+            <div class="bp-plat-icon">T</div><div class="bp-name">티스토리</div>
+          </div>
+          <div class="bp-platform selected p-blogger" id="plat-blogger2" onclick="togglePlatform('blogger')">
+            <div class="bp-plat-icon">B</div><div class="bp-name">블로거</div>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <input class="bp-inp" id="bp-title" type="text" placeholder="글 제목"/>
+        <textarea class="bp-inp" id="bp-content" placeholder="본문 (HTML 가능)" style="min-height:200px"></textarea>
+        <input class="bp-inp" id="bp-tags" type="text" placeholder="태그 (쉼표 구분)"/>
         <label class="bp-img-label">
           <input type="file" id="bp-images" accept="image/*" multiple style="display:none" onchange="previewImages()"/>
-          📷 이미지 첨부 (최대 10장)
+          📷 이미지 첨부
         </label>
         <div class="bp-img-preview" id="bp-img-preview"></div>
-
-        <input class="bp-inp" id="bp-tags" type="text" placeholder="태그 (쉼표로 구분, 예: 일상, 리뷰, 맛집)"/>
-
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <label style="display:flex;align-items:center;gap:7px;color:var(--t2);font-size:13px;cursor:pointer">
             <input type="checkbox" id="bp-schedule-toggle" onchange="toggleSchedule()" style="accent-color:var(--ac)"/>
@@ -381,16 +436,10 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
           <input class="bp-inp" id="bp-schedule-date" type="date" style="margin-bottom:0"/>
           <input class="bp-inp" id="bp-schedule-time" type="time" style="margin-bottom:0" value="09:00"/>
         </div>
-
         <div class="bp-actions">
           <button class="bp-pub-btn" id="bp-pub-btn" onclick="publishNow()">🚀 지금 발행</button>
           <button class="bp-sch-btn" id="bp-sch-btn" onclick="schedulePost()" style="display:none">🕐 예약 등록</button>
         </div>
-      </div>
-
-      <div class="section" id="bp-queue-section">
-        <div class="bp-section-title">🕐 예약 대기 중 <span class="sec-cnt" id="bp-queue-cnt"></span></div>
-        <div id="bp-queue-list"><div class="empty-state"><div class="ei">🕐</div><div class="et">예약된 글이 없습니다</div></div></div>
       </div>
     </div>
 
@@ -619,7 +668,7 @@ var currentView = 'blog';
 
 function showView(v) {
   currentView = v;
-  ['blog','blog-log','blog-accounts','blog-setup'].forEach(function(id) {
+  ['blog','write','blog-log','blog-accounts','blog-setup'].forEach(function(id) {
     var btn = document.getElementById('nav-' + id);
     if (btn) btn.classList.toggle('active', id === v);
     var view = document.getElementById('view-' + id);
@@ -636,20 +685,74 @@ function showView(v) {
 
 // ── HERO STATS ────────────────────────────────────────────
 async function loadHeroStats() {
-  var el = document.getElementById('dash-hero-stats');
-  if (!el) return;
+  var dateEl = document.getElementById('dash-today-date');
+  if (dateEl) {
+    dateEl.textContent = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
+  }
+  var s = { today: document.getElementById('stat-today'), done: document.getElementById('stat-done'),
+            fail: document.getElementById('stat-fail'), total: document.getElementById('stat-total') };
   try {
     var log = await bpFetch('/api/log');
     var today = new Date().toISOString().slice(0, 10);
-    var todayCount = log.filter(function(j) { return j.loggedAt && j.loggedAt.startsWith(today); }).length;
-    var done = log.filter(function(j) { return j.status === 'done'; }).length;
-    var rate = log.length > 0 ? Math.round(done / log.length * 100) : 0;
-    el.innerHTML =
-      '<div class="hero-stat"><div class="hero-stat-val">' + log.length + '</div><div class="hero-stat-label">전체 발행</div></div>' +
-      '<div class="hero-stat"><div class="hero-stat-val">' + todayCount + '</div><div class="hero-stat-label">오늘 발행</div></div>' +
-      '<div class="hero-stat"><div class="hero-stat-val">' + rate + '%</div><div class="hero-stat-label">성공률</div></div>';
+    var todayLogs  = log.filter(function(j){ return j.loggedAt && j.loggedAt.startsWith(today); });
+    var todayDone  = todayLogs.filter(function(j){ return j.status === 'done'; }).length;
+    var todayFail  = todayLogs.length - todayDone;
+    if (s.today) s.today.textContent = todayLogs.length;
+    if (s.done)  s.done.textContent  = todayDone;
+    if (s.fail)  s.fail.textContent  = todayFail;
+    if (s.total) s.total.textContent = log.length;
+    renderDashRecent(log.slice(0, 10));
+    loadDashTrending();
   } catch {
-    el.innerHTML = '<div class="hero-stat"><div class="hero-stat-val" style="font-size:14px;color:var(--t3)">서버 미연결</div></div>';
+    ['today','done','fail','total'].forEach(function(k){ if (s[k]) s[k].textContent = '–'; });
+    var recentEl = document.getElementById('dash-recent-list');
+    if (recentEl) recentEl.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><div class="et">서버에 연결할 수 없습니다</div></div>';
+  }
+}
+
+function renderDashRecent(log) {
+  var wrap = document.getElementById('dash-recent-list');
+  if (!wrap) return;
+  if (!log || log.length === 0) {
+    wrap.innerHTML = '<div class="empty-state"><div class="ei">📋</div><div class="et">발행 내역이 없습니다</div></div>';
+    return;
+  }
+  var PICONS = {naver:'🟢',tistory:'🟠',blogger:'🔵'};
+  wrap.innerHTML = log.map(function(j) {
+    var cls  = j.status === 'done' ? 'ok' : 'fail';
+    var icon = j.status === 'done' ? '✅' : '❌';
+    var t    = j.loggedAt ? new Date(j.loggedAt).toLocaleString('ko-KR') : '';
+    var plat = (j.platforms||[]).map(function(p){ return PICONS[p]||p; }).join(' ');
+    var links = '';
+    if (j.results) {
+      Object.keys(j.results).forEach(function(p) {
+        var r = j.results[p];
+        if (r && r.url) links += '<a href="' + r.url + '" target="_blank" style="color:var(--ac)">' + p + ' 보기</a> ';
+      });
+    }
+    return '<div class="bp-log-item ' + cls + '">'
+      + '<div class="bp-log-title"><span>' + icon + ' ' + escHtml(j.title) + '</span><span>' + plat + '</span></div>'
+      + '<div class="bp-log-meta"><span>' + t + '</span>'
+      + (j.keyword ? '<span>#' + escHtml(j.keyword) + '</span>' : '')
+      + (links ? '<span>' + links + '</span>' : '') + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+async function loadDashTrending() {
+  var wrap = document.getElementById('dash-trending-chips');
+  if (!wrap) return;
+  try {
+    var data = await bpFetch('/api/trending').catch(function(){ return null; });
+    if (!data || data.length === 0) {
+      wrap.innerHTML = '<span style="color:var(--t3);font-size:12px">키워드 없음 (서버 실행 후 확인)</span>';
+      return;
+    }
+    wrap.innerHTML = data.slice(0, 15).map(function(k, i) {
+      return '<span class="kw-chip' + (i < 5 ? ' hot' : '') + '">' + (i < 5 ? '🔥 ' : '') + escHtml(k.keyword) + '</span>';
+    }).join('');
+  } catch {
+    wrap.innerHTML = '<span style="color:var(--t3);font-size:12px">키워드 로드 실패</span>';
   }
 }
 
@@ -692,13 +795,14 @@ async function bpCheckServerStatus() {
 
 function togglePlatform(p) {
   var idx = bpSelectedPlatforms.indexOf(p);
+  var el  = document.getElementById('plat-' + p + '2');
   if (idx === -1) {
     bpSelectedPlatforms.push(p);
-    document.getElementById('plat-' + p).classList.add('selected');
+    if (el) el.classList.add('selected');
   } else {
     if (bpSelectedPlatforms.length === 1) { bpToast('최소 1개 플랫폼을 선택해야 합니다', 'err'); return; }
     bpSelectedPlatforms.splice(idx, 1);
-    document.getElementById('plat-' + p).classList.remove('selected');
+    if (el) el.classList.remove('selected');
   }
 }
 
