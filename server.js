@@ -267,26 +267,42 @@ app.get('/oauth/tistory/callback', async (req, res) => {
   res.send(`<h2>티스토리 인증 완료!</h2><p>아래 토큰을 .env 의 TISTORY_ACCESS_TOKEN 에 저장하세요:</p><code>${token}</code>`);
 });
 
+// ── Setup 페이지 (어떤 클라이언트 ID가 설정됐는지 확인) ──
+app.get('/setup', (req, res) => {
+  const cid = process.env.BLOGGER_CLIENT_ID || '';
+  const masked = cid ? cid.slice(0, 20) + '...' : '❌ 미설정';
+  const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+  res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:600px;width:100%}h2{color:#ec4899;margin-top:0}.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #222;font-size:14px}.label{color:#888}.val{color:#86efac;font-family:monospace}.btn{display:block;background:#ec4899;border:none;color:#fff;padding:14px;border-radius:8px;font-size:16px;cursor:pointer;width:100%;margin-top:24px;text-decoration:none;text-align:center}</style></head><body><div class="card"><h2>🔧 Blogger 설정 확인</h2><div class="row"><span class="label">BLOGGER_CLIENT_ID</span><span class="val">${masked}</span></div><div class="row"><span class="label">BLOGGER_CLIENT_SECRET</span><span class="val">${process.env.BLOGGER_CLIENT_SECRET ? '✅ 설정됨' : '❌ 미설정'}</span></div><div class="row"><span class="label">BLOGGER_REFRESH_TOKEN</span><span class="val">${process.env.BLOGGER_REFRESH_TOKEN ? '✅ 설정됨' : '❌ 미설정'}</span></div><div class="row"><span class="label">BLOGGER_BLOG_ID</span><span class="val">${process.env.BLOGGER_BLOG_ID || '❌ 미설정'}</span></div><a class="btn" href="/oauth/blogger">🔑 Blogger OAuth 인증 시작</a></div></body></html>`);
+});
+
 // ── Blogger OAuth ────────────────────────────────────────
 app.get('/oauth/blogger', (req, res) => {
   const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-  const url = getBloggerAuthUrl(
-    process.env.BLOGGER_CLIENT_ID,
-    `${baseUrl}/oauth/blogger/callback`,
-  );
+  const clientId = process.env.BLOGGER_CLIENT_ID;
+  if (!clientId) {
+    return res.send(`<h2>설정 필요</h2><p>Railway에 BLOGGER_CLIENT_ID 가 설정되지 않았습니다.</p>`);
+  }
+  const url = getBloggerAuthUrl(clientId, `${baseUrl}/oauth/blogger/callback`);
   res.redirect(url);
 });
 
 app.get('/oauth/blogger/callback', async (req, res) => {
   const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-  const { code } = req.query;
-  const { accessToken, refreshToken } = await exchangeBloggerToken(
-    process.env.BLOGGER_CLIENT_ID,
-    process.env.BLOGGER_CLIENT_SECRET,
-    code,
-    `${baseUrl}/oauth/blogger/callback`,
-  );
-  res.send(`<h2>Blogger 인증 완료!</h2><p>BLOGGER_REFRESH_TOKEN:</p><code>${refreshToken}</code>`);
+  const { code, error } = req.query;
+  if (error) {
+    return res.send(`<h2>인증 실패</h2><p>오류: ${error}</p><p><a href="/oauth/blogger">다시 시도</a></p>`);
+  }
+  try {
+    const { accessToken, refreshToken } = await exchangeBloggerToken(
+      process.env.BLOGGER_CLIENT_ID,
+      process.env.BLOGGER_CLIENT_SECRET,
+      code,
+      `${baseUrl}/oauth/blogger/callback`,
+    );
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:600px;width:100%}h2{color:#ec4899;margin-top:0}p{color:#aaa;font-size:14px}.token{background:#0d0d1a;border:1px solid #444;border-radius:8px;padding:16px;word-break:break-all;font-family:monospace;font-size:13px;color:#86efac;margin:16px 0}.btn{background:#ec4899;border:none;color:#fff;padding:12px 24px;border-radius:8px;font-size:15px;cursor:pointer;width:100%;margin-top:8px}p.tip{background:#1e2a1e;border:1px solid #2d4a2d;border-radius:8px;padding:12px;color:#86efac;font-size:13px}</style></head><body><div class="card"><h2>✅ Blogger 인증 완료!</h2><p>아래 토큰을 Railway의 <strong>BLOGGER_REFRESH_TOKEN</strong> 에 저장하세요:</p><div class="token" id="token">${refreshToken}</div><button class="btn" onclick="navigator.clipboard.writeText('${refreshToken}').then(()=>this.textContent='✅ 복사됨!')">📋 토큰 복사</button><p class="tip">💡 Railway → Variables → BLOGGER_REFRESH_TOKEN 값을 위 토큰으로 교체하세요.</p></div></body></html>`);
+  } catch (err) {
+    res.send(`<h2>토큰 교환 실패</h2><p>${err.message}</p><p><a href="/oauth/blogger">다시 시도</a></p>`);
+  }
 });
 
 // ── 서버 시작 ────────────────────────────────────────────
