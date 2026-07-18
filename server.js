@@ -19,6 +19,8 @@ const { enqueue, readQueue, readLog, startScheduler } = require('./scheduler/que
 const { startDailyCron, runDailyPipeline, readAccounts, writeAccounts } = require('./keywords/daily');
 const { generatePost } = require('./content/generator');
 const { crawlAffiliates } = require('./affiliates/crawler');
+const { generateIncomeReport, SIDE_HUSTLES } = require('./income/analyzer');
+const cron = require('node-cron');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -287,6 +289,29 @@ app.get('/api/affiliates', auth, async (req, res) => {
   res.json(data);
 });
 
+/** 부업 분석 리포트 (캐시: 오늘 하루) */
+let incomeReportCache = { data: null, date: '' };
+
+app.get('/api/income-report', auth, async (req, res) => {
+  const today  = new Date().toISOString().slice(0, 10);
+  const force  = req.query.refresh === '1';
+  if (!force && incomeReportCache.data && incomeReportCache.date === today) {
+    return res.json(incomeReportCache.data);
+  }
+  try {
+    const report = await generateIncomeReport();
+    incomeReportCache = { data: { ...report, generatedAt: new Date().toISOString() }, date: today };
+    res.json(incomeReportCache.data);
+  } catch (err) {
+    res.status(500).json({ error: err.message, hustles: SIDE_HUSTLES });
+  }
+});
+
+/** 부업 기본 데이터 (빠른 로딩용) */
+app.get('/api/income-hustles', auth, (req, res) => {
+  res.json(SIDE_HUSTLES);
+});
+
 // ── 계정 관리 API ─────────────────────────────────────────
 app.get('/api/accounts', auth, (req, res) => {
   res.json(readAccounts());
@@ -390,4 +415,34 @@ app.listen(PORT, () => {
   console.log(`   Blogger 인증: http://localhost:${PORT}/oauth/blogger\n`);
   startScheduler(publishJob);
   startDailyCron();
+
+  // 매일 09:00 부업 분석 리포트 자동 생성 + 발행
+  cron.schedule('0 9 * * *', async () => {
+    console.log('[Income] 09:00 부업 리포트 자동 발행 시작');
+    const accounts = readAccounts().filter(a => a.enabled);
+    if (accounts.length === 0) return;
+    const account = accounts[0];
+    try {
+      const report = await generateIncomeReport();
+      incomeReportCache = { data: { ...report, generatedAt: new Date().toISOString() }, date: new Date().toISOString().slice(0, 10) };
+      const platforms = account.platforms || ['blogger'];
+      enqueue({
+        id:          `income_${Date.now()}`,
+        title:       report.title,
+        content:     report.content,
+        tags:        report.tags,
+        imagePaths:  [],
+        platforms,
+        scheduledAt: new Date().toISOString(),
+        accountId:   account.id,
+        keyword:     '부업',
+        source:      'income_daily',
+      });
+      console.log(`[Income] 발행 예약: "${report.title}"`);
+      await notifyPublished(report.title, { income_report: { success: true, summary: report.summary } });
+    } catch (err) {
+      console.error('[Income] 리포트 생성 오류:', err.message);
+    }
+  }, { timezone: 'Asia/Seoul' });
+  console.log('[Income] 부업 리포트 크론 등록됨 (매일 09:00 KST)');
 });

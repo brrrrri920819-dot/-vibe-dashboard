@@ -384,6 +384,67 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
   .gen-modal{border-radius:16px}
   .gen-actions-bar{padding:12px 16px}
 }
+
+/* ── INCOME VIEW ──────────────────────────────── */
+.income-hero{background:linear-gradient(135deg,rgba(139,92,246,.12),rgba(109,40,217,.07));border:1px solid rgba(139,92,246,.25);border-radius:16px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden}
+.income-hero::after{content:'💰';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:56px;opacity:.09}
+.income-hero-title{color:#fff;font-size:17px;font-weight:700;margin-bottom:4px}
+.income-hero-sub{color:var(--t2);font-size:13px;line-height:1.6}
+.income-summary-pill{display:inline-flex;align-items:center;gap:7px;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:20px;padding:6px 14px;color:#c4b5fd;font-size:13px;font-weight:600;margin-top:12px;max-width:100%;word-break:break-all}
+.hustle-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:4px}
+.hustle-card{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:.22s}
+.hustle-card:hover{border-color:rgba(139,92,246,.4);transform:translateY(-2px);box-shadow:0 8px 32px rgba(139,92,246,.14)}
+.hustle-card.rank-1::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#f59e0b,#ef4444)}
+.hustle-card.rank-2::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#94a3b8,#64748b)}
+.hustle-card.rank-3::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#f59e0b,#b45309)}
+.hustle-rank-badge{position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+.hustle-rank-badge.r1{background:linear-gradient(135deg,#f59e0b,#ef4444)}
+.hustle-rank-badge.r2{background:linear-gradient(135deg,#94a3b8,#64748b)}
+.hustle-rank-badge.r3{background:linear-gradient(135deg,#f59e0b,#b45309)}
+.hustle-rank-badge.rn{background:rgba(255,255,255,.07);color:var(--t3)}
+.hustle-emoji{font-size:26px;margin-bottom:8px;display:block;line-height:1}
+.hustle-name{color:#fff;font-size:14px;font-weight:700;margin-bottom:3px;padding-right:30px;line-height:1.3}
+.hustle-cat{color:var(--t3);font-size:11px;margin-bottom:10px}
+.hustle-income-row{display:flex;align-items:baseline;gap:4px;margin-bottom:8px}
+.hustle-income-val{color:#4ade80;font-size:17px;font-weight:700;line-height:1}
+.hustle-hot-bar{height:3px;border-radius:2px;background:var(--bd2);overflow:hidden;margin-bottom:8px}
+.hustle-hot-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#8b5cf6,#ec4899);transition:.6s .1s}
+.hustle-badges{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.hustle-badge{font-size:10px;border-radius:10px;padding:3px 9px;font-weight:600}
+.hustle-badge.passive{background:rgba(96,165,250,.12);color:#60a5fa}
+.hustle-badge.mobile{background:rgba(34,197,94,.1);color:#4ade80}
+.hustle-badge.free{background:rgba(245,158,11,.12);color:#f59e0b}
+.hustle-real-data{font-size:11px;color:var(--t2);line-height:1.5;border-left:2px solid rgba(139,92,246,.4);padding-left:10px;margin-top:6px}
+.hustle-action-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#a78bfa;margin-top:10px;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);border-radius:8px;padding:6px 12px;text-decoration:none;transition:.15s}
+.hustle-action-link:hover{background:rgba(139,92,246,.18)}
+.income-report-wrap{background:var(--s2);border:1px solid var(--bd2);border-radius:12px;padding:18px;margin-top:4px}
+.income-report-title{color:#fff;font-size:15px;font-weight:700;margin-bottom:12px;line-height:1.4}
+.income-report-content{font-size:13px;color:var(--t2);line-height:1.9;max-height:500px;overflow:auto}
+.income-report-content h3{color:var(--t1);font-size:14px;font-weight:700;margin:18px 0 8px}
+.income-report-content p{margin-bottom:10px}
+.income-report-content img{max-width:100%;border-radius:8px;margin:10px 0;display:block}
+.income-report-content ul,.income-report-content ol{padding-left:18px;margin-bottom:10px}
+.income-report-content li{margin-bottom:5px}
+.income-report-content strong,.income-report-content b{color:var(--t1)}
+.income-refresh-btn{display:inline-flex;align-items:center;gap:7px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:#c4b5fd;border-radius:10px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.15s}
+.income-refresh-btn:hover{background:rgba(139,92,246,.22);transform:translateY(-1px)}
+.income-refresh-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.income-skeleton{background:linear-gradient(90deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%);background-size:200% 100%;animation:skel 1.4s ease-in-out infinite;border-radius:6px;margin-bottom:8px}
+@keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── MOBILE BOTTOM NAV ────────────────────────── */
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(8,11,20,.97);border-top:1px solid var(--bd);z-index:150;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.mob-nav-inner{display:flex;justify-content:space-around;align-items:stretch}
+.mob-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px 8px;border:none;background:transparent;color:var(--t3);font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.3px;transition:.15s;position:relative;min-height:56px}
+.mob-nav-item .mob-icon{font-size:19px;line-height:1;transition:.15s}
+.mob-nav-item.active{color:#f9a8d4}
+.mob-nav-item.active .mob-icon{filter:drop-shadow(0 0 6px rgba(236,72,153,.5))}
+.mob-nav-item.active::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;border-radius:0 0 2px 2px;background:linear-gradient(90deg,#ec4899,#f43f5e)}
+
+@media(max-width:720px){
+  .mobile-bottom-nav{display:block}
+  .hustle-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -434,6 +495,9 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
         <span class="ni">📅</span> 한달 스케줄
       </button>
       <div class="nav-section">수익 관리</div>
+      <button class="nav-item" id="nav-income" onclick="showView('income')">
+        <span class="ni">📈</span> 부업 분석 리포트
+      </button>
       <button class="nav-item" id="nav-affiliate" onclick="showView('affiliate')">
         <span class="ni">💰</span> 제휴 인텔리전스
       </button>
@@ -812,8 +876,66 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
       </div>
     </div>
 
+    <!-- 📈 부업 분석 리포트 -->
+    <div id="view-income" style="display:none">
+      <div class="page-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="page-title-wrap">
+          <div class="page-title">📈 부업 분석 리포트</div>
+          <div class="page-date">매일 09:00 AI 자동 분석 · 자동 발행 — 검수만 하면 됩니다</div>
+        </div>
+        <button class="income-refresh-btn" id="income-refresh-btn" onclick="loadDailyReport(true)">⟳ 새로고침</button>
+      </div>
+
+      <div class="income-hero">
+        <div class="income-hero-title">오늘의 부업 인사이트 🔥</div>
+        <div class="income-hero-sub">구글·네이버·커뮤니티 실시간 트렌드 + 실제 한국 시장 수익 데이터 기반 AI 분석<br>글은 AI가 쓰고 자동 발행까지 — 나는 결과만 본다</div>
+        <div class="income-summary-pill" id="income-summary">💡 AI 분석 요약 로딩 중...</div>
+      </div>
+
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">🏆 오늘의 부업 HOT 랭킹</div>
+        <div class="hustle-grid" id="income-hustle-grid">
+          <div style="text-align:center;padding:30px;color:var(--t3)"><span class="bp-spinner"></span> 데이터 로딩 중...</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="bp-section-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span>📝 오늘의 AI 부업 리포트</span>
+          <span style="font-size:11px;font-weight:400;color:var(--t3)">블로그에 자동 발행된 내용</span>
+        </div>
+        <div class="income-report-wrap">
+          <div id="income-report-section">
+            <div style="text-align:center;padding:28px;color:var(--t3)"><span class="bp-spinner"></span> AI 리포트 생성 중... (30~60초 소요)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /main -->
 </div><!-- /app -->
+
+<!-- Mobile Bottom Nav -->
+<nav class="mobile-bottom-nav" id="mobile-nav">
+  <div class="mob-nav-inner">
+    <button class="mob-nav-item active" id="mob-blog" onclick="showView('blog')">
+      <span class="mob-icon">📊</span><span>현황</span>
+    </button>
+    <button class="mob-nav-item" id="mob-keywords" onclick="showView('keywords')">
+      <span class="mob-icon">🔥</span><span>키워드</span>
+    </button>
+    <button class="mob-nav-item" id="mob-income" onclick="showView('income')">
+      <span class="mob-icon">📈</span><span>부업</span>
+    </button>
+    <button class="mob-nav-item" id="mob-month" onclick="showView('month')">
+      <span class="mob-icon">📅</span><span>스케줄</span>
+    </button>
+    <button class="mob-nav-item" id="mob-affiliate" onclick="showView('affiliate')">
+      <span class="mob-icon">💰</span><span>제휴</span>
+    </button>
+  </div>
+</nav>
 
 <!-- Public Share View -->
 <div id="public-view" style="display:none">
@@ -974,17 +1096,23 @@ function showView(v) {
   // 키워드 뷰 벗어나면 타이머 정리
   if (v !== 'keywords' && kwRefreshTimer) { clearInterval(kwRefreshTimer); kwRefreshTimer = null; }
   currentView = v;
-  ['blog','keywords','month','affiliate','write','blog-log','blog-accounts','blog-setup'].forEach(function(id) {
+  ['blog','keywords','month','affiliate','income','write','blog-log','blog-accounts','blog-setup'].forEach(function(id) {
     var btn = document.getElementById('nav-' + id);
     if (btn) btn.classList.toggle('active', id === v);
     var view = document.getElementById('view-' + id);
     if (view) view.style.display = id === v ? 'block' : 'none';
+  });
+  // 모바일 바텀 탭 동기화
+  ['blog','keywords','income','month','affiliate'].forEach(function(id) {
+    var mob = document.getElementById('mob-' + id);
+    if (mob) mob.classList.toggle('active', id === v);
   });
 
   if (v === 'blog')      { bpCheckServerStatus(); bpLoadQueue(); loadHeroStats(); }
   if (v === 'keywords')  { loadKeywordsView(); }
   if (v === 'month')     { loadMonthView(); }
   if (v === 'affiliate') { loadAffiliateView(false); }
+  if (v === 'income')    { loadIncomeView(); }
   if (v === 'blog-log')  { loadBlogLog(); }
   if (v === 'blog-setup'){ bpLoadServerSettings(); }
   if (v === 'blog-accounts') { bpLoadAccounts(); bpFetchTrending(); }
@@ -1967,6 +2095,98 @@ async function loadAffiliateView(forceRefresh) {
   } catch (e) {
     if (affList) affList.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><div class="et">서버에 연결해주세요</div></div>';
     if (scChips) scChips.innerHTML = '<span style="color:var(--t3);font-size:12px">서버 연결 필요</span>';
+  }
+}
+
+// ── INCOME VIEW ──────────────────────────────────────────────
+var incomeViewState = { hustles: null, reportLoaded: false };
+
+async function loadIncomeView() {
+  if (!incomeViewState.hustles) {
+    renderHustleSkeleton();
+    try {
+      var hustles = await bpFetch('/api/income-hustles');
+      incomeViewState.hustles = hustles;
+      renderHustleCards(hustles);
+    } catch {}
+  } else {
+    renderHustleCards(incomeViewState.hustles);
+  }
+  if (!incomeViewState.reportLoaded) loadDailyReport(false);
+}
+
+function renderHustleSkeleton() {
+  var grid = document.getElementById('income-hustle-grid');
+  if (!grid) return;
+  grid.innerHTML = [1,2,3,4,5,6,7].map(function() {
+    return '<div class="hustle-card">'
+      + '<div class="income-skeleton" style="height:26px;width:48px;margin-bottom:10px"></div>'
+      + '<div class="income-skeleton" style="height:14px;width:80%;margin-bottom:6px"></div>'
+      + '<div class="income-skeleton" style="height:11px;width:50%;margin-bottom:12px"></div>'
+      + '<div class="income-skeleton" style="height:18px;width:70%"></div></div>';
+  }).join('');
+}
+
+function renderHustleCards(hustles) {
+  var grid = document.getElementById('income-hustle-grid');
+  if (!grid || !hustles || !hustles.length) return;
+  grid.innerHTML = hustles.map(function(h, i) {
+    var rank = i + 1;
+    var rankCls = rank === 1 ? 'r1' : rank === 2 ? 'r2' : rank === 3 ? 'r3' : 'rn';
+    var cardCls = rank <= 3 ? ' rank-' + rank : '';
+    var score = h.hotScore || h.baseHotScore || 50;
+    var diff = '';
+    for (var d = 0; d < 5; d++) {
+      diff += '<span style="color:' + (d < (h.difficulty || 1) ? '#f59e0b' : 'var(--bd2)') + '">&#9679;</span>';
+    }
+    return '<div class="hustle-card' + cardCls + '">'
+      + '<div class="hustle-rank-badge ' + rankCls + '">' + rank + '</div>'
+      + '<span class="hustle-emoji">' + (h.emoji || '💼') + '</span>'
+      + '<div class="hustle-name">' + escHtml(h.name) + '</div>'
+      + '<div class="hustle-cat">' + escHtml(h.category || '') + ' · 난이도 ' + diff + '</div>'
+      + '<div class="hustle-income-row"><span class="hustle-income-val">월 ' + (h.monthlyMin||0) + '~' + (h.monthlyMax||0) + '만원</span></div>'
+      + '<div class="hustle-hot-bar"><div class="hustle-hot-fill" style="width:' + score + '%"></div></div>'
+      + '<div class="hustle-badges">'
+      + (h.passive ? '<span class="hustle-badge passive">패시브</span>' : '')
+      + (h.mobile ? '<span class="hustle-badge mobile">📱 모바일</span>' : '')
+      + (h.startupCost === 0 ? '<span class="hustle-badge free">무자본</span>' : '')
+      + '<span class="hustle-badge" style="background:rgba(139,92,246,.1);color:#a78bfa">HOT ' + score + '</span>'
+      + '</div>'
+      + (h.realData ? '<div class="hustle-real-data">' + escHtml(h.realData) + '</div>' : '')
+      + (h.platform ? '<a class="hustle-action-link" href="' + escHtml(h.platform) + '" target="_blank" rel="noopener">바로 시작 →</a>' : '')
+      + '</div>';
+  }).join('');
+}
+
+async function loadDailyReport(force) {
+  var reportWrap = document.getElementById('income-report-section');
+  var summaryEl  = document.getElementById('income-summary');
+  var btn        = document.getElementById('income-refresh-btn');
+  if (!reportWrap) return;
+
+  reportWrap.innerHTML = '<div style="text-align:center;padding:28px;color:var(--t3)"><span class="bp-spinner"></span> AI 리포트 분석 중... (30~60초 소요)</div>';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>분석 중...'; }
+
+  try {
+    var url = '/api/income-report' + (force ? '?refresh=1' : '');
+    var data = await bpFetch(url);
+
+    if (data.rankedHustles && data.rankedHustles.length) {
+      incomeViewState.hustles = data.rankedHustles;
+      renderHustleCards(data.rankedHustles);
+    }
+    if (summaryEl) summaryEl.textContent = data.summary ? '💡 ' + data.summary : '오늘의 분석 완료';
+    if (data.content) {
+      reportWrap.innerHTML = '<div class="income-report-title">' + escHtml(data.title || '') + '</div>'
+        + '<div class="income-report-content">' + data.content + '</div>';
+    } else {
+      reportWrap.innerHTML = '<div class="empty-state"><div class="ei">📝</div><div class="et">리포트 없음</div></div>';
+    }
+    incomeViewState.reportLoaded = true;
+  } catch (e) {
+    reportWrap.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><div class="et">서버에 연결해주세요<br><small style="color:var(--t3)">' + escHtml(e.message) + '</small></div></div>';
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '⟳ 새로고침'; }
   }
 }
 
