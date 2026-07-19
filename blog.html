@@ -433,7 +433,7 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 @keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 /* ── MOBILE BOTTOM NAV ────────────────────────── */
-.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(8,11,20,.97);border-top:1px solid var(--bd);z-index:150;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(8,11,20,.98);border-top:1px solid var(--bd);z-index:150;padding-bottom:env(safe-area-inset-bottom,0px)}
 .mob-nav-inner{display:flex;justify-content:space-around;align-items:stretch}
 .mob-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px 8px;border:none;background:transparent;color:var(--t3);font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.3px;transition:.15s;position:relative;min-height:56px}
 .mob-nav-item .mob-icon{font-size:19px;line-height:1;transition:.15s}
@@ -444,14 +444,21 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 @media(max-width:720px){
   .mobile-bottom-nav{display:block}
   .hustle-grid{grid-template-columns:1fr}
+  /* 모바일: 무거운 애니메이션/블러 전부 제거 */
+  #app::before,#app::after{animation:none}
+  .modal-bg,#sidebar-overlay,.gen-modal-bg{backdrop-filter:none;-webkit-backdrop-filter:none}
+  .lock-card{backdrop-filter:none;-webkit-backdrop-filter:none}
+  .live-dot{animation:none}
+  .pub-live::before{animation:none}
+  .income-skeleton{animation:none;background:var(--s2)}
 }
 
 /* ── WORLD-CLASS DESIGN SYSTEM ────────────────── */
-/* Animated background depth layers */
-#app::before{content:'';position:fixed;width:700px;height:700px;background:radial-gradient(circle,rgba(236,72,153,.045) 0%,transparent 70%);top:-250px;right:-200px;pointer-events:none;z-index:0;animation:orb-drift1 18s ease-in-out infinite alternate}
-#app::after{content:'';position:fixed;width:600px;height:600px;background:radial-gradient(circle,rgba(139,92,246,.04) 0%,transparent 70%);bottom:-180px;left:-150px;pointer-events:none;z-index:0;animation:orb-drift2 22s ease-in-out infinite alternate}
-@keyframes orb-drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(40px,30px) scale(1.1)}}
-@keyframes orb-drift2{from{transform:translate(0,0) scale(1)}to{transform:translate(-30px,-40px) scale(1.08)}}
+/* Animated background depth layers — GPU-composited, mobile-off */
+#app::before{content:'';position:fixed;width:700px;height:700px;background:radial-gradient(circle,rgba(236,72,153,.045) 0%,transparent 70%);top:-250px;right:-200px;pointer-events:none;z-index:0;will-change:transform;animation:orb-drift1 18s ease-in-out infinite alternate}
+#app::after{content:'';position:fixed;width:600px;height:600px;background:radial-gradient(circle,rgba(139,92,246,.04) 0%,transparent 70%);bottom:-180px;left:-150px;pointer-events:none;z-index:0;will-change:transform;animation:orb-drift2 22s ease-in-out infinite alternate}
+@keyframes orb-drift1{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(40px,30px,0) scale(1.1)}}
+@keyframes orb-drift2{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(-30px,-40px,0) scale(1.08)}}
 
 /* View transitions */
 @keyframes view-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -463,7 +470,6 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 
 /* Enhanced section */
 .section{transition:.2s border-color,.2s box-shadow}
-.section:hover{border-color:rgba(255,255,255,.06);box-shadow:0 4px 24px rgba(0,0,0,.15)}
 
 /* Premium stat cards */
 .stat-card{transition:.2s transform,.2s box-shadow,.2s border-color}
