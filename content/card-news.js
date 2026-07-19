@@ -9,7 +9,7 @@
 const https = require('https');
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL   = 'claude-sonnet-5-20251101';
+const MODEL   = 'claude-sonnet-5';
 
 // ─── Claude API ───────────────────────────────────────────────────────────────
 

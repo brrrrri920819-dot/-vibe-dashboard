@@ -22,7 +22,7 @@ const { SIDE_HUSTLES }         = require('./analyzer');
 // ── 상수 ─────────────────────────────────────────────────────────────────────
 
 const API_URL    = 'https://api.anthropic.com/v1/messages';
-const MODEL      = 'claude-sonnet-5-20251101';
+const MODEL      = 'claude-sonnet-5';
 const DATA_DIR   = path.join(__dirname, '../data');
 const CACHE_FILE = path.join(DATA_DIR, 'pipeline-cache.json');
 
