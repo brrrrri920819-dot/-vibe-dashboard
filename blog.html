@@ -727,6 +727,11 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
             <div class="bp-name">블로거</div>
             <div class="bp-status na" id="plat-blogger-status">확인 중</div>
           </div>
+          <div class="bp-platform" id="plat-ai" style="cursor:default;opacity:1;background:linear-gradient(135deg,#1a0a2e,#2d1b69)">
+            <div class="bp-plat-icon" style="background:#7c3aed">AI</div>
+            <div class="bp-name">Claude API</div>
+            <div class="bp-status na" id="plat-ai-status">확인 중</div>
+          </div>
         </div>
       </div>
 
@@ -1511,9 +1516,15 @@ async function bpFetch(path, opts) {
   var headers = Object.assign({ 'x-dashboard-password': BP_PASSWORD }, (opts && opts.headers) || {});
   try {
     var res = await fetch(url, Object.assign({}, opts, { headers: headers }));
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) {
+      var errBody;
+      try { errBody = await res.json(); } catch {}
+      var errMsg = (errBody && (errBody.error || errBody.message)) || ('HTTP ' + res.status);
+      throw new Error(errMsg);
+    }
     return await res.json();
   } catch (e) {
+    if (e.message && e.message.startsWith('서버 연결 실패:')) throw e;
     throw new Error('서버 연결 실패: ' + e.message);
   }
 }
@@ -1527,6 +1538,11 @@ async function bpCheckServerStatus() {
       el.className = data.platforms[p] ? 'bp-status ok' : 'bp-status err';
       el.textContent = data.platforms[p] ? '연결됨' : '설정 필요';
     });
+    var aiEl = document.getElementById('plat-ai-status');
+    if (aiEl) {
+      aiEl.className = data.anthropicKey ? 'bp-status ok' : 'bp-status err';
+      aiEl.textContent = data.anthropicKey ? '연결됨' : '❌ API 키 미설정';
+    }
   } catch {
     ['naver','tistory','blogger'].forEach(function(p) {
       var el = document.getElementById('plat-' + p + '-status');
@@ -2142,7 +2158,8 @@ async function generateFromKeyword(keyword) {
   } catch (e) {
     clearInterval(stepTimer);
     document.getElementById('gen-loading-kw').textContent = '오류: ' + e.message;
-    document.getElementById('gen-loading-wrap').querySelector('.gen-loading-sub').textContent = 'ANTHROPIC_API_KEY가 설정됐는지 확인해주세요';
+    var subEl = document.getElementById('gen-loading-wrap').querySelector('.gen-loading-sub');
+    if (subEl) subEl.textContent = e.message.includes('API 키') || e.message.includes('authentication') ? 'Railway에서 ANTHROPIC_API_KEY 환경변수 확인' : '서버 로그 확인 필요';
     document.getElementById('gen-big-spinner').style.display = 'none';
   }
 }

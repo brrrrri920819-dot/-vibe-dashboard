@@ -138,6 +138,7 @@ async function publishJob(job) {
 app.get('/api/status', auth, (req, res) => {
   res.json({
     ok: true,
+    anthropicKey: !!process.env.ANTHROPIC_API_KEY,
     platforms: {
       naver:   !!(process.env.NAVER_ID && process.env.NAVER_PW),
       tistory: !!process.env.TISTORY_ACCESS_TOKEN,
@@ -237,6 +238,7 @@ app.post('/api/generate', auth, async (req, res) => {
     });
     res.json({ success: true, keyword, ...post });
   } catch (err) {
+    console.error('[Generate] 오류:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });
