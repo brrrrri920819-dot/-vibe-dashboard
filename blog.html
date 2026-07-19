@@ -1424,7 +1424,7 @@ async function loadDashTrending() {
 // ── BLOG PUBLISHER ────────────────────────────────────────
 var bpAccounts = [];
 var bpTrending = [];
-var BP_SERVER   = localStorage.getItem('riri_bp_server') || 'http://localhost:3000';
+var BP_SERVER   = localStorage.getItem('riri_bp_server') || (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:3000' : (location.origin || ''));
 var BP_PASSWORD = localStorage.getItem('riri_bp_password') || '';
 var bpSelectedPlatforms = ['naver','tistory','blogger'];
 var bpImageFiles = [];
