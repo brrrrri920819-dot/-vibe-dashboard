@@ -22,6 +22,8 @@ const { crawlAffiliates } = require('./affiliates/crawler');
 const { generateIncomeReport, SIDE_HUSTLES } = require('./income/analyzer');
 const { generateCardNews }                  = require('./content/card-news');
 const { generateShortsScript, renderScriptHtml } = require('./content/shorts-script');
+const { loginAffiliate, getAffiliateStats, getAllStats } = require('./affiliates/login-manager');
+const { executePipeline, getPipelineStatus }             = require('./income/hustle-pipeline');
 const cron = require('node-cron');
 
 const app  = express();
@@ -334,6 +336,47 @@ app.post('/api/shorts-script', auth, async (req, res) => {
     const scriptData = await generateShortsScript(title, content, Array.isArray(tags) ? tags : []);
     const html       = renderScriptHtml(scriptData);
     res.json({ success: true, html, scriptData });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── 제휴 로그인 & 통계 API ────────────────────────────────
+app.post('/api/affiliates/login/:siteKey', auth, async (req, res) => {
+  const { siteKey } = req.params;
+  try {
+    const result = await loginAffiliate(siteKey);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/affiliates/stats', auth, async (req, res) => {
+  try {
+    const stats = await getAllStats();
+    res.json({ success: true, stats });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── 부업 파이프라인 API ───────────────────────────────────
+app.post('/api/hustle-pipeline/:hustleId', auth, async (req, res) => {
+  const { hustleId } = req.params;
+  try {
+    const result = await executePipeline(hustleId);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/hustle-pipeline/:hustleId', auth, async (req, res) => {
+  const { hustleId } = req.params;
+  try {
+    const result = await getPipelineStatus(hustleId);
+    res.json({ success: true, ...result });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

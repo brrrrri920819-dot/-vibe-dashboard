@@ -432,6 +432,50 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 .income-skeleton{background:linear-gradient(90deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%);background-size:200% 100%;animation:skel 1.4s ease-in-out infinite;border-radius:6px;margin-bottom:8px}
 @keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
+/* ── AFFILIATE LOGIN GRID ─────────────────────── */
+.aff-login-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:8px}
+@media(max-width:480px){.aff-login-grid{grid-template-columns:1fr}}
+.aff-login-card{background:var(--s2);border:1px solid var(--bd2);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;transition:.18s}
+.aff-login-card.connected{border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.05)}
+.aff-login-card.error{border-color:rgba(239,68,68,.3)}
+.aff-login-icon{font-size:26px;flex-shrink:0;width:38px;text-align:center}
+.aff-login-info{flex:1;min-width:0}
+.aff-login-name{color:var(--t1);font-size:13px;font-weight:600;margin-bottom:2px}
+.aff-login-stat{color:var(--t3);font-size:11px;line-height:1.5}
+.aff-login-stat b{color:#4ade80}
+.aff-login-btn{background:rgba(236,72,153,.1);border:1px solid rgba(236,72,153,.25);color:#f9a8d4;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap;flex-shrink:0}
+.aff-login-btn:hover{background:rgba(236,72,153,.2)}
+.aff-login-btn.connected{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:#4ade80}
+.aff-login-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── HUSTLE PIPELINE ───────────────────────────── */
+.hustle-pipeline-btn{display:block;width:100%;margin-top:12px;padding:9px;background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(236,72,153,.1));border:1px solid rgba(139,92,246,.3);color:#c4b5fd;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.3px;transition:.18s;text-align:center}
+.hustle-pipeline-btn:hover{background:linear-gradient(135deg,rgba(139,92,246,.25),rgba(236,72,153,.18));transform:translateY(-1px)}
+.pipeline-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:850;display:flex;align-items:flex-end;justify-content:center;padding:0}
+@media(min-width:600px){.pipeline-modal-bg{align-items:center;padding:20px}}
+.pipeline-modal{background:var(--s1);border:1px solid var(--bd);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:24px 20px 32px}
+@media(min-width:600px){.pipeline-modal{border-radius:20px}}
+.pipeline-modal-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.pipeline-modal-emoji{font-size:32px}
+.pipeline-modal-title{color:var(--t1);font-size:17px;font-weight:800;line-height:1.3}
+.pipeline-modal-sub{color:var(--t3);font-size:12px;margin-top:2px}
+.pipeline-close{background:var(--s2);border:1px solid var(--bd2);color:var(--t2);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;margin-left:auto;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.15s}
+.pipeline-step{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--bd2)}
+.pipeline-step:last-of-type{border-bottom:none}
+.pipeline-step-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+.pipeline-step-dot.waiting{background:var(--s2);border:1px solid var(--bd2);color:var(--t3)}
+.pipeline-step-dot.running{background:rgba(96,165,250,.15);border:1px solid #60a5fa;color:#60a5fa;animation:spin .8s linear infinite}
+.pipeline-step-dot.done{background:rgba(34,197,94,.15);border:1px solid #22c55e;color:#22c55e}
+.pipeline-step-dot.err{background:rgba(239,68,68,.12);border:1px solid #ef4444;color:#ef4444}
+.pipeline-step-body{flex:1;min-width:0}
+.pipeline-step-name{color:var(--t1);font-size:13px;font-weight:600;margin-bottom:3px}
+.pipeline-step-result{color:var(--t2);font-size:12px;line-height:1.6;word-break:break-all}
+.pipeline-result-box{background:var(--s2);border:1px solid var(--bd2);border-radius:10px;padding:14px;margin-top:16px}
+.pipeline-result-title{color:var(--t3);font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px}
+.pipeline-result-content{color:var(--t1);font-size:13px;line-height:1.8}
+.pipeline-action-btn{display:block;width:100%;margin-top:12px;padding:12px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border:none;color:#fff;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s}
+.pipeline-action-btn:hover{opacity:.9;transform:translateY(-1px)}
+
 /* ── MOBILE BOTTOM NAV ────────────────────────── */
 .mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(8,11,20,.98);border-top:1px solid var(--bd);z-index:150;padding-bottom:env(safe-area-inset-bottom,0px)}
 .mob-nav-inner{display:flex;justify-content:space-around;align-items:stretch}
@@ -956,6 +1000,17 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
         <button class="add-btn" onclick="loadAffiliateView(true)">⟳ 새로고침</button>
       </div>
 
+      <!-- 제휴 계정 로그인 대시보드 -->
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span>🔐 제휴 계정 로그인 & 수익 현황</span>
+          <button onclick="loadAffiliateStats()" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:#4ade80;border-radius:8px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">↺ 통계 새로고침</button>
+        </div>
+        <div class="aff-login-grid" id="aff-login-grid">
+          <div style="grid-column:1/-1;text-align:center;padding:18px;color:var(--t3);font-size:12px"><span class="bp-spinner"></span> 계정 상태 확인 중...</div>
+        </div>
+      </div>
+
       <!-- 쇼핑커넥트 섹션 -->
       <div class="sc-hero">
         <div class="sc-hero-title">🛍️ 네이버 쇼핑커넥트 — 지금 가장 핫한 수익화 수단</div>
@@ -1144,6 +1199,22 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 
   </div><!-- /main -->
 </div><!-- /app -->
+
+<!-- Pipeline Modal -->
+<div id="pipeline-modal-bg" class="pipeline-modal-bg" style="display:none" onclick="if(event.target===this)closePipelineModal()">
+  <div class="pipeline-modal" id="pipeline-modal-inner">
+    <div class="pipeline-modal-header">
+      <span class="pipeline-modal-emoji" id="pm-emoji">🚀</span>
+      <div>
+        <div class="pipeline-modal-title" id="pm-title">파이프라인 실행 중</div>
+        <div class="pipeline-modal-sub" id="pm-sub">AI가 자동으로 처리하고 있습니다</div>
+      </div>
+      <button class="pipeline-close" onclick="closePipelineModal()">✕</button>
+    </div>
+    <div id="pm-steps"></div>
+    <div id="pm-result" style="display:none"></div>
+  </div>
+</div>
 
 <!-- Mobile Bottom Nav -->
 <nav class="mobile-bottom-nav" id="mobile-nav">
@@ -2330,6 +2401,153 @@ async function loadAffiliateView(forceRefresh) {
     if (affList) affList.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><div class="et">서버에 연결해주세요</div></div>';
     if (scChips) scChips.innerHTML = '<span style="color:var(--t3);font-size:12px">서버 연결 필요</span>';
   }
+  loadAffiliateStats();
+}
+
+// ── AFFILIATE LOGIN MANAGER ───────────────────────────────────
+var AFF_SITES = [
+  { key: 'linkprice',        name: 'LinkPrice',       emoji: '🔗', desc: 'CPS 종합 플랫폼' },
+  { key: 'coupang_partners', name: '쿠팡파트너스',   emoji: '🛒', desc: '로켓배송 수수료 3~12%' },
+  { key: 'naver_shopping',   name: '네이버 쇼핑파트너', emoji: '🛍️', desc: '쇼핑커넥트 연동' },
+  { key: 'kakao_moment',     name: '카카오모먼트',    emoji: '💬', desc: '카카오 채널 광고' },
+];
+
+async function loadAffiliateStats() {
+  var grid = document.getElementById('aff-login-grid');
+  if (!grid) return;
+  grid.innerHTML = AFF_SITES.map(function(s) {
+    return '<div class="aff-login-card" id="aff-lc-' + s.key + '">'
+      + '<div class="aff-login-icon">' + s.emoji + '</div>'
+      + '<div class="aff-login-info"><div class="aff-login-name">' + escHtml(s.name) + '</div><div class="aff-login-stat">' + escHtml(s.desc) + '</div></div>'
+      + '<button class="aff-login-btn" id="aff-lb-' + s.key + '" onclick="loginAffiliate(\'' + s.key + '\')"><span class="bp-spinner"></span></button>'
+      + '</div>';
+  }).join('');
+
+  try {
+    var stats = await bpFetch('/api/affiliates/stats');
+    (stats || []).forEach(function(s) {
+      var card = document.getElementById('aff-lc-' + s.key);
+      var btn  = document.getElementById('aff-lb-' + s.key);
+      if (!card || !btn) return;
+      if (s.configured === false) {
+        btn.textContent = '설정필요';
+        btn.title = '.env에 계정 정보 입력 필요';
+        return;
+      }
+      if (s.success) {
+        card.classList.add('connected');
+        btn.textContent = '✓ 연결됨';
+        btn.classList.add('connected');
+        var statHtml = '';
+        if (s.balance != null) statHtml += '잔액 <b>' + s.balance + '</b>  ';
+        if (s.clickCount != null) statHtml += '클릭 <b>' + s.clickCount + '</b>  ';
+        if (s.conversionCount != null) statHtml += '전환 <b>' + s.conversionCount + '</b>';
+        if (statHtml) card.querySelector('.aff-login-stat').innerHTML = statHtml;
+      } else {
+        card.classList.add('error');
+        btn.textContent = '재로그인';
+        card.querySelector('.aff-login-stat').textContent = s.error || '로그인 실패';
+      }
+    });
+  } catch(e) {
+    AFF_SITES.forEach(function(s) {
+      var btn = document.getElementById('aff-lb-' + s.key);
+      if (btn) btn.textContent = '로그인';
+    });
+  }
+}
+
+async function loginAffiliate(siteKey) {
+  var btn = document.getElementById('aff-lb-' + siteKey);
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>'; }
+  try {
+    var res = await bpFetch('/api/affiliates/login/' + siteKey, { method: 'POST' });
+    if (res.success) {
+      bpToast('✅ ' + siteKey + ' 로그인 성공!', 'ok');
+      await loadAffiliateStats();
+    } else {
+      bpToast('⚠️ 로그인 실패: ' + (res.error || '계정 확인 필요'), 'err');
+      if (btn) { btn.disabled = false; btn.textContent = '재시도'; }
+    }
+  } catch(e) {
+    bpToast('⚠️ 서버 오류: ' + e.message, 'err');
+    if (btn) { btn.disabled = false; btn.textContent = '로그인'; }
+  }
+}
+
+// ── HUSTLE PIPELINE ───────────────────────────────────────────
+var PIPELINE_META = {
+  naver_blog:    { name: '네이버 블로그', emoji: '📝', steps: ['키워드 수집', 'AI 글 생성', '발행 큐 등록'], auto: '100% 자동' },
+  ai_freelance:  { name: 'AI 프리랜서',   emoji: '💼', steps: ['Kmong 의뢰 스캔', 'AI 매칭 분석', '제안서 자동 작성'], auto: '분석 자동' },
+  shorts:        { name: '유튜브 숏츠',    emoji: '🎬', steps: ['트렌드 선정', '대본 생성', '썸네일 프롬프트', 'YT 메타데이터'], auto: '대본 자동' },
+  smart_store:   { name: '스마트스토어',   emoji: '🛍️', steps: ['트렌드 상품 분석', '소싱처 탐색', '리스팅 자동 생성'], auto: '리스팅 자동' },
+  ebook:         { name: '전자책',          emoji: '📚', steps: ['주제 선정', '목차 생성', '챕터 초안 작성', '표지 카피', '업로드 가이드'], auto: '초안 자동' },
+  class101:      { name: 'Class101',        emoji: '🎓', steps: ['인기 주제 분석', '커리큘럼 생성', '홍보 문구 완성'], auto: '기획 자동' },
+  app_tech:      { name: '앱테크',           emoji: '📱', steps: ['오늘 앱 목록 수집', '수익 계산', '일정 자동 생성'], auto: '목록 자동' },
+};
+
+var pipelineRunning = false;
+
+async function runHustlePipeline(hustleId) {
+  if (pipelineRunning) { bpToast('파이프라인이 이미 실행 중이에요!', 'err'); return; }
+  var meta = PIPELINE_META[hustleId] || { name: hustleId, emoji: '🚀', steps: ['실행 중...'], auto: '자동' };
+  var bg   = document.getElementById('pipeline-modal-bg');
+  var pm   = document.getElementById('pm-emoji');
+  var pt   = document.getElementById('pm-title');
+  var ps   = document.getElementById('pm-sub');
+  var stepsEl = document.getElementById('pm-steps');
+  var resEl   = document.getElementById('pm-result');
+
+  if (pm)  pm.textContent  = meta.emoji;
+  if (pt)  pt.textContent  = meta.name + ' 파이프라인';
+  if (ps)  ps.textContent  = meta.auto + ' · ' + meta.steps.length + '단계';
+  if (resEl) resEl.style.display = 'none';
+
+  stepsEl.innerHTML = meta.steps.map(function(s, i) {
+    return '<div class="pipeline-step" id="ps-' + i + '">'
+      + '<div class="pipeline-step-dot waiting" id="psd-' + i + '">' + (i+1) + '</div>'
+      + '<div class="pipeline-step-body"><div class="pipeline-step-name">' + escHtml(s) + '</div><div class="pipeline-step-result" id="psr-' + i + '" style="color:var(--t3)">대기 중...</div></div>'
+      + '</div>';
+  }).join('');
+
+  bg.style.display = 'flex';
+  pipelineRunning = true;
+
+  try {
+    var data = await bpFetch('/api/hustle-pipeline/' + hustleId, { method: 'POST' });
+    var steps = data.steps || [];
+    steps.forEach(function(step, i) {
+      var dot = document.getElementById('psd-' + i);
+      var res = document.getElementById('psr-' + i);
+      if (dot) { dot.className = 'pipeline-step-dot ' + (step.status === 'done' ? 'done' : 'err'); dot.textContent = step.status === 'done' ? '✓' : '✕'; }
+      if (res) { res.textContent = step.resultSummary || (step.status === 'done' ? '완료' : step.error || '오류'); res.style.color = step.status === 'done' ? 'var(--t2)' : '#f87171'; }
+    });
+    if (resEl && data.summary) {
+      resEl.style.display = 'block';
+      resEl.innerHTML = '<div class="pipeline-result-box"><div class="pipeline-result-title">결과 요약</div><div class="pipeline-result-content">' + escHtml(data.summary) + '</div>'
+        + (data.readyToPublish ? '<button class="pipeline-action-btn" onclick="closePipelineModal();showView(\'write\')">✍️ 글 발행하기</button>' : '')
+        + (data.downloadUrl ? '<a class="pipeline-action-btn" href="' + escHtml(data.downloadUrl) + '" target="_blank" style="display:block;text-align:center;text-decoration:none;margin-top:8px">⬇ 결과물 다운로드</a>' : '')
+        + '</div>';
+    }
+    bpToast('✅ 파이프라인 완료! ' + meta.name, 'ok');
+  } catch(e) {
+    if (stepsEl) {
+      var firstWait = stepsEl.querySelector('.pipeline-step-dot.waiting');
+      if (firstWait) { firstWait.className = 'pipeline-step-dot err'; firstWait.textContent = '!'; }
+    }
+    if (resEl) {
+      resEl.style.display = 'block';
+      resEl.innerHTML = '<div class="pipeline-result-box" style="border-color:rgba(239,68,68,.3)"><div style="color:#f87171;font-size:13px">⚠️ ' + escHtml(e.message) + '</div></div>';
+    }
+    bpToast('⚠️ 파이프라인 오류: ' + e.message, 'err');
+  } finally {
+    pipelineRunning = false;
+  }
+}
+
+function closePipelineModal() {
+  var bg = document.getElementById('pipeline-modal-bg');
+  if (bg) bg.style.display = 'none';
 }
 
 // ── AUTO SETTINGS ────────────────────────────────────────────
@@ -2628,7 +2846,8 @@ function renderHustleCards(hustles) {
       + '<span class="hustle-badge" style="background:rgba(139,92,246,.1);color:#a78bfa">HOT ' + score + '</span>'
       + '</div>'
       + (h.realData ? '<div class="hustle-real-data">' + escHtml(h.realData) + '</div>' : '')
-      + (h.platform ? '<a class="hustle-action-link" href="' + escHtml(h.platform) + '" target="_blank" rel="noopener">바로 시작 →</a>' : '')
+      + (h.platform ? '<a class="hustle-action-link" href="' + escHtml(h.platform) + '" target="_blank" rel="noopener">사이트 →</a>' : '')
+      + '<button class="hustle-pipeline-btn" onclick="runHustlePipeline(\'' + escHtml(h.id || 'naver_blog') + '\')">▶ 파이프라인 자동 실행</button>'
       + '</div>';
   }).join('');
 }
