@@ -1,25 +1,29 @@
 /**
  * humanizer.js
- * AI가 생성한 텍스트를 사람이 쓴 것처럼 가공하는 유틸리티
- * - 문장 끝 다양화, 자연스러운 줄바꿈, 구어체 삽입
+ * AI 텍스트를 한국 블로그 글처럼 자연스럽게 가공
  */
 
 const FILLER_PHRASES = [
-  '사실 이건 제가 직접 써봤는데요,',
-  '솔직히 말하면',
-  '개인적으로는',
-  '제 경험상으로는',
-  '뭐 이건 취향 차이겠지만',
-  '아 참고로',
-  '그리고 하나 더 얘기하자면',
+  '근데 솔직히 말하면',
+  '제가 직접 써봤는데요',
   '이게 생각보다',
-  '의외로',
   '처음엔 저도 몰랐는데',
+  '개인적으로는',
+  '친구한테 물어보니까',
+  '알고보니',
+  '사실 이거',
+  '뭐 제 경험상으로는',
+  '아 참고로',
 ];
 
-const CASUAL_ENDINGS = ['ㅎㅎ', '^^', '..', '~', '😊', '!', ''];
+const CASUAL_ENDINGS = ['ㅎㅎ', ' ㅠㅠ', '~', '!', '', ' 😊', '..'];
+
 const TRANSITION_WORDS = [
-  '그리고', '그래서', '근데', '또한', '그런데', '아무튼', '결론적으로', '여튼',
+  '그리고', '근데', '또한', '아무튼', '여튼', '그래서', '사실',
+];
+
+const INTERJECTIONS = [
+  '아, ', '오, ', '헉 ', '음.. ', '사실 ', '그니까 ',
 ];
 
 function randomItem(arr) {
@@ -30,82 +34,79 @@ function randomBetween(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-/**
- * 문장 배열을 받아 사람처럼 보이게 가공
- */
-function humanizeSentences(sentences) {
-  return sentences.map((s, i) => {
-    let text = s.trim();
-
-    // 가끔 필러 문구 앞에 삽입 (20% 확률)
-    if (Math.random() < 0.2 && i > 0) {
-      text = randomItem(FILLER_PHRASES) + ' ' + text.charAt(0).toLowerCase() + text.slice(1);
-    }
-
-    // 너무 딱딱한 마침표를 가끔 감성적으로 변경 (15% 확률)
-    if (Math.random() < 0.15 && text.endsWith('.')) {
-      const ending = randomItem(CASUAL_ENDINGS);
-      text = text.slice(0, -1) + (ending ? ' ' + ending : '');
-    }
-
-    return text;
-  });
+// 너무 완벽한 AI 문장 패턴 제거
+function removeAiPatterns(text) {
+  return text
+    .replace(/첫째[,，]?\s*/g, '먼저 ')
+    .replace(/둘째[,，]?\s*/g, '그리고 ')
+    .replace(/셋째[,，]?\s*/g, '마지막으로 ')
+    .replace(/결론적으로\s*/g, '여튼 ')
+    .replace(/요약하자면\s*/g, '간단히 말하면 ')
+    .replace(/주목할 만한\s*/g, '눈에 띄는 ')
+    .replace(/효과적인\s*/g, '쓸만한 ')
+    .replace(/최적화된\s*/g, '잘 맞는 ')
+    .replace(/중요한 것은\s*/g, '핵심은 ')
+    .replace(/다양한\s*/g, '여러 ')
+    .replace(/다양하게\s*/g, '여러 방식으로 ')
+    .replace(/활용할 수 있습니다/g, '쓸 수 있어요')
+    .replace(/가능합니다/g, '돼요')
+    .replace(/있습니다\./g, '있어요.')
+    .replace(/됩니다\./g, '돼요.')
+    .replace(/합니다\./g, '해요.')
+    .replace(/입니다\./g, '이에요.')
+    .replace(/습니다\./g, '어요.');
 }
 
-/**
- * HTML 본문을 받아 사람 냄새 나게 변환
- */
 function humanizeHtml(html) {
-  // <br> 중복 제거 후 약간의 간격 변화
+  // AI 패턴 제거
+  html = removeAiPatterns(html);
+
+  // 연속 br 태그 정리
   html = html.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
 
-  // 문단 나누기
-  const paras = html.split(/\n{2,}/).filter(Boolean);
+  // 문단 처리
+  const paras = html.split(/(?<=<\/p>)\s*(?=<p)/i);
 
-  const result = paras.map((p) => {
-    // 짧은 문단은 가끔 이모지 추가 (10% 확률)
-    if (p.length < 80 && Math.random() < 0.1) {
-      const emojis = ['✅', '💡', '📌', '👉', '🔍', '⭐'];
-      p = randomItem(emojis) + ' ' + p;
+  const result = paras.map((p, i) => {
+    // 짧은 문단에 가끔 감탄사 삽입 (15% 확률)
+    if (p.length < 120 && Math.random() < 0.15 && i > 0) {
+      const inj = randomItem(INTERJECTIONS);
+      p = p.replace(/^<p>/i, `<p>${inj}`);
     }
+
+    // 긴 문단에 필러 문구 (10% 확률)
+    if (p.length > 200 && Math.random() < 0.10 && i > 1) {
+      const filler = randomItem(FILLER_PHRASES);
+      p = p.replace(/^<p>/i, `<p>${filler}, `);
+    }
+
     return p;
   });
 
-  return result.join('\n\n');
+  return result.join('\n');
 }
 
-/**
- * 포스트 제목을 사람스럽게 변환
- * - 질문형, 경험공유형, 숫자강조형 패턴 중 랜덤 선택
- */
 function humanizeTitle(title) {
   const patterns = [
-    (t) => t, // 그대로
-    (t) => `${t} 후기 및 솔직한 리뷰`,
-    (t) => `${t}? 직접 해봤습니다`,
-    (t) => `제가 ${t}을(를) 써본 결과...`,
-    (t) => `${t} - 알아두면 유용한 팁`,
-    (t) => `[실사용 후기] ${t}`,
+    (t) => t,
+    (t) => `${t} 솔직 후기`,
+    (t) => `${t}? 직접 해봤어요`,
+    (t) => `${t} - 써보니까 이렇더라고요`,
+    (t) => `${t} 알고 계셨나요?`,
+    (t) => `[찐후기] ${t}`,
+    (t) => `${t} 이거 진짜예요?`,
   ];
   return randomItem(patterns)(title);
 }
 
-/**
- * 발행 시간을 인간처럼 랜덤화 (지정 시간 ±15분 이내)
- * @param {Date} baseTime
- * @returns {Date}
- */
 function humanizePostTime(baseTime) {
   const jitter = randomBetween(-15, 15) * 60 * 1000;
   return new Date(baseTime.getTime() + jitter);
 }
 
-/**
- * 플랫폼마다 약간 다른 버전의 텍스트 생성 (중복 콘텐츠 회피)
- */
 function variantForPlatform(content, platform) {
   const variants = {
-    naver: (c) => c.replace(/블로그/g, '포스트'),
+    naver:   (c) => c.replace(/블로그/g, '포스팅'),
     tistory: (c) => c,
     blogger: (c) => c.replace(/안녕하세요/g, '안녕하세요 여러분'),
   };
@@ -115,7 +116,7 @@ function variantForPlatform(content, platform) {
 module.exports = {
   humanizeHtml,
   humanizeTitle,
-  humanizeSentences,
+  humanizeSentences: (s) => s,
   humanizePostTime,
   variantForPlatform,
 };

@@ -17,6 +17,12 @@ const { humanizeHtml, humanizeTitle, humanizePostTime, variantForPlatform } = re
 const { notifyPublished } = require('./telegram');
 const { enqueue, readQueue, readLog, startScheduler } = require('./scheduler/queue');
 const { startDailyCron, runDailyPipeline, readAccounts, writeAccounts } = require('./keywords/daily');
+const { generatePost } = require('./content/generator');
+const { crawlAffiliates } = require('./affiliates/crawler');
+const { generateIncomeReport, SIDE_HUSTLES } = require('./income/analyzer');
+const { generateCardNews }                  = require('./content/card-news');
+const { generateShortsScript, renderScriptHtml } = require('./content/shorts-script');
+const cron = require('node-cron');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -51,6 +57,27 @@ function auth(req, res, next) {
 
 // ── 메인 발행 함수 ────────────────────────────────────────
 async function publishJob(job) {
+  // 한달 예약 자동생성: 발행 시점에 최신 트렌딩 키워드로 글 생성
+  if (job.autoGenerate && !job.content) {
+    const { fetchAllTrending } = require('./keywords/fetcher');
+    const accounts = readAccounts();
+    const account  = (job.accountId && accounts.find(a => a.id === job.accountId)) || accounts[0];
+    if (!account) throw new Error('계정 없음 — 계정·주제 관리에서 계정을 추가해주세요');
+
+    const trending = await fetchAllTrending({
+      naverClientId:     process.env.NAVER_CLIENT_ID,
+      naverClientSecret: process.env.NAVER_CLIENT_SECRET,
+      seedKeywords:      account.topicSeeds || [],
+    });
+    const keyword = trending[0]?.keyword || '오늘의 트렌드';
+    console.log(`[AutoGen] 키워드 "${keyword}" 로 글 생성 중...`);
+    const post = await generatePost(keyword, account);
+    job.title   = post.title;
+    job.content = post.content;
+    job.tags    = post.tags;
+    job.keyword = keyword;
+  }
+
   const results = {};
   const { title, content, tags, imagePaths = [], platforms } = job;
 
@@ -194,6 +221,124 @@ app.get('/api/trending', auth, async (req, res) => {
   res.json(data);
 });
 
+/** AI 글 즉시 생성 (발행 전 미리보기용) */
+app.post('/api/generate', auth, async (req, res) => {
+  const { keyword, accountId } = req.body;
+  if (!keyword) return res.status(400).json({ error: 'keyword 필수' });
+  const accounts = readAccounts();
+  const account = (accountId && accounts.find(a => a.id === accountId)) || accounts[0] || {};
+  try {
+    const post = await generatePost(keyword, {
+      topic:    account.topic    || '라이프스타일',
+      tone:     account.tone     || '친근한',
+      platform: (account.platforms || ['blogger'])[0],
+    });
+    res.json({ success: true, keyword, ...post });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/** 한달치 자동발행 예약 */
+app.post('/api/month-schedule', auth, (req, res) => {
+  const { startDate, postsPerDay = 1, postHours = [9, 19], accountId } = req.body;
+  const accounts = readAccounts();
+  const account  = (accountId && accounts.find(a => a.id === accountId)) || accounts[0];
+  if (!account) return res.status(400).json({ error: '계정을 먼저 설정해주세요' });
+
+  const start = startDate ? new Date(startDate) : new Date();
+  start.setHours(0, 0, 0, 0);
+  if (start <= new Date()) start.setDate(start.getDate() + 1);
+
+  const jobs = [];
+  const hours = postHours.slice(0, Math.min(postsPerDay, 3));
+  for (let day = 0; day < 30; day++) {
+    const dayDate = new Date(start);
+    dayDate.setDate(dayDate.getDate() + day);
+    for (const h of hours) {
+      const scheduledAt = new Date(dayDate);
+      const jitter = Math.floor(Math.random() * 20);
+      scheduledAt.setHours(h, jitter, 0, 0);
+      const job = {
+        id:           `month_${Date.now()}_d${day}_h${h}`,
+        title:        `[자동발행] ${dayDate.toLocaleDateString('ko-KR')} ${h}시`,
+        content:      '',
+        tags:         [],
+        imagePaths:   [],
+        platforms:    account.platforms || ['blogger'],
+        scheduledAt:  scheduledAt.toISOString(),
+        autoGenerate: true,
+        accountId:    account.id,
+        source:       'month_schedule',
+      };
+      enqueue(job);
+      jobs.push(job);
+    }
+  }
+  res.json({ success: true, count: jobs.length, firstPost: jobs[0]?.scheduledAt, lastPost: jobs[jobs.length - 1]?.scheduledAt });
+});
+
+/** 제휴 인텔리전스 */
+let affiliateCache = { data: null, fetchedAt: 0 };
+app.get('/api/affiliates', auth, async (req, res) => {
+  const now = Date.now();
+  const forceRefresh = req.query.refresh === '1';
+  if (!forceRefresh && affiliateCache.data && now - affiliateCache.fetchedAt < 60 * 60 * 1000) {
+    return res.json(affiliateCache.data);
+  }
+  const data = await crawlAffiliates().catch(() => affiliateCache.data || {});
+  affiliateCache = { data, fetchedAt: now };
+  res.json(data);
+});
+
+/** 부업 분석 리포트 (캐시: 오늘 하루) */
+let incomeReportCache = { data: null, date: '' };
+
+app.get('/api/income-report', auth, async (req, res) => {
+  const today  = new Date().toISOString().slice(0, 10);
+  const force  = req.query.refresh === '1';
+  if (!force && incomeReportCache.data && incomeReportCache.date === today) {
+    return res.json(incomeReportCache.data);
+  }
+  try {
+    const report = await generateIncomeReport();
+    incomeReportCache = { data: { ...report, generatedAt: new Date().toISOString() }, date: today };
+    res.json(incomeReportCache.data);
+  } catch (err) {
+    res.status(500).json({ error: err.message, hustles: SIDE_HUSTLES });
+  }
+});
+
+/** 부업 기본 데이터 (빠른 로딩용) */
+app.get('/api/income-hustles', auth, (req, res) => {
+  res.json(SIDE_HUSTLES);
+});
+
+/** 인스타그램 카드뉴스 생성 */
+app.post('/api/card-news', auth, async (req, res) => {
+  const { title, content, tags } = req.body;
+  if (!title || !content) return res.status(400).json({ error: 'title, content 필수' });
+  try {
+    const result = await generateCardNews(title, content, Array.isArray(tags) ? tags : []);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/** 유튜브 숏츠 대본 생성 */
+app.post('/api/shorts-script', auth, async (req, res) => {
+  const { title, content, tags } = req.body;
+  if (!title || !content) return res.status(400).json({ error: 'title, content 필수' });
+  try {
+    const scriptData = await generateShortsScript(title, content, Array.isArray(tags) ? tags : []);
+    const html       = renderScriptHtml(scriptData);
+    res.json({ success: true, html, scriptData });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ── 계정 관리 API ─────────────────────────────────────────
 app.get('/api/accounts', auth, (req, res) => {
   res.json(readAccounts());
@@ -313,4 +458,34 @@ app.listen(PORT, () => {
   console.log(`   Blogger 인증: http://localhost:${PORT}/oauth/blogger\n`);
   startScheduler(publishJob);
   startDailyCron();
+
+  // 매일 09:00 부업 분석 리포트 자동 생성 + 발행
+  cron.schedule('0 9 * * *', async () => {
+    console.log('[Income] 09:00 부업 리포트 자동 발행 시작');
+    const accounts = readAccounts().filter(a => a.enabled);
+    if (accounts.length === 0) return;
+    const account = accounts[0];
+    try {
+      const report = await generateIncomeReport();
+      incomeReportCache = { data: { ...report, generatedAt: new Date().toISOString() }, date: new Date().toISOString().slice(0, 10) };
+      const platforms = account.platforms || ['blogger'];
+      enqueue({
+        id:          `income_${Date.now()}`,
+        title:       report.title,
+        content:     report.content,
+        tags:        report.tags,
+        imagePaths:  [],
+        platforms,
+        scheduledAt: new Date().toISOString(),
+        accountId:   account.id,
+        keyword:     '부업',
+        source:      'income_daily',
+      });
+      console.log(`[Income] 발행 예약: "${report.title}"`);
+      await notifyPublished(report.title, { income_report: { success: true, summary: report.summary } });
+    } catch (err) {
+      console.error('[Income] 리포트 생성 오류:', err.message);
+    }
+  }, { timezone: 'Asia/Seoul' });
+  console.log('[Income] 부업 리포트 크론 등록됨 (매일 09:00 KST)');
 });

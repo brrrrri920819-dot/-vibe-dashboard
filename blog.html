@@ -253,6 +253,292 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
 ::-webkit-scrollbar-thumb:hover{background:var(--ac)}
+
+/* ── LIVE INDICATOR ───────────────────────────── */
+.live-bar{display:flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--bd);border-radius:10px;padding:9px 16px;margin-bottom:16px;font-size:12px;color:var(--t2)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex-shrink:0;animation:livepulse 1.8s ease-in-out infinite}
+@keyframes livepulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}50%{box-shadow:0 0 0 6px rgba(34,197,94,0)}}
+.live-tag{background:rgba(34,197,94,.12);color:var(--ok);font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.5px}
+
+/* ── KEYWORD VIEW ─────────────────────────────── */
+.kw-source-card{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:18px 18px 14px;margin-bottom:12px}
+.kw-source-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.kw-source-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.3px}
+.kw-src-google .kw-source-badge{background:rgba(66,133,244,.15);color:#60a5fa}
+.kw-src-daum   .kw-source-badge{background:rgba(96,165,250,.12);color:#93c5fd}
+.kw-src-zum    .kw-source-badge{background:rgba(251,146,60,.12);color:#fb923c}
+.kw-src-naver  .kw-source-badge{background:rgba(3,199,90,.12);color:#4ade80}
+.kw-source-cnt{color:var(--t3);font-size:11px;margin-left:auto}
+.kw-chips-grid{display:flex;flex-wrap:wrap;gap:8px}
+.kw-gen-chip{display:inline-flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--bd2);border-radius:24px;padding:7px 16px;font-size:13px;color:var(--t1);cursor:pointer;transition:.18s;position:relative;overflow:hidden}
+.kw-gen-chip::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(236,72,153,.15),rgba(244,63,94,.08));opacity:0;transition:.18s}
+.kw-gen-chip:hover{border-color:var(--ac);transform:translateY(-2px);box-shadow:0 4px 16px rgba(236,72,153,.25)}
+.kw-gen-chip:hover::before{opacity:1}
+.kw-gen-chip:hover .kw-chip-icon{transform:scale(1.2)}
+.kw-chip-icon{font-size:14px;transition:.15s}
+.kw-chip-rank{font-size:10px;color:var(--t3);font-weight:600}
+.kw-hot-chip{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.06)}
+.kw-hot-chip .kw-chip-rank{color:#f59e0b}
+.kw-chip-loading .kw-gen-chip{opacity:.5;pointer-events:none}
+.kw-timer{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:11px;color:var(--t3)}
+.kw-timer-bar{width:60px;height:3px;background:var(--bd2);border-radius:2px;overflow:hidden}
+.kw-timer-fill{height:100%;background:linear-gradient(90deg,#ec4899,#f43f5e);border-radius:2px;transition:width 1s linear}
+
+/* ── GENERATE MODAL ───────────────────────────── */
+.gen-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px}
+.gen-modal{background:var(--s1);border:1px solid var(--bd2);border-radius:20px;width:100%;max-width:680px;max-height:90vh;overflow:auto;box-shadow:0 40px 100px rgba(0,0,0,.7);position:relative}
+.gen-loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;text-align:center}
+.gen-big-spinner{width:56px;height:56px;border:3px solid var(--bd2);border-top-color:var(--ac);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:20px}
+.gen-loading-kw{color:#f9a8d4;font-size:17px;font-weight:700;margin-bottom:8px}
+.gen-loading-sub{color:var(--t3);font-size:13px}
+.gen-loading-steps{margin-top:16px;text-align:left;display:flex;flex-direction:column;gap:6px}
+.gen-step{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t3)}
+.gen-step.done{color:var(--ok)}
+.gen-step.active{color:var(--t1)}
+.gen-step-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.gen-preview-wrap{padding:24px}
+.gen-preview-title{color:#fff;font-size:18px;font-weight:700;line-height:1.4;margin-bottom:14px;letter-spacing:-.3px}
+.gen-preview-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.gen-preview-content{background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:16px;max-height:280px;overflow:auto;font-size:13px;line-height:1.8;color:var(--t2)}
+.gen-preview-content img{max-width:100%;border-radius:8px;margin:8px 0;display:block}
+.gen-preview-content h3{color:var(--t1);font-size:14px;font-weight:600;margin:12px 0 6px}
+.gen-preview-content p{margin-bottom:10px}
+.gen-preview-img-strip{display:flex;gap:8px;margin:14px 0;overflow-x:auto}
+.gen-preview-img-strip img{width:120px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--bd2);flex-shrink:0}
+.gen-actions-bar{display:flex;gap:10px;padding:16px 24px;border-top:1px solid var(--bd);flex-wrap:wrap}
+.gen-actions-bar .bp-pub-btn{flex:1;min-width:120px}
+.gen-actions-bar .bp-sch-btn{flex:1;min-width:120px}
+.gen-close-btn{position:absolute;top:16px;right:16px;background:var(--s2);border:1px solid var(--bd2);color:var(--t2);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.gen-close-btn:hover{color:var(--t1);border-color:var(--ac)}
+
+/* ── MONTH SCHEDULE ───────────────────────────── */
+.month-hero{background:linear-gradient(135deg,rgba(96,165,250,.1),rgba(139,92,246,.08));border:1px solid rgba(96,165,250,.2);border-radius:16px;padding:22px;margin-bottom:18px}
+.month-hero-title{color:#fff;font-size:17px;font-weight:700;margin-bottom:6px}
+.month-hero-sub{color:var(--t2);font-size:13px;line-height:1.6}
+.month-settings{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.month-settings .form-grp{margin:0}
+.month-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:16px}
+.cal-day{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:8px 6px;text-align:center;min-height:52px;font-size:11px;position:relative;transition:.15s}
+.cal-day.has-post{border-color:rgba(236,72,153,.4);background:rgba(236,72,153,.06)}
+.cal-day.today{border-color:#f59e0b;background:rgba(245,158,11,.06)}
+.cal-day-num{color:var(--t3);font-weight:600;margin-bottom:3px}
+.cal-day.has-post .cal-day-num{color:#f9a8d4}
+.cal-post-dot{width:5px;height:5px;border-radius:50%;background:var(--ac);margin:1px auto}
+.cal-day-label{font-size:9px;color:var(--t3);margin-top:2px}
+.month-stats-row{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}
+.month-stat-pill{background:var(--s2);border:1px solid var(--bd2);border-radius:20px;padding:6px 14px;font-size:12px;color:var(--t2);display:flex;align-items:center;gap:6px}
+.month-stat-pill b{color:var(--t1)}
+
+/* ── AFFILIATE ────────────────────────────────── */
+.aff-hero{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(16,185,129,.06));border:1px solid rgba(34,197,94,.2);border-radius:16px;padding:22px;margin-bottom:18px;position:relative;overflow:hidden}
+.aff-hero::after{content:'💰';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:56px;opacity:.08}
+.aff-hero-title{color:#fff;font-size:17px;font-weight:700;margin-bottom:4px}
+.aff-hero-sub{color:var(--t2);font-size:13px}
+.aff-card{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:18px;margin-bottom:10px;transition:.15s;position:relative;overflow:hidden}
+.aff-card:hover{border-color:rgba(34,197,94,.3);transform:translateY(-1px)}
+.aff-card-hot{border-color:rgba(245,158,11,.35)!important}
+.aff-card-hot::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#f59e0b,#f43f5e)}
+.aff-row1{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+.aff-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;flex-shrink:0;letter-spacing:-1px}
+.aff-icon-coupang{background:rgba(255,90,30,.15);color:#ff5a1e}
+.aff-icon-naver{background:rgba(3,199,90,.15);color:#03c75a}
+.aff-icon-connect{background:rgba(3,199,90,.2);color:#03c75a}
+.aff-icon-tenping{background:rgba(139,92,246,.15);color:#a78bfa}
+.aff-icon-linkprice{background:rgba(96,165,250,.12);color:#60a5fa}
+.aff-icon-edpick{background:rgba(244,63,94,.12);color:#f43f5e}
+.aff-icon-ilike{background:rgba(245,158,11,.12);color:#f59e0b}
+.aff-name{color:#fff;font-size:15px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:8px}
+.aff-tag-badge{font-size:10px;padding:2px 8px;border-radius:12px;background:rgba(236,72,153,.15);color:#f9a8d4;font-weight:600}
+.aff-type{color:var(--t3);font-size:11px;margin-bottom:6px}
+.aff-rate{color:#4ade80;font-size:14px;font-weight:600}
+.aff-score-bar{display:flex;align-items:center;gap:10px;margin:10px 0}
+.aff-score-fill{height:4px;border-radius:2px;background:linear-gradient(90deg,#22c55e,#16a34a);flex-shrink:0;transition:.3s}
+.aff-score-num{color:var(--t3);font-size:11px;white-space:nowrap}
+.aff-pros{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.aff-pro{font-size:11px;color:var(--t2);background:var(--s2);padding:3px 8px;border-radius:6px}
+.aff-url-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ac);text-decoration:none;margin-top:10px;padding:6px 12px;background:rgba(236,72,153,.08);border:1px solid rgba(236,72,153,.2);border-radius:8px;transition:.15s}
+.aff-url-btn:hover{background:rgba(236,72,153,.15)}
+
+/* ── SHOPPING CONNECT ─────────────────────────── */
+.sc-hero{background:linear-gradient(135deg,rgba(3,199,90,.12),rgba(16,185,129,.07));border:1px solid rgba(3,199,90,.25);border-radius:16px;padding:20px;margin-bottom:14px;position:relative;overflow:hidden}
+.sc-hero::after{content:'🛍️';position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:50px;opacity:.1}
+.sc-hero-title{color:#fff;font-size:16px;font-weight:700;margin-bottom:6px}
+.sc-categories{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:12px}
+.sc-cat{background:rgba(0,0,0,.2);border:1px solid rgba(3,199,90,.2);border-radius:10px;padding:10px 12px;text-align:center}
+.sc-cat-name{color:var(--t1);font-size:12px;font-weight:600;margin-bottom:3px}
+.sc-cat-rate{color:#4ade80;font-size:13px;font-weight:700}
+.sc-kw-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.sc-kw-chip{background:rgba(3,199,90,.08);border:1px solid rgba(3,199,90,.2);color:#4ade80;font-size:12px;border-radius:20px;padding:5px 12px;cursor:pointer;transition:.15s}
+.sc-kw-chip:hover{background:rgba(3,199,90,.16);transform:translateY(-1px)}
+.sc-strategy{background:rgba(3,199,90,.06);border:1px solid rgba(3,199,90,.2);border-radius:12px;padding:16px;margin-top:14px}
+.sc-strategy-title{color:#4ade80;font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sc-step{display:flex;align-items:flex-start;gap:9px;font-size:12px;color:var(--t2);margin-bottom:7px;line-height:1.5}
+.sc-step-num{color:#4ade80;font-weight:700;font-size:12px;flex-shrink:0;width:16px}
+
+/* ── RESPONSIVE ADDITIONS ─────────────────────── */
+@media(max-width:720px){
+  .month-settings{grid-template-columns:1fr}
+  .month-calendar{grid-template-columns:repeat(7,1fr)}
+  .cal-day{padding:5px 3px;min-height:40px}
+  .sc-categories{grid-template-columns:repeat(2,1fr)}
+  .gen-modal{border-radius:16px}
+  .gen-actions-bar{padding:12px 16px}
+}
+
+/* ── INCOME VIEW ──────────────────────────────── */
+.income-hero{background:linear-gradient(135deg,rgba(139,92,246,.12),rgba(109,40,217,.07));border:1px solid rgba(139,92,246,.25);border-radius:16px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden}
+.income-hero::after{content:'💰';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:56px;opacity:.09}
+.income-hero-title{color:#fff;font-size:17px;font-weight:700;margin-bottom:4px}
+.income-hero-sub{color:var(--t2);font-size:13px;line-height:1.6}
+.income-summary-pill{display:inline-flex;align-items:center;gap:7px;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:20px;padding:6px 14px;color:#c4b5fd;font-size:13px;font-weight:600;margin-top:12px;max-width:100%;word-break:break-all}
+.hustle-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:4px}
+.hustle-card{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:.22s}
+.hustle-card:hover{border-color:rgba(139,92,246,.4);transform:translateY(-2px);box-shadow:0 8px 32px rgba(139,92,246,.14)}
+.hustle-card.rank-1::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#f59e0b,#ef4444)}
+.hustle-card.rank-2::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#94a3b8,#64748b)}
+.hustle-card.rank-3::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#f59e0b,#b45309)}
+.hustle-rank-badge{position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+.hustle-rank-badge.r1{background:linear-gradient(135deg,#f59e0b,#ef4444)}
+.hustle-rank-badge.r2{background:linear-gradient(135deg,#94a3b8,#64748b)}
+.hustle-rank-badge.r3{background:linear-gradient(135deg,#f59e0b,#b45309)}
+.hustle-rank-badge.rn{background:rgba(255,255,255,.07);color:var(--t3)}
+.hustle-emoji{font-size:26px;margin-bottom:8px;display:block;line-height:1}
+.hustle-name{color:#fff;font-size:14px;font-weight:700;margin-bottom:3px;padding-right:30px;line-height:1.3}
+.hustle-cat{color:var(--t3);font-size:11px;margin-bottom:10px}
+.hustle-income-row{display:flex;align-items:baseline;gap:4px;margin-bottom:8px}
+.hustle-income-val{color:#4ade80;font-size:17px;font-weight:700;line-height:1}
+.hustle-hot-bar{height:3px;border-radius:2px;background:var(--bd2);overflow:hidden;margin-bottom:8px}
+.hustle-hot-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#8b5cf6,#ec4899);transition:.6s .1s}
+.hustle-badges{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.hustle-badge{font-size:10px;border-radius:10px;padding:3px 9px;font-weight:600}
+.hustle-badge.passive{background:rgba(96,165,250,.12);color:#60a5fa}
+.hustle-badge.mobile{background:rgba(34,197,94,.1);color:#4ade80}
+.hustle-badge.free{background:rgba(245,158,11,.12);color:#f59e0b}
+.hustle-real-data{font-size:11px;color:var(--t2);line-height:1.5;border-left:2px solid rgba(139,92,246,.4);padding-left:10px;margin-top:6px}
+.hustle-action-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#a78bfa;margin-top:10px;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);border-radius:8px;padding:6px 12px;text-decoration:none;transition:.15s}
+.hustle-action-link:hover{background:rgba(139,92,246,.18)}
+.income-report-wrap{background:var(--s2);border:1px solid var(--bd2);border-radius:12px;padding:18px;margin-top:4px}
+.income-report-title{color:#fff;font-size:15px;font-weight:700;margin-bottom:12px;line-height:1.4}
+.income-report-content{font-size:13px;color:var(--t2);line-height:1.9;max-height:500px;overflow:auto}
+.income-report-content h3{color:var(--t1);font-size:14px;font-weight:700;margin:18px 0 8px}
+.income-report-content p{margin-bottom:10px}
+.income-report-content img{max-width:100%;border-radius:8px;margin:10px 0;display:block}
+.income-report-content ul,.income-report-content ol{padding-left:18px;margin-bottom:10px}
+.income-report-content li{margin-bottom:5px}
+.income-report-content strong,.income-report-content b{color:var(--t1)}
+.income-refresh-btn{display:inline-flex;align-items:center;gap:7px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:#c4b5fd;border-radius:10px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.15s}
+.income-refresh-btn:hover{background:rgba(139,92,246,.22);transform:translateY(-1px)}
+.income-refresh-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.income-skeleton{background:linear-gradient(90deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%);background-size:200% 100%;animation:skel 1.4s ease-in-out infinite;border-radius:6px;margin-bottom:8px}
+@keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── MOBILE BOTTOM NAV ────────────────────────── */
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(8,11,20,.97);border-top:1px solid var(--bd);z-index:150;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.mob-nav-inner{display:flex;justify-content:space-around;align-items:stretch}
+.mob-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px 8px;border:none;background:transparent;color:var(--t3);font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.3px;transition:.15s;position:relative;min-height:56px}
+.mob-nav-item .mob-icon{font-size:19px;line-height:1;transition:.15s}
+.mob-nav-item.active{color:#f9a8d4}
+.mob-nav-item.active .mob-icon{filter:drop-shadow(0 0 6px rgba(236,72,153,.5))}
+.mob-nav-item.active::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;border-radius:0 0 2px 2px;background:linear-gradient(90deg,#ec4899,#f43f5e)}
+
+@media(max-width:720px){
+  .mobile-bottom-nav{display:block}
+  .hustle-grid{grid-template-columns:1fr}
+}
+
+/* ── WORLD-CLASS DESIGN SYSTEM ────────────────── */
+/* Animated background depth layers */
+#app::before{content:'';position:fixed;width:700px;height:700px;background:radial-gradient(circle,rgba(236,72,153,.045) 0%,transparent 70%);top:-250px;right:-200px;pointer-events:none;z-index:0;animation:orb-drift1 18s ease-in-out infinite alternate}
+#app::after{content:'';position:fixed;width:600px;height:600px;background:radial-gradient(circle,rgba(139,92,246,.04) 0%,transparent 70%);bottom:-180px;left:-150px;pointer-events:none;z-index:0;animation:orb-drift2 22s ease-in-out infinite alternate}
+@keyframes orb-drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(40px,30px) scale(1.1)}}
+@keyframes orb-drift2{from{transform:translate(0,0) scale(1)}to{transform:translate(-30px,-40px) scale(1.08)}}
+
+/* View transitions */
+@keyframes view-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.view-anim{animation:view-in .28s cubic-bezier(.22,1,.36,1) both}
+
+/* Count-up pop */
+@keyframes stat-pop{0%{transform:scale(1)}40%{transform:scale(1.12);color:#f9a8d4}100%{transform:scale(1)}}
+.sc-val.pop{animation:stat-pop .35s cubic-bezier(.22,1,.36,1)}
+
+/* Enhanced section */
+.section{transition:.2s border-color,.2s box-shadow}
+.section:hover{border-color:rgba(255,255,255,.06);box-shadow:0 4px 24px rgba(0,0,0,.15)}
+
+/* Premium stat cards */
+.stat-card{transition:.2s transform,.2s box-shadow,.2s border-color}
+.stat-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.accent-pink:hover{border-color:rgba(236,72,153,.35);box-shadow:0 12px 40px rgba(236,72,153,.15)}
+.accent-green:hover{border-color:rgba(34,197,94,.35);box-shadow:0 12px 40px rgba(34,197,94,.1)}
+.accent-blue:hover{border-color:rgba(96,165,250,.35);box-shadow:0 12px 40px rgba(96,165,250,.1)}
+.accent-red:hover{border-color:rgba(239,68,68,.35);box-shadow:0 12px 40px rgba(239,68,68,.1)}
+
+/* Enhanced nav */
+.nav-item{transition:.18s background,.18s color,.18s padding-left}
+.nav-item:hover{padding-left:14px}
+.nav-item.active{padding-left:13px}
+
+/* ── CARD NEWS VIEW ───────────────────────────── */
+.cardnews-hero{background:linear-gradient(135deg,rgba(236,72,153,.12),rgba(244,63,94,.07),rgba(139,92,246,.06));border:1px solid rgba(236,72,153,.22);border-radius:16px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden}
+.cardnews-hero::after{content:'📱';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:56px;opacity:.1}
+.cardnews-toggle-row{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--s2);border:1px solid var(--bd2);border-radius:12px;margin-bottom:12px;transition:.2s}
+.cardnews-toggle-row:hover{border-color:rgba(236,72,153,.25)}
+.cardnews-toggle-label{flex:1}
+.cardnews-toggle-title{color:var(--t1);font-size:13px;font-weight:600}
+.cardnews-toggle-sub{color:var(--t3);font-size:11px;margin-top:2px}
+/* Cards preview horizontal scroll */
+.cards-preview-scroll{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 12px;scrollbar-width:thin;scrollbar-color:var(--bd2) transparent}
+.cards-preview-scroll::-webkit-scrollbar{height:3px}
+.cards-preview-scroll::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+.card-preview-slot{flex-shrink:0;width:180px;height:180px;border-radius:12px;overflow:hidden;cursor:pointer;border:1px solid var(--bd2);position:relative;transition:.2s}
+.card-preview-slot:hover{transform:scale(1.04);border-color:var(--ac);box-shadow:0 8px 24px rgba(236,72,153,.2)}
+.card-preview-slot .card-num-badge{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.6);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:#fff;backdrop-filter:blur(4px)}
+.card-preview-inner{transform:scale(0.333);transform-origin:top left;width:540px;height:540px;pointer-events:none}
+/* Card fullscreen modal */
+.card-full-bg{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.card-full-inner{position:relative;max-width:560px;width:100%}
+.card-full-close{position:absolute;top:-44px;right:0;background:rgba(255,255,255,.08);border:none;color:#fff;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-family:inherit}
+.card-nav-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:50%;width:40px;height:40px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:.15s;backdrop-filter:blur(8px)}
+.card-nav-btn:hover{background:rgba(236,72,153,.3)}
+.card-nav-prev{left:-52px}
+.card-nav-next{right:-52px}
+.card-download-bar{display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap}
+/* Hashtag display */
+.cn-hashtags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cn-hashtag{background:rgba(236,72,153,.1);color:#f9a8d4;font-size:11px;border-radius:20px;padding:4px 12px;border:1px solid rgba(236,72,153,.2)}
+
+/* ── SHORTS SCRIPT VIEW ───────────────────────── */
+.shorts-hero{background:linear-gradient(135deg,rgba(239,68,68,.1),rgba(245,158,11,.07));border:1px solid rgba(239,68,68,.2);border-radius:16px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden}
+.shorts-hero::after{content:'🎬';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:56px;opacity:.1}
+.script-segment{background:var(--s2);border:1px solid var(--bd2);border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:.15s}
+.script-segment:hover{border-color:rgba(255,255,255,.08)}
+.script-segment.seg-hook{border-left:3px solid #ef4444}
+.script-segment.seg-content{border-left:3px solid #60a5fa}
+.script-segment.seg-cta{border-left:3px solid #22c55e}
+.script-segment.seg-outro{border-left:3px solid var(--t3)}
+.script-timing-badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;margin-bottom:8px}
+.seg-hook .script-timing-badge{background:rgba(239,68,68,.12);color:#f87171}
+.seg-content .script-timing-badge{background:rgba(96,165,250,.12);color:#60a5fa}
+.seg-cta .script-timing-badge{background:rgba(34,197,94,.12);color:#4ade80}
+.seg-outro .script-timing-badge{background:rgba(255,255,255,.06);color:var(--t3)}
+.script-text{color:var(--t1);font-size:14px;line-height:1.8;margin-bottom:10px}
+.script-visual-cue{background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.15);border-radius:8px;padding:8px 12px;font-size:11px;color:#a78bfa;line-height:1.6}
+.script-visual-cue::before{content:'🎥 화면: '}
+.script-copy-all{width:100%;padding:11px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.2);color:#60a5fa;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.script-copy-all:hover{background:rgba(96,165,250,.18)}
+.shorts-meta{background:var(--s2);border:1px solid var(--bd2);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.shorts-title-display{color:#fff;font-size:14px;font-weight:700;margin-bottom:6px}
+.shorts-desc-display{color:var(--t2);font-size:12px;line-height:1.6}
+.shorts-tips{display:flex;flex-direction:column;gap:6px}
+.shorts-tip{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--t2);line-height:1.5}
+.shorts-tip::before{content:'💡';flex-shrink:0}
+
+/* ── ENHANCED RESPONSIVE ──────────────────────── */
+@media(max-width:720px){
+  .card-nav-btn{display:none}
+  .card-preview-slot{width:150px;height:150px}
+  .card-preview-inner{transform:scale(0.278);width:540px;height:540px}
+}
 </style>
 </head>
 <body>
@@ -294,7 +580,31 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
     <div class="s-nav">
       <div class="nav-section">블로그 자동화</div>
       <button class="nav-item active" id="nav-blog" onclick="showView('blog')">
-        <span class="ni">✍️</span> 블로그 발행
+        <span class="ni">📊</span> 발행 현황
+      </button>
+      <button class="nav-item" id="nav-keywords" onclick="showView('keywords')">
+        <span class="ni">🔥</span> 키워드 발행
+      </button>
+      <button class="nav-item" id="nav-month" onclick="showView('month')">
+        <span class="ni">📅</span> 한달 스케줄
+      </button>
+      <div class="nav-section">수익 관리</div>
+      <button class="nav-item" id="nav-income" onclick="showView('income')">
+        <span class="ni">📈</span> 부업 분석 리포트
+      </button>
+      <button class="nav-item" id="nav-affiliate" onclick="showView('affiliate')">
+        <span class="ni">💰</span> 제휴 인텔리전스
+      </button>
+      <div class="nav-section">콘텐츠 확장</div>
+      <button class="nav-item" id="nav-cardnews" onclick="showView('cardnews')">
+        <span class="ni">📱</span> 인스타 카드뉴스
+      </button>
+      <button class="nav-item" id="nav-shorts" onclick="showView('shorts')">
+        <span class="ni">🎬</span> 유튜브 숏츠 대본
+      </button>
+      <div class="nav-section">설정</div>
+      <button class="nav-item" id="nav-write" onclick="showView('write')">
+        <span class="ni">✏️</span> 글 직접 작성
       </button>
       <button class="nav-item" id="nav-blog-log" onclick="showView('blog-log')">
         <span class="ni">📜</span> 발행 이력
@@ -313,64 +623,116 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 
   <div class="main" id="main">
 
-    <!-- Dashboard hero (blog stats) -->
+    <!-- 메인: 발행 현황 대시보드 -->
     <div id="view-blog">
       <div class="page-header">
         <button class="menu-btn" onclick="openSidebar()">☰</button>
         <div class="page-title-wrap">
-          <div class="page-title">블로그 발행</div>
-          <div class="page-date">네이버 · 티스토리 · 블로그스팟 동시 발행</div>
+          <div class="page-title">발행 현황</div>
+          <div class="page-date" id="dash-today-date"></div>
+        </div>
+        <button class="add-btn" onclick="bpRunNow()">▶ 지금 실행</button>
+      </div>
+
+      <!-- 오늘 통계 -->
+      <div class="stat-grid" style="margin-bottom:14px">
+        <div class="stat-card accent-pink">
+          <div class="sc-label">오늘 발행</div>
+          <div class="sc-val" id="stat-today">–</div>
+          <div class="sc-sub">건</div>
+        </div>
+        <div class="stat-card accent-green">
+          <div class="sc-label">성공</div>
+          <div class="sc-val" id="stat-done">–</div>
+          <div class="sc-sub">건</div>
+        </div>
+        <div class="stat-card accent-red">
+          <div class="sc-label">실패</div>
+          <div class="sc-val" id="stat-fail">–</div>
+          <div class="sc-sub">건</div>
+        </div>
+        <div class="stat-card accent-blue">
+          <div class="sc-label">누적</div>
+          <div class="sc-val" id="stat-total">–</div>
+          <div class="sc-sub">건</div>
         </div>
       </div>
 
-      <div class="dash-hero">
-        <div class="dash-hero-title">리리의 시크릿 대시보드 🌸</div>
-        <div class="dash-hero-sub">AI 자동 블로그 발행 시스템 — 오늘도 열심히!</div>
-        <div class="dash-hero-stats" id="dash-hero-stats"></div>
-      </div>
-
+      <!-- 플랫폼 상태 -->
       <div class="section" style="margin-bottom:14px">
-        <div class="bp-section-title">📡 발행 플랫폼 선택 <span style="color:var(--t3);font-size:11px;font-weight:400">(복수 선택 가능)</span></div>
+        <div class="bp-section-title">📡 플랫폼 연결 상태</div>
         <div class="bp-grid">
-          <div class="bp-platform selected p-naver" id="plat-naver" onclick="togglePlatform('naver')">
+          <div class="bp-platform p-naver" id="plat-naver" style="cursor:default;opacity:1">
             <div class="bp-plat-icon">N</div>
-            <div class="bp-name">네이버 블로그</div>
-            <div class="bp-status na" id="plat-naver-status">설정 확인 중...</div>
+            <div class="bp-name">네이버</div>
+            <div class="bp-status na" id="plat-naver-status">확인 중</div>
           </div>
-          <div class="bp-platform selected p-tistory" id="plat-tistory" onclick="togglePlatform('tistory')">
+          <div class="bp-platform p-tistory" id="plat-tistory" style="cursor:default;opacity:1">
             <div class="bp-plat-icon">T</div>
             <div class="bp-name">티스토리</div>
-            <div class="bp-status na" id="plat-tistory-status">설정 확인 중...</div>
+            <div class="bp-status na" id="plat-tistory-status">확인 중</div>
           </div>
-          <div class="bp-platform selected p-blogger" id="plat-blogger" onclick="togglePlatform('blogger')">
+          <div class="bp-platform p-blogger" id="plat-blogger" style="cursor:default;opacity:1">
             <div class="bp-plat-icon">B</div>
-            <div class="bp-name">블로그스팟</div>
-            <div class="bp-status na" id="plat-blogger-status">설정 확인 중...</div>
+            <div class="bp-name">블로거</div>
+            <div class="bp-status na" id="plat-blogger-status">확인 중</div>
           </div>
         </div>
       </div>
 
+      <!-- 최근 발행 글 -->
       <div class="section" style="margin-bottom:14px">
-        <div class="bp-section-title">✍️ 글 작성</div>
-        <div class="bp-humanize-tip">
-          <b>AI 티 안 나게 자동 처리:</b> 제목 변형, 문단 구조 변화, 플랫폼별 미세 차이 적용, 발행 시간 ±15분 랜덤화가 자동으로 적용됩니다.
+        <div class="bp-section-title">📋 최근 발행 내역 <button onclick="loadHeroStats()" style="background:none;border:none;color:var(--t3);font-size:11px;cursor:pointer;margin-left:4px">새로고침</button></div>
+        <div id="dash-recent-list"><div class="empty-state"><div class="ei">📋</div><div class="et">발행 내역이 없습니다</div></div></div>
+      </div>
+
+      <!-- 오늘 트렌딩 -->
+      <div class="section">
+        <div class="bp-section-title">🔥 오늘 트렌딩 키워드</div>
+        <div id="dash-trending-chips" style="display:flex;flex-wrap:wrap;gap:6px">
+          <span style="color:var(--t3);font-size:12px">불러오는 중...</span>
         </div>
-        <input class="bp-inp" id="bp-title" type="text" placeholder="글 제목을 입력하세요"/>
-        <textarea class="bp-inp" id="bp-content" placeholder="본문 내용을 입력하세요. HTML 사용 가능합니다.
+      </div>
 
-이미지는 [IMG:파일명.jpg] 형태로 삽입 위치를 지정할 수 있습니다.
-예) <p>이 사진을 보세요!</p>
-[IMG:photo1.jpg]
-<p>어떠신가요?</p>"></textarea>
+      <!-- 예약 큐 -->
+      <div class="section" id="bp-queue-section" style="margin-top:14px">
+        <div class="bp-section-title">🕐 예약 대기 <span class="sec-cnt" id="bp-queue-cnt"></span></div>
+        <div id="bp-queue-list"><div class="empty-state"><div class="ei">🕐</div><div class="et">예약된 글이 없습니다</div></div></div>
+      </div>
+    </div>
 
+    <!-- 글쓰기 (수동 발행) -->
+    <div id="view-write" style="display:none">
+      <div class="page-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="page-title-wrap">
+          <div class="page-title">글 작성</div>
+          <div class="page-date">수동 발행</div>
+        </div>
+      </div>
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">📡 발행 플랫폼</div>
+        <div class="bp-grid">
+          <div class="bp-platform selected p-naver" id="plat-naver2" onclick="togglePlatform('naver')">
+            <div class="bp-plat-icon">N</div><div class="bp-name">네이버</div>
+          </div>
+          <div class="bp-platform selected p-tistory" id="plat-tistory2" onclick="togglePlatform('tistory')">
+            <div class="bp-plat-icon">T</div><div class="bp-name">티스토리</div>
+          </div>
+          <div class="bp-platform selected p-blogger" id="plat-blogger2" onclick="togglePlatform('blogger')">
+            <div class="bp-plat-icon">B</div><div class="bp-name">블로거</div>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <input class="bp-inp" id="bp-title" type="text" placeholder="글 제목"/>
+        <textarea class="bp-inp" id="bp-content" placeholder="본문 (HTML 가능)" style="min-height:200px"></textarea>
+        <input class="bp-inp" id="bp-tags" type="text" placeholder="태그 (쉼표 구분)"/>
         <label class="bp-img-label">
           <input type="file" id="bp-images" accept="image/*" multiple style="display:none" onchange="previewImages()"/>
-          📷 이미지 첨부 (최대 10장)
+          📷 이미지 첨부
         </label>
         <div class="bp-img-preview" id="bp-img-preview"></div>
-
-        <input class="bp-inp" id="bp-tags" type="text" placeholder="태그 (쉼표로 구분, 예: 일상, 리뷰, 맛집)"/>
-
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <label style="display:flex;align-items:center;gap:7px;color:var(--t2);font-size:13px;cursor:pointer">
             <input type="checkbox" id="bp-schedule-toggle" onchange="toggleSchedule()" style="accent-color:var(--ac)"/>
@@ -381,16 +743,10 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
           <input class="bp-inp" id="bp-schedule-date" type="date" style="margin-bottom:0"/>
           <input class="bp-inp" id="bp-schedule-time" type="time" style="margin-bottom:0" value="09:00"/>
         </div>
-
         <div class="bp-actions">
           <button class="bp-pub-btn" id="bp-pub-btn" onclick="publishNow()">🚀 지금 발행</button>
           <button class="bp-sch-btn" id="bp-sch-btn" onclick="schedulePost()" style="display:none">🕐 예약 등록</button>
         </div>
-      </div>
-
-      <div class="section" id="bp-queue-section">
-        <div class="bp-section-title">🕐 예약 대기 중 <span class="sec-cnt" id="bp-queue-cnt"></span></div>
-        <div id="bp-queue-list"><div class="empty-state"><div class="ei">🕐</div><div class="et">예약된 글이 없습니다</div></div></div>
       </div>
     </div>
 
@@ -496,8 +852,313 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
       </div>
     </div>
 
+    <!-- 🔥 키워드 발행 -->
+    <div id="view-keywords" style="display:none">
+      <div class="page-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="page-title-wrap">
+          <div class="page-title">🔥 실시간 키워드</div>
+          <div class="page-date">키워드 클릭 → AI 글 생성 → 바로 발행</div>
+        </div>
+        <button class="add-btn" onclick="refreshKeywords()">⟳ 새로고침</button>
+      </div>
+
+      <div class="live-bar">
+        <span class="live-dot"></span>
+        <span class="live-tag">LIVE</span>
+        <span style="font-size:12px">실시간 트렌딩 키워드 — 클릭 한 번으로 AI 글 생성 후 발행</span>
+        <div class="kw-timer" id="kw-timer-wrap">
+          <span id="kw-timer-text">5:00</span>
+          <div class="kw-timer-bar"><div class="kw-timer-fill" id="kw-timer-fill" style="width:100%"></div></div>
+        </div>
+      </div>
+
+      <div id="kw-sources-wrap">
+        <div class="section"><div style="text-align:center;padding:30px;color:var(--t3)"><span class="bp-spinner"></span> 키워드 수집 중...</div></div>
+      </div>
+    </div>
+
+    <!-- 📅 한달 스케줄 -->
+    <div id="view-month" style="display:none">
+      <div class="page-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="page-title-wrap">
+          <div class="page-title">📅 한달 자동 스케줄</div>
+          <div class="page-date">예약 후 매일 자동으로 최신 키워드 반영해 발행</div>
+        </div>
+      </div>
+
+      <div class="month-hero">
+        <div class="month-hero-title">30일치 자동 발행 예약</div>
+        <div class="month-hero-sub">예약 등록 후 매일 발행 시간이 되면 그날 가장 핫한 키워드를 자동으로 가져와 AI가 글을 쓰고 발행합니다.<br>미리 콘텐츠를 만들지 않아도 됩니다 — 발행 당일 실시간 트렌드 반영.</div>
+      </div>
+
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">⚙️ 발행 설정</div>
+        <div class="month-settings">
+          <div class="form-grp">
+            <label class="form-label">시작일</label>
+            <input class="bp-inp" id="month-start-date" type="date" style="margin-bottom:0"/>
+          </div>
+          <div class="form-grp">
+            <label class="form-label">하루 발행 수</label>
+            <select class="bp-inp" id="month-posts-per-day" style="margin-bottom:0">
+              <option value="1">1편/일</option>
+              <option value="2">2편/일</option>
+              <option value="3">3편/일</option>
+            </select>
+          </div>
+          <div class="form-grp">
+            <label class="form-label">발행 계정</label>
+            <select class="bp-inp" id="month-account-id" style="margin-bottom:0">
+              <option value="">기본 계정</option>
+            </select>
+          </div>
+          <div class="form-grp">
+            <label class="form-label">발행 시간대</label>
+            <select class="bp-inp" id="month-post-hours" style="margin-bottom:0">
+              <option value="9,19">오전 9시 + 저녁 7시</option>
+              <option value="9">오전 9시만</option>
+              <option value="19">저녁 7시만</option>
+              <option value="8,14,20">8시·14시·20시 (3편)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+          <button class="bp-pub-btn" id="month-schedule-btn" onclick="submitMonthSchedule()">📅 30일 예약 등록</button>
+          <button class="bp-sch-btn" onclick="loadMonthCalendar()">🗓 현재 예약 보기</button>
+        </div>
+        <div id="month-result" style="margin-top:12px;font-size:13px;color:var(--ok)"></div>
+      </div>
+
+      <!-- 30일 캘린더 -->
+      <div class="section" id="month-calendar-section" style="display:none">
+        <div class="bp-section-title">🗓 30일 스케줄 현황</div>
+        <div class="month-stats-row" id="month-stats-row"></div>
+        <div class="month-calendar" id="month-calendar" style="margin-top:14px"></div>
+      </div>
+    </div>
+
+    <!-- 💰 제휴 인텔리전스 -->
+    <div id="view-affiliate" style="display:none">
+      <div class="page-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="page-title-wrap">
+          <div class="page-title">💰 제휴 인텔리전스</div>
+          <div class="page-date">CPS·CPA 프로그램 비교 + 쇼핑커넥트 실시간 분석</div>
+        </div>
+        <button class="add-btn" onclick="loadAffiliateView(true)">⟳ 새로고침</button>
+      </div>
+
+      <!-- 쇼핑커넥트 섹션 -->
+      <div class="sc-hero">
+        <div class="sc-hero-title">🛍️ 네이버 쇼핑커넥트 — 지금 가장 핫한 수익화 수단</div>
+        <div style="color:var(--t2);font-size:12px;margin-top:4px">네이버 블로그 포스팅에 스마트스토어 링크 삽입 → 구매 발생 시 수수료 2~15%</div>
+        <div class="sc-categories" id="sc-categories"></div>
+      </div>
+
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">🔥 쇼핑커넥트 트렌딩 키워드 <span style="color:var(--t3);font-size:11px;font-weight:400">클릭 → 즉시 글 생성</span></div>
+        <div class="sc-kw-chips" id="sc-kw-chips">
+          <span style="color:var(--t3);font-size:12px">로딩 중...</span>
+        </div>
+      </div>
+
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">📋 전략 추천</div>
+        <div class="sc-strategy" id="sc-strategy-box">
+          <div style="color:var(--t3);font-size:12px">데이터 로딩 중...</div>
+        </div>
+      </div>
+
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">🏆 제휴 프로그램 비교 <span id="aff-fetched-time" style="color:var(--t3);font-size:11px;font-weight:400"></span></div>
+        <div id="aff-programs-list"><div style="text-align:center;padding:30px;color:var(--t3)"><span class="bp-spinner"></span> 분석 중...</div></div>
+      </div>
+    </div>
+
+    <!-- 📱 인스타 카드뉴스 -->
+    <div id="view-cardnews" style="display:none">
+      <div class="page-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="page-title-wrap">
+          <div class="page-title">📱 인스타 카드뉴스</div>
+          <div class="page-date">블로그 글 → 6장 인스타 카드뉴스 자동 생성</div>
+        </div>
+        <button class="add-btn" id="cn-gen-btn" onclick="generateCardNewsFromLatest()">✨ 최신글로 생성</button>
+      </div>
+
+      <div class="cardnews-hero">
+        <div style="color:#fff;font-size:17px;font-weight:700;margin-bottom:4px">블로그 발행 → 인스타 카드뉴스 자동화</div>
+        <div style="color:var(--t2);font-size:13px;line-height:1.6">블로그 글이 발행될 때마다 자동으로 6장짜리 인스타 카드뉴스를 생성합니다.<br>클로드가 디자인까지 — 세계 최고 수준의 카드뉴스를 바로 인스타에 올리세요.</div>
+      </div>
+
+      <!-- 자동화 토글 -->
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">⚙️ 자동화 설정</div>
+        <div class="cardnews-toggle-row">
+          <div class="cardnews-toggle-label">
+            <div class="cardnews-toggle-title">📱 블로그 발행 시 카드뉴스 자동 생성</div>
+            <div class="cardnews-toggle-sub">글이 발행될 때마다 AI가 카드뉴스를 자동으로 만들어 저장</div>
+          </div>
+          <label class="acc-toggle">
+            <input type="checkbox" id="cn-auto-toggle" onchange="saveAutoSetting('cardnews', this.checked)"/>
+            <span class="acc-slider"></span>
+          </label>
+        </div>
+        <div class="cardnews-toggle-row">
+          <div class="cardnews-toggle-label">
+            <div class="cardnews-toggle-title">🤖 인스타그램 자동 업로드</div>
+            <div class="cardnews-toggle-sub">생성된 카드뉴스를 인스타그램에 자동 발행 (Instagram API 설정 필요)</div>
+          </div>
+          <label class="acc-toggle">
+            <input type="checkbox" id="cn-insta-toggle" onchange="saveAutoSetting('instagram', this.checked)"/>
+            <span class="acc-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 글 입력 / 선택 -->
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">📝 카드뉴스 소재</div>
+        <input class="bp-inp" id="cn-title-inp" type="text" placeholder="블로그 글 제목 (또는 최신 발행 글이 자동으로 들어와요)"/>
+        <textarea class="bp-inp" id="cn-content-inp" placeholder="블로그 본문 (HTML 포함 가능, 일부만 넣어도 OK)" style="min-height:100px;font-size:12px"></textarea>
+        <input class="bp-inp" id="cn-tags-inp" type="text" placeholder="태그 (쉼표 구분)"/>
+        <button class="bp-pub-btn" id="cn-generate-btn" onclick="triggerCardNewsGen()" style="max-width:200px">✨ 카드뉴스 생성</button>
+        <div id="cn-gen-status" style="color:var(--t3);font-size:12px;margin-top:10px"></div>
+      </div>
+
+      <!-- 카드뉴스 미리보기 -->
+      <div class="section" id="cn-preview-section" style="display:none">
+        <div class="bp-section-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span>🖼️ 카드뉴스 미리보기 <span id="cn-card-count" style="color:var(--t3);font-weight:400;font-size:11px"></span></span>
+          <button onclick="downloadAllCards()" style="background:rgba(236,72,153,.1);border:1px solid rgba(236,72,153,.2);color:#f9a8d4;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit">⬇ 전체 저장</button>
+        </div>
+        <div class="cards-preview-scroll" id="cn-cards-scroll"></div>
+        <div class="cn-hashtags" id="cn-hashtags"></div>
+      </div>
+    </div>
+
+    <!-- 🎬 유튜브 숏츠 대본 -->
+    <div id="view-shorts" style="display:none">
+      <div class="page-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="page-title-wrap">
+          <div class="page-title">🎬 유튜브 숏츠 대본</div>
+          <div class="page-date">블로그 글 → 60초 숏츠 대본 자동 생성</div>
+        </div>
+        <button class="add-btn" id="sh-gen-btn" onclick="generateShortsFromLatest()">🎬 최신글로 생성</button>
+      </div>
+
+      <div class="shorts-hero">
+        <div style="color:#fff;font-size:17px;font-weight:700;margin-bottom:4px">블로그 발행 → 숏츠 대본 자동 생성</div>
+        <div style="color:var(--t2);font-size:13px;line-height:1.6">블로그 글이 발행될 때마다 유튜브 숏츠 대본을 AI가 자동으로 씁니다.<br>훅 · 본문 · CTA · 비주얼 큐까지 — 찍기만 하면 됩니다.</div>
+      </div>
+
+      <!-- 자동화 토글 -->
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">⚙️ 자동화 설정</div>
+        <div class="cardnews-toggle-row">
+          <div class="cardnews-toggle-label">
+            <div class="cardnews-toggle-title">🎬 블로그 발행 시 숏츠 대본 자동 생성</div>
+            <div class="cardnews-toggle-sub">글이 발행될 때마다 AI가 숏츠 대본을 자동으로 작성해 저장</div>
+          </div>
+          <label class="acc-toggle">
+            <input type="checkbox" id="sh-auto-toggle" onchange="saveAutoSetting('shorts', this.checked)"/>
+            <span class="acc-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 글 입력 -->
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">📝 숏츠 소재</div>
+        <input class="bp-inp" id="sh-title-inp" type="text" placeholder="블로그 글 제목"/>
+        <textarea class="bp-inp" id="sh-content-inp" placeholder="블로그 본문 (일부만 넣어도 OK)" style="min-height:80px;font-size:12px"></textarea>
+        <input class="bp-inp" id="sh-tags-inp" type="text" placeholder="태그 (쉼표 구분)"/>
+        <button class="bp-pub-btn" id="sh-generate-btn" onclick="triggerShortsGen()" style="max-width:200px">🎬 대본 생성</button>
+        <div id="sh-gen-status" style="color:var(--t3);font-size:12px;margin-top:10px"></div>
+      </div>
+
+      <!-- 숏츠 대본 출력 -->
+      <div id="sh-script-section" style="display:none">
+        <div class="section" style="margin-bottom:14px">
+          <div class="bp-section-title">📋 메타 정보</div>
+          <div class="shorts-meta" id="sh-meta"></div>
+        </div>
+        <div class="section" style="margin-bottom:14px">
+          <div class="bp-section-title">🎭 대본 (세그먼트별)</div>
+          <div id="sh-script-body"></div>
+          <button class="script-copy-all" id="sh-copy-btn" onclick="copyFullScript()" style="margin-top:10px">📋 전체 대본 복사</button>
+          <textarea id="sh-full-text" style="position:absolute;left:-9999px;opacity:0"></textarea>
+        </div>
+        <div class="section">
+          <div class="bp-section-title">💡 제작 팁</div>
+          <div class="shorts-tips" id="sh-tips"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 📈 부업 분석 리포트 -->
+    <div id="view-income" style="display:none">
+      <div class="page-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="page-title-wrap">
+          <div class="page-title">📈 부업 분석 리포트</div>
+          <div class="page-date">매일 09:00 AI 자동 분석 · 자동 발행 — 검수만 하면 됩니다</div>
+        </div>
+        <button class="income-refresh-btn" id="income-refresh-btn" onclick="loadDailyReport(true)">⟳ 새로고침</button>
+      </div>
+
+      <div class="income-hero">
+        <div class="income-hero-title">오늘의 부업 인사이트 🔥</div>
+        <div class="income-hero-sub">구글·네이버·커뮤니티 실시간 트렌드 + 실제 한국 시장 수익 데이터 기반 AI 분석<br>글은 AI가 쓰고 자동 발행까지 — 나는 결과만 본다</div>
+        <div class="income-summary-pill" id="income-summary">💡 AI 분석 요약 로딩 중...</div>
+      </div>
+
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">🏆 오늘의 부업 HOT 랭킹</div>
+        <div class="hustle-grid" id="income-hustle-grid">
+          <div style="text-align:center;padding:30px;color:var(--t3)"><span class="bp-spinner"></span> 데이터 로딩 중...</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="bp-section-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span>📝 오늘의 AI 부업 리포트</span>
+          <span style="font-size:11px;font-weight:400;color:var(--t3)">블로그에 자동 발행된 내용</span>
+        </div>
+        <div class="income-report-wrap">
+          <div id="income-report-section">
+            <div style="text-align:center;padding:28px;color:var(--t3)"><span class="bp-spinner"></span> AI 리포트 생성 중... (30~60초 소요)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /main -->
 </div><!-- /app -->
+
+<!-- Mobile Bottom Nav -->
+<nav class="mobile-bottom-nav" id="mobile-nav">
+  <div class="mob-nav-inner">
+    <button class="mob-nav-item active" id="mob-blog" onclick="showView('blog')">
+      <span class="mob-icon">📊</span><span>현황</span>
+    </button>
+    <button class="mob-nav-item" id="mob-keywords" onclick="showView('keywords')">
+      <span class="mob-icon">🔥</span><span>키워드</span>
+    </button>
+    <button class="mob-nav-item" id="mob-income" onclick="showView('income')">
+      <span class="mob-icon">📈</span><span>부업</span>
+    </button>
+    <button class="mob-nav-item" id="mob-month" onclick="showView('month')">
+      <span class="mob-icon">📅</span><span>스케줄</span>
+    </button>
+    <button class="mob-nav-item" id="mob-affiliate" onclick="showView('affiliate')">
+      <span class="mob-icon">💰</span><span>제휴</span>
+    </button>
+  </div>
+</nav>
 
 <!-- Public Share View -->
 <div id="public-view" style="display:none">
@@ -521,6 +1182,43 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
     <div class="pub-kwlist">
       <div class="pub-posts-title">🔥 오늘 트렌딩 키워드</div>
       <div class="pub-kw-chips" id="pub-kw-chips"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Generate Modal -->
+<div class="gen-modal-bg" id="gen-modal-bg" style="display:none" onclick="if(event.target===this)closeGenModal()">
+  <div class="gen-modal">
+    <button class="gen-close-btn" onclick="closeGenModal()">✕</button>
+
+    <div id="gen-loading-wrap" class="gen-loading-wrap">
+      <div class="gen-big-spinner"></div>
+      <div class="gen-loading-kw" id="gen-loading-kw">키워드 분석 중...</div>
+      <div class="gen-loading-sub">AI가 사람처럼 자연스러운 글을 작성하고 있어요 ✍️</div>
+      <div class="gen-loading-steps">
+        <div class="gen-step active" id="gstep-1"><span class="gen-step-dot"></span>트렌드 키워드 분석</div>
+        <div class="gen-step" id="gstep-2"><span class="gen-step-dot"></span>SEO 최적화 구조 설계</div>
+        <div class="gen-step" id="gstep-3"><span class="gen-step-dot"></span>사람처럼 자연스러운 문체로 작성</div>
+        <div class="gen-step" id="gstep-4"><span class="gen-step-dot"></span>이미지 삽입 &amp; 마무리</div>
+      </div>
+    </div>
+
+    <div id="gen-preview-wrap" style="display:none">
+      <div class="gen-preview-wrap">
+        <div class="gen-preview-title" id="gen-preview-title"></div>
+        <div class="gen-preview-tags" id="gen-preview-tags"></div>
+        <div style="color:var(--t3);font-size:11px;margin-bottom:8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase">본문 미리보기</div>
+        <div class="gen-preview-content" id="gen-preview-content"></div>
+      </div>
+      <div class="gen-actions-bar">
+        <select class="bp-inp" id="gen-platform-select" style="max-width:160px;margin-bottom:0">
+          <option value="blogger">🔵 블로그스팟</option>
+          <option value="tistory">🟠 티스토리</option>
+          <option value="naver">🟢 네이버</option>
+        </select>
+        <button class="bp-pub-btn" onclick="publishGenerated()">🚀 지금 발행</button>
+        <button class="bp-sch-btn" onclick="scheduleGeneratedPost()">🕐 예약 발행</button>
+      </div>
     </div>
   </div>
 </div>
@@ -618,17 +1316,33 @@ function closeSidebar() {
 var currentView = 'blog';
 
 function showView(v) {
+  // 키워드 뷰 벗어나면 타이머 정리
+  if (v !== 'keywords' && kwRefreshTimer) { clearInterval(kwRefreshTimer); kwRefreshTimer = null; }
   currentView = v;
-  ['blog','blog-log','blog-accounts','blog-setup'].forEach(function(id) {
+  ['blog','keywords','month','affiliate','income','cardnews','shorts','write','blog-log','blog-accounts','blog-setup'].forEach(function(id) {
     var btn = document.getElementById('nav-' + id);
     if (btn) btn.classList.toggle('active', id === v);
     var view = document.getElementById('view-' + id);
-    if (view) view.style.display = id === v ? 'block' : 'none';
+    if (view) {
+      view.style.display = id === v ? 'block' : 'none';
+      if (id === v) { view.classList.add('view-anim'); setTimeout(function(){ view.classList.remove('view-anim'); }, 300); }
+    }
+  });
+  // 모바일 바텀 탭 동기화
+  ['blog','keywords','income','month','affiliate'].forEach(function(id) {
+    var mob = document.getElementById('mob-' + id);
+    if (mob) mob.classList.toggle('active', id === v);
   });
 
-  if (v === 'blog') { bpCheckServerStatus(); bpLoadQueue(); loadHeroStats(); }
-  if (v === 'blog-log') loadBlogLog();
-  if (v === 'blog-setup') bpLoadServerSettings();
+  if (v === 'blog')      { bpCheckServerStatus(); bpLoadQueue(); loadHeroStats(); }
+  if (v === 'keywords')  { loadKeywordsView(); }
+  if (v === 'month')     { loadMonthView(); }
+  if (v === 'affiliate') { loadAffiliateView(false); }
+  if (v === 'income')    { loadIncomeView(); }
+  if (v === 'cardnews')  { loadCardNewsView(); }
+  if (v === 'shorts')    { loadShortsView(); }
+  if (v === 'blog-log')  { loadBlogLog(); }
+  if (v === 'blog-setup'){ bpLoadServerSettings(); }
   if (v === 'blog-accounts') { bpLoadAccounts(); bpFetchTrending(); }
 
   if (window.innerWidth <= 720) closeSidebar();
@@ -636,20 +1350,74 @@ function showView(v) {
 
 // ── HERO STATS ────────────────────────────────────────────
 async function loadHeroStats() {
-  var el = document.getElementById('dash-hero-stats');
-  if (!el) return;
+  var dateEl = document.getElementById('dash-today-date');
+  if (dateEl) {
+    dateEl.textContent = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
+  }
+  var s = { today: document.getElementById('stat-today'), done: document.getElementById('stat-done'),
+            fail: document.getElementById('stat-fail'), total: document.getElementById('stat-total') };
   try {
     var log = await bpFetch('/api/log');
     var today = new Date().toISOString().slice(0, 10);
-    var todayCount = log.filter(function(j) { return j.loggedAt && j.loggedAt.startsWith(today); }).length;
-    var done = log.filter(function(j) { return j.status === 'done'; }).length;
-    var rate = log.length > 0 ? Math.round(done / log.length * 100) : 0;
-    el.innerHTML =
-      '<div class="hero-stat"><div class="hero-stat-val">' + log.length + '</div><div class="hero-stat-label">전체 발행</div></div>' +
-      '<div class="hero-stat"><div class="hero-stat-val">' + todayCount + '</div><div class="hero-stat-label">오늘 발행</div></div>' +
-      '<div class="hero-stat"><div class="hero-stat-val">' + rate + '%</div><div class="hero-stat-label">성공률</div></div>';
+    var todayLogs  = log.filter(function(j){ return j.loggedAt && j.loggedAt.startsWith(today); });
+    var todayDone  = todayLogs.filter(function(j){ return j.status === 'done'; }).length;
+    var todayFail  = todayLogs.length - todayDone;
+    if (s.today) s.today.textContent = todayLogs.length;
+    if (s.done)  s.done.textContent  = todayDone;
+    if (s.fail)  s.fail.textContent  = todayFail;
+    if (s.total) s.total.textContent = log.length;
+    renderDashRecent(log.slice(0, 10));
+    loadDashTrending();
   } catch {
-    el.innerHTML = '<div class="hero-stat"><div class="hero-stat-val" style="font-size:14px;color:var(--t3)">서버 미연결</div></div>';
+    ['today','done','fail','total'].forEach(function(k){ if (s[k]) s[k].textContent = '–'; });
+    var recentEl = document.getElementById('dash-recent-list');
+    if (recentEl) recentEl.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><div class="et">서버에 연결할 수 없습니다</div></div>';
+  }
+}
+
+function renderDashRecent(log) {
+  var wrap = document.getElementById('dash-recent-list');
+  if (!wrap) return;
+  if (!log || log.length === 0) {
+    wrap.innerHTML = '<div class="empty-state"><div class="ei">📋</div><div class="et">발행 내역이 없습니다</div></div>';
+    return;
+  }
+  var PICONS = {naver:'🟢',tistory:'🟠',blogger:'🔵'};
+  wrap.innerHTML = log.map(function(j) {
+    var cls  = j.status === 'done' ? 'ok' : 'fail';
+    var icon = j.status === 'done' ? '✅' : '❌';
+    var t    = j.loggedAt ? new Date(j.loggedAt).toLocaleString('ko-KR') : '';
+    var plat = (j.platforms||[]).map(function(p){ return PICONS[p]||p; }).join(' ');
+    var links = '';
+    if (j.results) {
+      Object.keys(j.results).forEach(function(p) {
+        var r = j.results[p];
+        if (r && r.url) links += '<a href="' + r.url + '" target="_blank" style="color:var(--ac)">' + p + ' 보기</a> ';
+      });
+    }
+    return '<div class="bp-log-item ' + cls + '">'
+      + '<div class="bp-log-title"><span>' + icon + ' ' + escHtml(j.title) + '</span><span>' + plat + '</span></div>'
+      + '<div class="bp-log-meta"><span>' + t + '</span>'
+      + (j.keyword ? '<span>#' + escHtml(j.keyword) + '</span>' : '')
+      + (links ? '<span>' + links + '</span>' : '') + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+async function loadDashTrending() {
+  var wrap = document.getElementById('dash-trending-chips');
+  if (!wrap) return;
+  try {
+    var data = await bpFetch('/api/trending').catch(function(){ return null; });
+    if (!data || data.length === 0) {
+      wrap.innerHTML = '<span style="color:var(--t3);font-size:12px">키워드 없음 (서버 실행 후 확인)</span>';
+      return;
+    }
+    wrap.innerHTML = data.slice(0, 15).map(function(k, i) {
+      return '<span class="kw-chip' + (i < 5 ? ' hot' : '') + '">' + (i < 5 ? '🔥 ' : '') + escHtml(k.keyword) + '</span>';
+    }).join('');
+  } catch {
+    wrap.innerHTML = '<span style="color:var(--t3);font-size:12px">키워드 로드 실패</span>';
   }
 }
 
@@ -692,13 +1460,14 @@ async function bpCheckServerStatus() {
 
 function togglePlatform(p) {
   var idx = bpSelectedPlatforms.indexOf(p);
+  var el  = document.getElementById('plat-' + p + '2');
   if (idx === -1) {
     bpSelectedPlatforms.push(p);
-    document.getElementById('plat-' + p).classList.add('selected');
+    if (el) el.classList.add('selected');
   } else {
     if (bpSelectedPlatforms.length === 1) { bpToast('최소 1개 플랫폼을 선택해야 합니다', 'err'); return; }
     bpSelectedPlatforms.splice(idx, 1);
-    document.getElementById('plat-' + p).classList.remove('selected');
+    if (el) el.classList.remove('selected');
   }
 }
 
@@ -1142,6 +1911,753 @@ function bpToast(msg, type) {
   loadPublicData();
   setInterval(loadPublicData, 5 * 60 * 1000);
 })();
+
+// ── KEYWORD VIEW ─────────────────────────────────────────
+var kwRefreshTimer = null;
+var kwCountdown    = 300; // 5분
+var kwCountdownEl  = null;
+var kwFillEl       = null;
+
+function loadKeywordsView() {
+  kwCountdownEl = document.getElementById('kw-timer-text');
+  kwFillEl      = document.getElementById('kw-timer-fill');
+  refreshKeywords();
+  clearInterval(kwRefreshTimer);
+  kwCountdown = 300;
+  kwRefreshTimer = setInterval(function() {
+    kwCountdown--;
+    if (kwCountdownEl) kwCountdownEl.textContent = Math.floor(kwCountdown/60) + ':' + String(kwCountdown%60).padStart(2,'0');
+    if (kwFillEl) kwFillEl.style.width = (kwCountdown / 300 * 100) + '%';
+    if (kwCountdown <= 0) { kwCountdown = 300; refreshKeywords(); }
+  }, 1000);
+}
+
+async function refreshKeywords() {
+  var wrap = document.getElementById('kw-sources-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="section"><div style="text-align:center;padding:30px;color:var(--t3)"><span class="bp-spinner"></span> 키워드 수집 중...</div></div>';
+  try {
+    var data = await bpFetch('/api/trending').catch(function(){ return null; });
+    if (!data || data.length === 0) {
+      wrap.innerHTML = '<div class="section"><div class="empty-state"><div class="ei">⚠️</div><div class="et">서버에 연결하면 실시간 키워드를 볼 수 있어요</div></div></div>';
+      return;
+    }
+
+    var bySource = {};
+    var srcOrder = ['google_trends','daum','zum','naver_datalab','naver_main'];
+    var srcLabels = { google_trends:'🌐 구글 트렌드 KR', daum:'🔵 다음 실시간', zum:'🔶 줌 이슈', naver_datalab:'🟢 네이버 DataLab', naver_main:'🟢 네이버' };
+    var srcClass  = { google_trends:'kw-src-google', daum:'kw-src-daum', zum:'kw-src-zum', naver_datalab:'kw-src-naver', naver_main:'kw-src-naver' };
+
+    // 소스 분류
+    data.forEach(function(k) {
+      var src = (k.sources && k.sources[0]) || k.source || 'other';
+      if (!bySource[src]) bySource[src] = [];
+      bySource[src].push(k);
+    });
+    // 소스 없는 항목은 all로
+    var allSrcs = Object.keys(bySource);
+    if (allSrcs.length === 0 || (allSrcs.length === 1 && allSrcs[0] === 'other')) {
+      bySource = { all: data };
+      srcLabels.all = '🔥 전체 트렌딩';
+      srcClass.all  = 'kw-src-google';
+      srcOrder = ['all'];
+    }
+
+    var html = '';
+    var orderedSrcs = srcOrder.filter(function(s){ return bySource[s] && bySource[s].length > 0; });
+    var restSrcs = allSrcs.filter(function(s){ return !srcOrder.includes(s) && bySource[s] && bySource[s].length > 0; });
+    orderedSrcs.concat(restSrcs).forEach(function(src) {
+      var kws = bySource[src].slice(0, 20);
+      var label = srcLabels[src] || src;
+      var cls   = srcClass[src] || 'kw-src-google';
+      html += '<div class="kw-source-card ' + cls + '">'
+        + '<div class="kw-source-head"><span class="kw-source-badge">' + label + '</span>'
+        + '<span class="kw-source-cnt">' + kws.length + '개</span></div>'
+        + '<div class="kw-chips-grid">'
+        + kws.map(function(k, i) {
+            var isHot = i < 5;
+            return '<button class="kw-gen-chip' + (isHot ? ' kw-hot-chip' : '') + '" onclick="generateFromKeyword(\'' + escHtml(k.keyword) + '\')">'
+              + '<span class="kw-chip-rank">' + (i + 1) + '</span>'
+              + '<span>' + escHtml(k.keyword) + '</span>'
+              + (isHot ? '<span class="kw-chip-icon">🔥</span>' : '<span class="kw-chip-icon">✍️</span>')
+              + '</button>';
+          }).join('')
+        + '</div></div>';
+    });
+
+    // 전체 상위 50개 통합 보기도 추가
+    if (data.length > 0) {
+      html += '<div class="section" style="margin-top:8px">'
+        + '<div class="bp-section-title">🏆 종합 순위 Top ' + Math.min(data.length, 50) + '</div>'
+        + '<div class="kw-chips-grid">'
+        + data.slice(0, 50).map(function(k, i) {
+            var isHot = i < 10;
+            return '<button class="kw-gen-chip' + (isHot ? ' kw-hot-chip' : '') + '" onclick="generateFromKeyword(\'' + escHtml(k.keyword) + '\')">'
+              + '<span class="kw-chip-rank">#' + (i+1) + '</span>'
+              + '<span>' + escHtml(k.keyword) + '</span>'
+              + (i < 3 ? '<span class="kw-chip-icon">🔥</span>' : '')
+              + '</button>';
+          }).join('')
+        + '</div></div>';
+    }
+
+    wrap.innerHTML = html;
+  } catch (e) {
+    wrap.innerHTML = '<div class="section"><div class="empty-state"><div class="ei">⚠️</div><div class="et">' + escHtml(e.message) + '</div></div></div>';
+  }
+}
+
+// ── GENERATE MODAL ────────────────────────────────────────
+var genPost    = null;
+var genKeyword = null;
+
+async function generateFromKeyword(keyword) {
+  genKeyword = keyword;
+  genPost    = null;
+
+  // 모달 열기
+  document.getElementById('gen-modal-bg').style.display = 'flex';
+  document.getElementById('gen-loading-wrap').style.display = 'flex';
+  document.getElementById('gen-preview-wrap').style.display = 'none';
+  document.getElementById('gen-loading-kw').textContent = '"' + keyword + '"';
+  ['gstep-1','gstep-2','gstep-3','gstep-4'].forEach(function(id, i) {
+    var el = document.getElementById(id);
+    if (el) el.className = 'gen-step' + (i === 0 ? ' active' : '');
+  });
+
+  // 단계 애니메이션
+  var stepTimer = setInterval(function() {
+    var active = document.querySelector('.gen-step.active');
+    if (!active) { clearInterval(stepTimer); return; }
+    active.className = 'gen-step done';
+    var next = active.nextElementSibling;
+    if (next) next.className = 'gen-step active';
+    else clearInterval(stepTimer);
+  }, 1800);
+
+  try {
+    var data = await bpFetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-dashboard-password': BP_PASSWORD },
+      body: JSON.stringify({ keyword }),
+    });
+    clearInterval(stepTimer);
+    ['gstep-1','gstep-2','gstep-3','gstep-4'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.className = 'gen-step done';
+    });
+
+    if (!data.success) throw new Error(data.error || '생성 실패');
+
+    genPost = data;
+    document.getElementById('gen-preview-title').textContent = data.title || keyword;
+    document.getElementById('gen-preview-tags').innerHTML = (data.tags || []).map(function(t) {
+      return '<span class="bp-tag">#' + escHtml(t) + '</span>';
+    }).join('');
+    var contentEl = document.getElementById('gen-preview-content');
+    contentEl.innerHTML = data.content || '';
+
+    setTimeout(function() {
+      document.getElementById('gen-loading-wrap').style.display = 'none';
+      document.getElementById('gen-preview-wrap').style.display = 'block';
+    }, 400);
+
+  } catch (e) {
+    clearInterval(stepTimer);
+    document.getElementById('gen-loading-kw').textContent = '오류: ' + e.message;
+    document.getElementById('gen-loading-wrap').querySelector('.gen-loading-sub').textContent = 'ANTHROPIC_API_KEY가 설정됐는지 확인해주세요';
+    document.getElementById('gen-big-spinner').style.display = 'none';
+  }
+}
+
+function closeGenModal() {
+  document.getElementById('gen-modal-bg').style.display = 'none';
+  genPost = null; genKeyword = null;
+}
+
+async function publishGenerated() {
+  if (!genPost) return;
+  var platform = document.getElementById('gen-platform-select').value;
+  var btn = document.querySelector('#gen-modal-bg .bp-pub-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>발행 중...'; }
+  try {
+    var fd = new FormData();
+    fd.append('title',     genPost.title    || genKeyword);
+    fd.append('content',   genPost.content  || '');
+    fd.append('tags',      JSON.stringify(genPost.tags || []));
+    fd.append('platforms', JSON.stringify([platform]));
+    var res = await fetch(BP_SERVER + '/api/publish', {
+      method: 'POST',
+      headers: { 'x-dashboard-password': BP_PASSWORD },
+      body: fd,
+    });
+    var data = await res.json();
+    if (data.success) {
+      bpToast('🚀 발행 완료!', 'ok');
+      closeGenModal();
+      loadHeroStats();
+    } else {
+      bpToast('발행 실패: ' + (data.error || '알 수 없는 오류'), 'err');
+    }
+  } catch (e) {
+    bpToast('오류: ' + e.message, 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 지금 발행'; }
+  }
+}
+
+async function scheduleGeneratedPost() {
+  if (!genPost) return;
+  var platform = document.getElementById('gen-platform-select').value;
+  var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  var scheduledAt = tomorrow.toISOString().slice(0, 10) + 'T09:00:00';
+  var fd = new FormData();
+  fd.append('title',       genPost.title || genKeyword);
+  fd.append('content',     genPost.content || '');
+  fd.append('tags',        JSON.stringify(genPost.tags || []));
+  fd.append('platforms',   JSON.stringify([platform]));
+  fd.append('scheduledAt', scheduledAt);
+  try {
+    var res = await fetch(BP_SERVER + '/api/schedule', {
+      method: 'POST',
+      headers: { 'x-dashboard-password': BP_PASSWORD },
+      body: fd,
+    });
+    var data = await res.json();
+    if (data.success) {
+      bpToast('🕐 예약 완료: ' + new Date(data.scheduledAt).toLocaleString('ko-KR'), 'ok');
+      closeGenModal();
+      bpLoadQueue();
+    } else {
+      bpToast('예약 실패: ' + (data.error || ''), 'err');
+    }
+  } catch (e) {
+    bpToast('오류: ' + e.message, 'err');
+  }
+}
+
+// ── MONTH SCHEDULE ────────────────────────────────────────
+function loadMonthView() {
+  // 시작일 기본값 = 내일
+  var inp = document.getElementById('month-start-date');
+  if (inp && !inp.value) {
+    var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+    inp.value = tomorrow.toISOString().slice(0, 10);
+  }
+  // 계정 목록 채우기
+  bpFetch('/api/accounts').then(function(accs) {
+    var sel = document.getElementById('month-account-id');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">기본 계정</option>'
+      + accs.map(function(a){ return '<option value="' + a.id + '">' + escHtml(a.name) + '</option>'; }).join('');
+  }).catch(function(){});
+  loadMonthCalendar();
+}
+
+async function submitMonthSchedule() {
+  var btn       = document.getElementById('month-schedule-btn');
+  var resultEl  = document.getElementById('month-result');
+  var startDate = document.getElementById('month-start-date').value;
+  var ppd       = parseInt(document.getElementById('month-posts-per-day').value);
+  var hoursRaw  = document.getElementById('month-post-hours').value;
+  var accountId = document.getElementById('month-account-id').value;
+  var postHours = hoursRaw.split(',').map(Number);
+
+  if (!confirm('30일치 자동 발행을 예약할까요?\n예약된 글은 매일 발행 시간에 그날 가장 핫한 키워드로 AI가 자동 작성합니다.')) return;
+
+  btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>예약 중...';
+  resultEl.textContent = '';
+  try {
+    var data = await bpFetch('/api/month-schedule', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'x-dashboard-password': BP_PASSWORD },
+      body:    JSON.stringify({ startDate, postsPerDay: ppd, postHours, accountId: accountId || undefined }),
+    });
+    if (data.success) {
+      resultEl.style.color = 'var(--ok)';
+      resultEl.textContent = '✅ ' + data.count + '개 예약 완료! ' + new Date(data.firstPost).toLocaleDateString('ko-KR') + ' ~ ' + new Date(data.lastPost).toLocaleDateString('ko-KR');
+      bpToast('30일치 ' + data.count + '개 예약 완료 🎉', 'ok');
+      loadMonthCalendar();
+    } else {
+      resultEl.style.color = 'var(--err)';
+      resultEl.textContent = '❌ ' + (data.error || '실패');
+    }
+  } catch (e) {
+    resultEl.style.color = 'var(--err)';
+    resultEl.textContent = '❌ ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = '📅 30일 예약 등록';
+  }
+}
+
+async function loadMonthCalendar() {
+  var section = document.getElementById('month-calendar-section');
+  var calEl   = document.getElementById('month-calendar');
+  var statsEl = document.getElementById('month-stats-row');
+  if (!section || !calEl) return;
+
+  try {
+    var queue = await bpFetch('/api/queue').catch(function(){ return []; });
+    var monthJobs = queue.filter(function(j){ return j.source === 'month_schedule' || j.id.startsWith('month_'); });
+
+    if (monthJobs.length === 0) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+
+    var now = new Date();
+    var pending = monthJobs.filter(function(j){ return j.status === 'pending'; }).length;
+    var done    = monthJobs.filter(function(j){ return j.status === 'done'; }).length;
+    var fail    = monthJobs.filter(function(j){ return j.status === 'failed'; }).length;
+
+    statsEl.innerHTML =
+      '<div class="month-stat-pill">📊 전체 <b>' + monthJobs.length + '개</b></div>' +
+      '<div class="month-stat-pill">🕐 대기 <b>' + pending + '개</b></div>' +
+      '<div class="month-stat-pill" style="color:var(--ok)">✅ 완료 <b>' + done + '개</b></div>' +
+      (fail ? '<div class="month-stat-pill" style="color:var(--err)">❌ 실패 <b>' + fail + '개</b></div>' : '');
+
+    // 날짜별 집계
+    var byDate = {};
+    monthJobs.forEach(function(j) {
+      var d = (j.scheduledAt || '').slice(0, 10);
+      if (!byDate[d]) byDate[d] = [];
+      byDate[d].push(j);
+    });
+
+    // 30일 캘린더 (첫 날 기준)
+    var dates = Object.keys(byDate).sort();
+    var firstDate = new Date(dates[0] || now);
+    var html = '';
+    // 요일 헤더
+    ['일','월','화','수','목','금','토'].forEach(function(d) {
+      html += '<div style="text-align:center;color:var(--t3);font-size:10px;font-weight:700;padding:4px 0">' + d + '</div>';
+    });
+    // 첫날 앞 빈칸
+    var startDay = firstDate.getDay();
+    for (var i = 0; i < startDay; i++) html += '<div class="cal-day" style="opacity:.2"></div>';
+    // 날짜 셀
+    for (var d = 0; d < 35; d++) {
+      var date = new Date(firstDate); date.setDate(date.getDate() + d);
+      var dateStr = date.toISOString().slice(0, 10);
+      var isToday = dateStr === now.toISOString().slice(0, 10);
+      var jobs = byDate[dateStr] || [];
+      var hasDone = jobs.some(function(j){ return j.status === 'done'; });
+      var hasFail = jobs.some(function(j){ return j.status === 'failed'; });
+      html += '<div class="cal-day' + (jobs.length > 0 ? ' has-post' : '') + (isToday ? ' today' : '') + '">'
+        + '<div class="cal-day-num">' + date.getDate() + '</div>'
+        + jobs.map(function(j){ return '<div class="cal-post-dot" style="background:' + (j.status==='done'?'var(--ok)':j.status==='failed'?'var(--err)':'var(--ac)') + '"></div>'; }).join('')
+        + (jobs.length > 0 ? '<div class="cal-day-label">' + jobs.length + '편' + (hasDone?' ✅':'') + (hasFail?' ❌':'') + '</div>' : '')
+        + '</div>';
+    }
+    calEl.innerHTML = html;
+  } catch (e) {
+    section.style.display = 'none';
+  }
+}
+
+// ── AFFILIATE VIEW ────────────────────────────────────────
+async function loadAffiliateView(forceRefresh) {
+  var affList  = document.getElementById('aff-programs-list');
+  var scChips  = document.getElementById('sc-kw-chips');
+  var scCats   = document.getElementById('sc-categories');
+  var strategy = document.getElementById('sc-strategy-box');
+  var timeEl   = document.getElementById('aff-fetched-time');
+
+  if (affList) affList.innerHTML = '<div style="text-align:center;padding:30px;color:var(--t3)"><span class="bp-spinner"></span> 제휴 데이터 분석 중...</div>';
+  if (scChips) scChips.innerHTML = '<span style="color:var(--t3);font-size:12px">로딩 중...</span>';
+
+  try {
+    var url = '/api/affiliates' + (forceRefresh ? '?refresh=1' : '');
+    var data = await bpFetch(url);
+
+    if (timeEl && data.fetchedAt) timeEl.textContent = '(' + new Date(data.fetchedAt).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'}) + ' 기준)';
+
+    // 쇼핑커넥트 카테고리
+    if (scCats && data.shoppingConnect && data.shoppingConnect.categoryRates) {
+      scCats.innerHTML = Object.entries(data.shoppingConnect.categoryRates).map(function(e) {
+        return '<div class="sc-cat"><div class="sc-cat-name">' + e[0] + '</div><div class="sc-cat-rate">' + e[1].rate + '</div></div>';
+      }).join('');
+    }
+
+    // 쇼핑커넥트 트렌딩 키워드
+    if (scChips && data.shoppingConnect && data.shoppingConnect.trendingKeywords) {
+      var kws = data.shoppingConnect.trendingKeywords;
+      scChips.innerHTML = kws.slice(0, 20).map(function(k) {
+        return '<button class="sc-kw-chip" onclick="generateFromKeyword(\'' + escHtml(k.keyword) + '\')">' + escHtml(k.keyword) + '</button>';
+      }).join('');
+    }
+
+    // 전략 추천
+    if (strategy && data.strategy && data.strategy.primary) {
+      var p = data.strategy.primary;
+      strategy.innerHTML = '<div class="sc-strategy-title">🎯 ' + p.name + '</div>'
+        + '<div style="color:var(--t2);font-size:12px;margin-bottom:12px">' + p.description + '</div>'
+        + (p.step || []).map(function(s, i) {
+            return '<div class="sc-step"><span class="sc-step-num">' + (i+1) + '</span>' + s + '</div>';
+          }).join('')
+        + (p.expectedCpm ? '<div style="margin-top:10px;color:#4ade80;font-size:12px;font-weight:600">예상 수익: ' + p.expectedCpm + '</div>' : '');
+    }
+
+    // 제휴 프로그램 리스트
+    if (affList && data.programs) {
+      var ICONS = { coupang:'🛒', naver_shopping:'🟢', shopping_connect:'🛍️', tenping:'✨', linkprice:'🔗', edpick:'💄', ilike:'💳' };
+      var ICON_CLS = { coupang:'aff-icon-coupang', naver_shopping:'aff-icon-naver', shopping_connect:'aff-icon-connect', tenping:'aff-icon-tenping', linkprice:'aff-icon-linkprice', edpick:'aff-icon-edpick', ilike:'aff-icon-ilike' };
+      affList.innerHTML = data.programs.sort(function(a,b){ return b.hotScore - a.hotScore; }).map(function(p) {
+        var isHot = p.hotScore >= 90;
+        return '<div class="aff-card' + (isHot ? ' aff-card-hot' : '') + '">'
+          + '<div class="aff-row1">'
+          + '<div class="aff-icon ' + (ICON_CLS[p.id] || '') + '">' + (ICONS[p.id] || '💼') + '</div>'
+          + '<div style="flex:1;min-width:0">'
+          + '<div class="aff-name">' + escHtml(p.name) + '<span class="aff-tag-badge">' + escHtml(p.tag || p.type) + '</span>' + (p.trending ? '<span style="font-size:10px;color:#f59e0b">🔥</span>' : '') + '</div>'
+          + '<div class="aff-type">' + p.type + ' · ' + (p.category || '') + ' · 쿠키 ' + (p.cookieDays || '?') + '일</div>'
+          + '<div class="aff-rate">수수료 ' + (p.commissionRate || p.avgCpa || '-') + '</div>'
+          + '</div>'
+          + '<div style="text-align:right;flex-shrink:0"><div style="color:#fff;font-size:20px;font-weight:700">' + p.hotScore + '</div><div style="color:var(--t3);font-size:10px">HOT</div></div>'
+          + '</div>'
+          + '<div class="aff-score-bar"><div class="aff-score-fill" style="width:' + p.hotScore + '%"></div><span class="aff-score-num">열기도 ' + p.hotScore + '/100</span></div>'
+          + '<div class="aff-pros">' + (p.pros || []).map(function(pro){ return '<span class="aff-pro">✓ ' + escHtml(pro) + '</span>'; }).join('') + '</div>'
+          + (p.bestFor ? '<div style="margin-top:8px;font-size:11px;color:var(--t3)">💡 <b style="color:var(--t2)">' + escHtml(p.bestFor) + '</b></div>' : '')
+          + '<a class="aff-url-btn" href="' + p.url + '" target="_blank">가입하기 →</a>'
+          + '</div>';
+      }).join('');
+    }
+
+  } catch (e) {
+    if (affList) affList.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><div class="et">서버에 연결해주세요</div></div>';
+    if (scChips) scChips.innerHTML = '<span style="color:var(--t3);font-size:12px">서버 연결 필요</span>';
+  }
+}
+
+// ── AUTO SETTINGS ────────────────────────────────────────────
+var autoSettings = JSON.parse(localStorage.getItem('riri_auto_settings') || '{}');
+function saveAutoSetting(key, val) {
+  autoSettings[key] = val;
+  localStorage.setItem('riri_auto_settings', JSON.stringify(autoSettings));
+  bpToast((val ? '✅ ' : '⏸ ') + key + ' 자동화 ' + (val ? '켜짐' : '꺼짐'), val ? 'ok' : '');
+}
+function loadAutoSettings() {
+  var cnToggle = document.getElementById('cn-auto-toggle');
+  var cnInsta  = document.getElementById('cn-insta-toggle');
+  var shToggle = document.getElementById('sh-auto-toggle');
+  if (cnToggle) cnToggle.checked = !!autoSettings.cardnews;
+  if (cnInsta)  cnInsta.checked  = !!autoSettings.instagram;
+  if (shToggle) shToggle.checked = !!autoSettings.shorts;
+}
+
+// ── CARD NEWS VIEW ────────────────────────────────────────────
+var cnGeneratedData = null;
+var cnCurrentCard   = 0;
+
+function loadCardNewsView() {
+  loadAutoSettings();
+  // 최신 발행 글 가져와서 자동으로 제목/본문 채우기
+  bpFetch('/api/log').then(function(log) {
+    var latest = (log || [])[0];
+    if (latest && latest.title && !document.getElementById('cn-title-inp').value) {
+      document.getElementById('cn-title-inp').value = latest.title;
+      document.getElementById('cn-tags-inp').value = (latest.tags || []).join(', ');
+    }
+  }).catch(function(){});
+}
+
+async function generateCardNewsFromLatest() {
+  var log = await bpFetch('/api/log').catch(function(){ return []; });
+  var latest = (log || [])[0];
+  if (!latest) { bpToast('발행된 글이 없습니다', 'err'); return; }
+  document.getElementById('cn-title-inp').value   = latest.title || '';
+  document.getElementById('cn-tags-inp').value    = (latest.tags || []).join(', ');
+  document.getElementById('cn-content-inp').value = '';
+  triggerCardNewsGen();
+}
+
+async function triggerCardNewsGen() {
+  var title   = (document.getElementById('cn-title-inp').value || '').trim();
+  var content = (document.getElementById('cn-content-inp').value || '').trim();
+  var tags    = (document.getElementById('cn-tags-inp').value || '').split(',').map(function(t){ return t.trim(); }).filter(Boolean);
+  if (!title) { bpToast('제목을 입력해주세요', 'err'); return; }
+
+  var btn      = document.getElementById('cn-generate-btn');
+  var statusEl = document.getElementById('cn-gen-status');
+  btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>AI 디자인 중...';
+  statusEl.textContent = '클로드가 6장짜리 카드뉴스를 디자인하고 있어요 ✨';
+
+  try {
+    var data = await bpFetch('/api/card-news', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-dashboard-password': BP_PASSWORD },
+      body: JSON.stringify({ title, content, tags }),
+    });
+    cnGeneratedData = data;
+    renderCardNewsPreviews(data);
+    statusEl.textContent = '✅ ' + (data.cardCount || 6) + '장 생성 완료! 클릭해서 크게 보세요.';
+    statusEl.style.color = 'var(--ok)';
+  } catch (e) {
+    statusEl.textContent = '⚠️ ' + e.message;
+    statusEl.style.color = 'var(--err)';
+  } finally {
+    btn.disabled = false; btn.textContent = '✨ 카드뉴스 생성';
+  }
+}
+
+function renderCardNewsPreviews(data) {
+  var section = document.getElementById('cn-preview-section');
+  var scroll  = document.getElementById('cn-cards-scroll');
+  var countEl = document.getElementById('cn-card-count');
+  var hashEl  = document.getElementById('cn-hashtags');
+  if (!section || !scroll) return;
+
+  var cards = data.cards || [];
+  section.style.display = 'block';
+  if (countEl) countEl.textContent = '(' + cards.length + '장)';
+
+  scroll.innerHTML = cards.map(function(card, i) {
+    return '<div class="card-preview-slot" onclick="openCardFull(' + i + ')">'
+      + '<span class="card-num-badge">' + (i + 1) + ' / ' + cards.length + '</span>'
+      + '<div class="card-preview-inner">' + (card.html || '') + '</div>'
+      + '</div>';
+  }).join('');
+
+  if (hashEl && data.hashtags) {
+    hashEl.innerHTML = data.hashtags.map(function(h) {
+      return '<span class="cn-hashtag">' + escHtml(h) + '</span>';
+    }).join('');
+  }
+}
+
+function openCardFull(idx) {
+  if (!cnGeneratedData || !cnGeneratedData.cards) return;
+  cnCurrentCard = idx;
+  var cards = cnGeneratedData.cards;
+
+  var existing = document.getElementById('card-full-bg');
+  if (existing) existing.remove();
+
+  var bg = document.createElement('div');
+  bg.className = 'card-full-bg'; bg.id = 'card-full-bg';
+  bg.onclick = function(e) { if (e.target === bg) bg.remove(); };
+  bg.innerHTML = '<div class="card-full-inner">'
+    + '<button class="card-full-close" onclick="document.getElementById(\'card-full-bg\').remove()">✕ 닫기</button>'
+    + '<div id="card-full-display">' + (cards[idx].html || '') + '</div>'
+    + (cards.length > 1 ? '<button class="card-nav-btn card-nav-prev" onclick="navCard(-1)">‹</button><button class="card-nav-btn card-nav-next" onclick="navCard(1)">›</button>' : '')
+    + '<div class="card-download-bar">'
+    + '<button onclick="downloadCard(' + idx + ')" style="background:rgba(236,72,153,.12);border:1px solid rgba(236,72,153,.25);color:#f9a8d4;border-radius:9px;padding:8px 18px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">⬇ 이 장 저장</button>'
+    + '</div></div>';
+  document.body.appendChild(bg);
+}
+
+function navCard(dir) {
+  if (!cnGeneratedData || !cnGeneratedData.cards) return;
+  cnCurrentCard = (cnCurrentCard + dir + cnGeneratedData.cards.length) % cnGeneratedData.cards.length;
+  var display = document.getElementById('card-full-display');
+  if (display) display.innerHTML = cnGeneratedData.cards[cnCurrentCard].html || '';
+}
+
+function downloadCard(idx) {
+  var cards = (cnGeneratedData || {}).cards || [];
+  if (!cards[idx]) return;
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{margin:0;background:#080b14}</style></head><body>' + cards[idx].html + '</body></html>';
+  var blob = new Blob([html], { type: 'text/html' });
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'card_' + (idx+1) + '.html'; a.click();
+}
+
+function downloadAllCards() {
+  var cards = (cnGeneratedData || {}).cards || [];
+  cards.forEach(function(c, i) { setTimeout(function(){ downloadCard(i); }, i * 300); });
+}
+
+// ── SHORTS SCRIPT VIEW ────────────────────────────────────────
+var shGeneratedData = null;
+
+function loadShortsView() {
+  loadAutoSettings();
+  bpFetch('/api/log').then(function(log) {
+    var latest = (log || [])[0];
+    if (latest && latest.title && !document.getElementById('sh-title-inp').value) {
+      document.getElementById('sh-title-inp').value = latest.title || '';
+      document.getElementById('sh-tags-inp').value  = (latest.tags || []).join(', ');
+    }
+  }).catch(function(){});
+}
+
+async function generateShortsFromLatest() {
+  var log = await bpFetch('/api/log').catch(function(){ return []; });
+  var latest = (log || [])[0];
+  if (!latest) { bpToast('발행된 글이 없습니다', 'err'); return; }
+  document.getElementById('sh-title-inp').value   = latest.title || '';
+  document.getElementById('sh-tags-inp').value    = (latest.tags || []).join(', ');
+  document.getElementById('sh-content-inp').value = '';
+  triggerShortsGen();
+}
+
+async function triggerShortsGen() {
+  var title   = (document.getElementById('sh-title-inp').value || '').trim();
+  var content = (document.getElementById('sh-content-inp').value || '').trim();
+  var tags    = (document.getElementById('sh-tags-inp').value || '').split(',').map(function(t){ return t.trim(); }).filter(Boolean);
+  if (!title) { bpToast('제목을 입력해주세요', 'err'); return; }
+
+  var btn      = document.getElementById('sh-generate-btn');
+  var statusEl = document.getElementById('sh-gen-status');
+  btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>대본 생성 중...';
+  statusEl.textContent = '클로드가 60초 숏츠 대본을 작성하고 있어요 🎬';
+
+  try {
+    var data = await bpFetch('/api/shorts-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-dashboard-password': BP_PASSWORD },
+      body: JSON.stringify({ title, content, tags }),
+    });
+    shGeneratedData = data;
+    renderShortsScript(data);
+    statusEl.textContent = '✅ 대본 완성! 세그먼트별로 확인하고 바로 촬영하세요.';
+    statusEl.style.color = 'var(--ok)';
+  } catch (e) {
+    statusEl.textContent = '⚠️ ' + e.message;
+    statusEl.style.color = 'var(--err)';
+  } finally {
+    btn.disabled = false; btn.textContent = '🎬 대본 생성';
+  }
+}
+
+function renderShortsScript(data) {
+  var section  = document.getElementById('sh-script-section');
+  var metaEl   = document.getElementById('sh-meta');
+  var bodyEl   = document.getElementById('sh-script-body');
+  var tipsEl   = document.getElementById('sh-tips');
+  var fullText = document.getElementById('sh-full-text');
+  if (!section) return;
+  section.style.display = 'block';
+
+  if (metaEl) {
+    var tags = (data.hashtags || []).map(function(h){ return '<span class="cn-hashtag" style="background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);color:#f87171">' + escHtml(h) + '</span>'; }).join('');
+    metaEl.innerHTML = '<div class="shorts-title-display">' + escHtml(data.title || '') + '</div>'
+      + (data.description ? '<div class="shorts-desc-display">' + escHtml(data.description) + '</div>' : '')
+      + (data.hashtags ? '<div class="cn-hashtags" style="margin-top:10px">' + tags + '</div>' : '')
+      + '<div style="margin-top:10px;font-size:12px;color:var(--t3)">총 길이: ' + escHtml(data.totalDuration || '약 60초') + '</div>';
+  }
+
+  var segments = data.script || [];
+  var segClassMap = { HOOK:'seg-hook', POINT_1:'seg-content', POINT_2:'seg-content', POINT_3:'seg-content', POINT_4:'seg-content', CTA:'seg-cta', OUTRO:'seg-outro', INTRO:'seg-content' };
+  var segLabelMap = { HOOK:'🔥 HOOK', POINT_1:'📌 포인트 1', POINT_2:'📌 포인트 2', POINT_3:'📌 포인트 3', POINT_4:'📌 포인트 4', CTA:'💚 CTA', OUTRO:'🎬 아웃트로', INTRO:'👋 인트로' };
+
+  if (bodyEl) {
+    bodyEl.innerHTML = segments.map(function(seg) {
+      var cls   = segClassMap[seg.segment] || 'seg-content';
+      var label = segLabelMap[seg.segment] || seg.segment;
+      return '<div class="script-segment ' + cls + '">'
+        + '<div class="script-timing-badge">' + label + ' · ' + escHtml(seg.timing || '') + '</div>'
+        + '<div class="script-text">' + escHtml(seg.script || '') + '</div>'
+        + (seg.visual ? '<div class="script-visual-cue">' + escHtml(seg.visual) + '</div>' : '')
+        + '</div>';
+    }).join('');
+  }
+
+  var plain = segments.map(function(s) { return '[' + (s.segment||'') + ' · ' + (s.timing||'') + ']\n' + (s.script||'') + (s.visual ? '\n(화면: ' + s.visual + ')' : ''); }).join('\n\n');
+  if (fullText) fullText.value = plain;
+
+  if (tipsEl && data.tips) {
+    tipsEl.innerHTML = data.tips.map(function(t) {
+      return '<div class="shorts-tip">' + escHtml(t) + '</div>';
+    }).join('');
+  }
+}
+
+function copyFullScript() {
+  var ta = document.getElementById('sh-full-text');
+  if (!ta) return;
+  ta.select(); document.execCommand('copy');
+  navigator.clipboard.writeText(ta.value).catch(function(){});
+  bpToast('📋 대본이 클립보드에 복사되었습니다!', 'ok');
+}
+
+// ── INCOME VIEW ──────────────────────────────────────────────
+var incomeViewState = { hustles: null, reportLoaded: false };
+
+async function loadIncomeView() {
+  if (!incomeViewState.hustles) {
+    renderHustleSkeleton();
+    try {
+      var hustles = await bpFetch('/api/income-hustles');
+      incomeViewState.hustles = hustles;
+      renderHustleCards(hustles);
+    } catch {}
+  } else {
+    renderHustleCards(incomeViewState.hustles);
+  }
+  if (!incomeViewState.reportLoaded) loadDailyReport(false);
+}
+
+function renderHustleSkeleton() {
+  var grid = document.getElementById('income-hustle-grid');
+  if (!grid) return;
+  grid.innerHTML = [1,2,3,4,5,6,7].map(function() {
+    return '<div class="hustle-card">'
+      + '<div class="income-skeleton" style="height:26px;width:48px;margin-bottom:10px"></div>'
+      + '<div class="income-skeleton" style="height:14px;width:80%;margin-bottom:6px"></div>'
+      + '<div class="income-skeleton" style="height:11px;width:50%;margin-bottom:12px"></div>'
+      + '<div class="income-skeleton" style="height:18px;width:70%"></div></div>';
+  }).join('');
+}
+
+function renderHustleCards(hustles) {
+  var grid = document.getElementById('income-hustle-grid');
+  if (!grid || !hustles || !hustles.length) return;
+  grid.innerHTML = hustles.map(function(h, i) {
+    var rank = i + 1;
+    var rankCls = rank === 1 ? 'r1' : rank === 2 ? 'r2' : rank === 3 ? 'r3' : 'rn';
+    var cardCls = rank <= 3 ? ' rank-' + rank : '';
+    var score = h.hotScore || h.baseHotScore || 50;
+    var diff = '';
+    for (var d = 0; d < 5; d++) {
+      diff += '<span style="color:' + (d < (h.difficulty || 1) ? '#f59e0b' : 'var(--bd2)') + '">&#9679;</span>';
+    }
+    return '<div class="hustle-card' + cardCls + '">'
+      + '<div class="hustle-rank-badge ' + rankCls + '">' + rank + '</div>'
+      + '<span class="hustle-emoji">' + (h.emoji || '💼') + '</span>'
+      + '<div class="hustle-name">' + escHtml(h.name) + '</div>'
+      + '<div class="hustle-cat">' + escHtml(h.category || '') + ' · 난이도 ' + diff + '</div>'
+      + '<div class="hustle-income-row"><span class="hustle-income-val">월 ' + (h.monthlyMin||0) + '~' + (h.monthlyMax||0) + '만원</span></div>'
+      + '<div class="hustle-hot-bar"><div class="hustle-hot-fill" style="width:' + score + '%"></div></div>'
+      + '<div class="hustle-badges">'
+      + (h.passive ? '<span class="hustle-badge passive">패시브</span>' : '')
+      + (h.mobile ? '<span class="hustle-badge mobile">📱 모바일</span>' : '')
+      + (h.startupCost === 0 ? '<span class="hustle-badge free">무자본</span>' : '')
+      + '<span class="hustle-badge" style="background:rgba(139,92,246,.1);color:#a78bfa">HOT ' + score + '</span>'
+      + '</div>'
+      + (h.realData ? '<div class="hustle-real-data">' + escHtml(h.realData) + '</div>' : '')
+      + (h.platform ? '<a class="hustle-action-link" href="' + escHtml(h.platform) + '" target="_blank" rel="noopener">바로 시작 →</a>' : '')
+      + '</div>';
+  }).join('');
+}
+
+async function loadDailyReport(force) {
+  var reportWrap = document.getElementById('income-report-section');
+  var summaryEl  = document.getElementById('income-summary');
+  var btn        = document.getElementById('income-refresh-btn');
+  if (!reportWrap) return;
+
+  reportWrap.innerHTML = '<div style="text-align:center;padding:28px;color:var(--t3)"><span class="bp-spinner"></span> AI 리포트 분석 중... (30~60초 소요)</div>';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>분석 중...'; }
+
+  try {
+    var url = '/api/income-report' + (force ? '?refresh=1' : '');
+    var data = await bpFetch(url);
+
+    if (data.rankedHustles && data.rankedHustles.length) {
+      incomeViewState.hustles = data.rankedHustles;
+      renderHustleCards(data.rankedHustles);
+    }
+    if (summaryEl) summaryEl.textContent = data.summary ? '💡 ' + data.summary : '오늘의 분석 완료';
+    if (data.content) {
+      reportWrap.innerHTML = '<div class="income-report-title">' + escHtml(data.title || '') + '</div>'
+        + '<div class="income-report-content">' + data.content + '</div>';
+    } else {
+      reportWrap.innerHTML = '<div class="empty-state"><div class="ei">📝</div><div class="et">리포트 없음</div></div>';
+    }
+    incomeViewState.reportLoaded = true;
+  } catch (e) {
+    reportWrap.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><div class="et">서버에 연결해주세요<br><small style="color:var(--t3)">' + escHtml(e.message) + '</small></div></div>';
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '⟳ 새로고침'; }
+  }
+}
 
 // ── INIT ─────────────────────────────────────────────────
 if (!new URLSearchParams(window.location.search).has('public')) initLock();

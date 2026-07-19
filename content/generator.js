@@ -1,18 +1,17 @@
 /**
  * content/generator.js
- * Claude API로 블로그 글 자동 생성
- * 모델: claude-haiku-4-5 (속도/비용 최적)
+ * 수익형 블로그 글 자동 생성 — AI 티 최소화, SEO 최적화
  */
 
 const https = require('https');
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL   = 'claude-haiku-4-5-20251001';
+const MODEL   = 'claude-sonnet-5-20251101';
 
-function callClaude(prompt, systemPrompt) {
+function callClaude(prompt, systemPrompt, maxTokens = 4096) {
   const body = JSON.stringify({
     model: MODEL,
-    max_tokens: 2048,
+    max_tokens: maxTokens,
     system: systemPrompt,
     messages: [{ role: 'user', content: prompt }],
   });
@@ -45,60 +44,92 @@ function callClaude(prompt, systemPrompt) {
   });
 }
 
-/**
- * 트렌딩 키워드 + 계정 주제 기반 블로그 글 생성
- * @param {string} keyword   - 트렌딩 키워드
- * @param {object} account   - 계정 설정 (topic, tone, platform)
- * @returns {{ title, content, tags }}
- */
-async function generatePost(keyword, account) {
-  const { topic, tone = '친근하고 자연스러운', platform = 'naver' } = account;
+// Unsplash 무료 이미지 — sig 파라미터로 매번 다른 사진
+function getImageUrl(keyword) {
+  const encoded = encodeURIComponent(keyword.replace(/\s+/g, ','));
+  const sig = Math.floor(Math.random() * 9999);
+  return `https://source.unsplash.com/1200x630/?${encoded}&sig=${sig}`;
+}
 
-  const systemPrompt = `당신은 한국 블로그 작가입니다. 다음 규칙을 반드시 따르세요:
-- 구어체, 자연스러운 문체 사용 (AI 느낌 없애기)
-- 1인칭 시점, 개인 경험 담은 듯한 서술
-- 너무 완벽하지 않게 — 가끔 "사실...", "솔직히", "개인적으로" 같은 표현 섞기
-- 이모지 2~3개 자연스럽게 삽입
-- 단락 나누기 잘 하기 (모바일 가독성)
-- SEO를 위해 키워드 자연스럽게 3~5회 반복
-- 절대로 목록(bullet) 남발하지 말 것 — 자연스러운 산문체 위주`;
+// 이미지 HTML 태그 생성
+function imageTag(keyword, alt) {
+  const url = getImageUrl(keyword);
+  return `<figure style="text-align:center;margin:28px 0"><img src="${url}" alt="${alt}" style="max-width:100%;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.12)"><figcaption style="color:#888;font-size:13px;margin-top:8px">${alt}</figcaption></figure>`;
+}
+
+const SYSTEM_PROMPT = `당신은 대한민국 MZ세대가 즐겨 보는 정보성 블로그를 운영하는 20-30대 여성입니다.
+
+글쓰기 스타일:
+- 친구에게 카톡으로 얘기하듯 자연스러운 구어체
+- "저도 처음엔 몰랐는데요~", "근데 진짜로", "솔직히 말하면" 같은 표현 자연스럽게 사용
+- 가끔 오타나 줄임말 섞기 ("ㅎㅎ", "ㅠㅠ", "진짜루", "대박이더라고요")
+- 개인 경험담처럼 서술 ("제가 직접 써봤는데", "친구한테 물어보니까")
+- AI가 절대 쓰지 않는 한국어 표현들: "이게 뭐야 싶었는데", "알고보니", "완전 꿀팁"
+- 완벽하게 구조화된 글 금지 — 약간 산만하고 자연스럽게
+- 이모지는 2~4개만, 제목 말고 본문 중간에 자연스럽게
+
+SEO 전략:
+- 키워드를 첫 문단과 소제목에 자연스럽게 포함
+- 롱테일 키워드 변형 3~5회 사용
+- 1500~2000자 분량 (정보 충실도 높게)
+- 독자가 끝까지 읽도록 궁금증 유발 구조`;
+
+async function generatePost(keyword, account) {
+  const { topic = '라이프스타일', tone = '친근한', platform = 'blogger' } = account;
 
   const prompt = `
-주제: ${topic}
 트렌딩 키워드: "${keyword}"
-블로그 플랫폼: ${platform}
+블로그 주제: ${topic}
 글 톤: ${tone}
+플랫폼: ${platform}
 
-위 트렌딩 키워드를 활용해서 주제에 맞는 블로그 글을 써주세요.
+이 키워드로 수익형 블로그 포스팅을 작성해주세요.
 
-반드시 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
+요구사항:
+1. 제목: 실제로 클릭하고 싶은 제목 (숫자/후기/비교/놀라운 사실 활용)
+2. 본문: HTML 형식, 1800~2200자
+   - 첫 문단: 공감 or 충격 사실로 시작 (독자를 잡아당겨야 함)
+   - 소제목 3개 (h3 태그)로 구성 — 각 섹션마다 실용 정보
+   - 이미지 플레이스홀더 3~4곳에 [IMAGE:영어키워드] 형식으로 각 섹션 사이에 배치
+   - 중간: 개인 경험담, 꿀팁, 비교 정보 섞기
+   - 마지막: 핵심 요약 + 댓글 유도
+3. 태그: 검색량 높은 태그 8개
+4. 이미지 키워드: 영어로 4개 (각각 달라야 함, Unsplash 검색용)
+
+JSON 형식으로만 응답:
 {
-  "title": "글 제목 (SEO 최적화, 30자 이내)",
-  "content": "HTML 형식의 본문 (p, br 태그 사용, 600~900자)",
-  "tags": ["태그1", "태그2", "태그3", "태그4", "태그5"]
+  "title": "제목",
+  "content": "HTML 본문 ([IMAGE:영어키워드] 3~4개 포함)",
+  "tags": ["태그1", ..., "태그8"],
+  "imageKeywords": ["english keyword 1", "english keyword 2", "english keyword 3", "english keyword 4"]
 }`;
 
-  try {
-    const raw = await callClaude(prompt, systemPrompt);
+  const raw = await callClaude(prompt, SYSTEM_PROMPT, 4096);
+  const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
+  const json = JSON.parse(cleaned);
 
-    // JSON 파싱 (마크다운 코드블록 제거)
-    const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
-    const json = JSON.parse(cleaned);
+  if (!json.title || !json.content) throw new Error('글 생성 결과 불완전');
 
-    if (!json.title || !json.content) throw new Error('글 생성 결과 불완전');
+  // 이미지 플레이스홀더를 실제 이미지 태그로 교체
+  let content = json.content;
+  const imgKeywords = json.imageKeywords || [keyword, topic];
+  let imgIndex = 0;
+  content = content.replace(/\[IMAGE:([^\]]+)\]/g, (match, imgKw) => {
+    const kw = imgKw || imgKeywords[imgIndex] || keyword;
+    imgIndex++;
+    return imageTag(kw, kw);
+  });
 
-    console.log(`[Generator] 생성 완료: "${json.title}"`);
-    return json;
-
-  } catch (err) {
-    console.error('[Generator] 생성 실패:', err.message);
-    // 폴백: 최소한의 글 반환
-    return {
-      title: `${keyword} 관련 정보`,
-      content: `<p>오늘은 <b>${keyword}</b>에 대해 이야기해볼게요.</p><p>${topic}에 관심 있으신 분들께 도움이 되길 바랍니다.</p>`,
-      tags: [keyword, topic],
-    };
+  // 남은 이미지 키워드가 있으면 본문 중간에 삽입
+  if (imgIndex === 0 && imgKeywords.length > 0) {
+    const mid = content.indexOf('</p>', Math.floor(content.length * 0.4));
+    if (mid !== -1) {
+      content = content.slice(0, mid + 4) + imageTag(imgKeywords[0], imgKeywords[0]) + content.slice(mid + 4);
+    }
   }
+
+  console.log(`[Generator] 생성 완료: "${json.title}" (이미지 ${imgIndex}개)`);
+  return { title: json.title, content, tags: json.tags || [keyword] };
 }
 
 module.exports = { generatePost };
