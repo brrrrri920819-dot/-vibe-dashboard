@@ -13,7 +13,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const { chromium } = require('playwright');
+
+function getChromium() {
+  return require('playwright').chromium;
+}
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const SESSIONS_FILE = path.join(DATA_DIR, 'affiliate-sessions.json');
@@ -115,7 +118,7 @@ function getValidSession(siteKey) {
 // ── 브라우저 공통 런처 ────────────────────────────────────
 async function launchBrowser() {
   console.log(`[AffLogin] Chromium 실행: ${CHROMIUM_PATH}`);
-  return chromium.launch({
+  return getChromium().launch({
     executablePath: CHROMIUM_PATH,
     headless: true,
     args: [
