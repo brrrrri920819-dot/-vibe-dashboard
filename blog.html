@@ -2424,8 +2424,8 @@ async function loadAffiliateStats() {
   }).join('');
 
   try {
-    var stats = await bpFetch('/api/affiliates/stats');
-    (stats || []).forEach(function(s) {
+    var statsRes = await bpFetch('/api/affiliates/stats');
+    (statsRes.stats || []).forEach(function(s) {
       var card = document.getElementById('aff-lc-' + s.key);
       var btn  = document.getElementById('aff-lb-' + s.key);
       if (!card || !btn) return;
@@ -2520,13 +2520,15 @@ async function runHustlePipeline(hustleId) {
       var dot = document.getElementById('psd-' + i);
       var res = document.getElementById('psr-' + i);
       if (dot) { dot.className = 'pipeline-step-dot ' + (step.status === 'done' ? 'done' : 'err'); dot.textContent = step.status === 'done' ? '✓' : '✕'; }
-      if (res) { res.textContent = step.resultSummary || (step.status === 'done' ? '완료' : step.error || '오류'); res.style.color = step.status === 'done' ? 'var(--t2)' : '#f87171'; }
+      var stepSummary = step.status === 'done'
+        ? (step.result && typeof step.result === 'object' ? Object.values(step.result).filter(v => typeof v === 'string' || typeof v === 'number').slice(0,2).join(' · ') || '완료' : '완료')
+        : ((step.result && step.result.error) || '오류');
+      if (res) { res.textContent = stepSummary + (step.durationMs ? ' (' + step.durationMs + 'ms)' : ''); res.style.color = step.status === 'done' ? 'var(--t2)' : '#f87171'; }
     });
     if (resEl && data.summary) {
       resEl.style.display = 'block';
       resEl.innerHTML = '<div class="pipeline-result-box"><div class="pipeline-result-title">결과 요약</div><div class="pipeline-result-content">' + escHtml(data.summary) + '</div>'
-        + (data.readyToPublish ? '<button class="pipeline-action-btn" onclick="closePipelineModal();showView(\'write\')">✍️ 글 발행하기</button>' : '')
-        + (data.downloadUrl ? '<a class="pipeline-action-btn" href="' + escHtml(data.downloadUrl) + '" target="_blank" style="display:block;text-align:center;text-decoration:none;margin-top:8px">⬇ 결과물 다운로드</a>' : '')
+        + ((data.data && data.data.readyToPublish) ? '<button class="pipeline-action-btn" onclick="closePipelineModal();showView(\'write\')">✍️ 글 발행하기</button>' : '')
         + '</div>';
     }
     bpToast('✅ 파이프라인 완료! ' + meta.name, 'ok');
