@@ -1,0 +1,428 @@
+<title>MOTEL NOWHERE — YouTube Sleep-Music Channel Launch Package</title>
+<style>
+  :root{
+    --ink:#f2ead9;        /* motel-sign cream */
+    --ink-dim:#b8aa93;    /* faded cream */
+    --ground:#12101f;     /* midnight violet-navy */
+    --ground-2:#1b1830;   /* raised card */
+    --line:#332e4d;
+    --neon:#ff5c8a;       /* vacancy-sign pink */
+    --dusk:#ff8c4b;       /* sunset orange */
+    --teal:#3ecfb8;       /* diner teal */
+    --gold:#ffd36b;
+    --display:"Futura","Century Gothic","Trebuchet MS",Verdana,sans-serif;
+    --body:Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  html{background:var(--ground);}
+  body{
+    font-family:var(--body); color:var(--ink); background:var(--ground);
+    line-height:1.65; margin:0; padding:0 20px 96px;
+  }
+  .wrap{max-width:860px; margin:0 auto;}
+  /* ---------- hero ---------- */
+  .hero{padding:72px 0 40px; border-bottom:1px solid var(--line);}
+  .eyebrow{
+    font-family:var(--display); font-size:12px; letter-spacing:.32em;
+    text-transform:uppercase; color:var(--teal); margin:0 0 18px;
+  }
+  h1{
+    font-family:var(--display); font-weight:700; text-transform:uppercase;
+    font-size:clamp(40px,7vw,64px); letter-spacing:.06em; line-height:1.02;
+    margin:0 0 10px; text-wrap:balance;
+    color:var(--neon);
+    text-shadow:0 0 22px rgba(255,92,138,.45), 0 0 60px rgba(255,92,138,.2);
+  }
+  .sub{font-size:19px; color:var(--ink-dim); max-width:56ch; margin:14px 0 0;}
+  .sub b{color:var(--ink); font-weight:600;}
+  /* ---------- sections ---------- */
+  section{padding:52px 0 8px;}
+  h2{
+    font-family:var(--display); font-weight:700; text-transform:uppercase;
+    letter-spacing:.14em; font-size:22px; color:var(--gold);
+    margin:0 0 6px; text-wrap:balance;
+  }
+  .kicker{
+    font-family:var(--display); font-size:11px; letter-spacing:.3em;
+    text-transform:uppercase; color:var(--ink-dim); margin:0 0 4px;
+  }
+  h3{font-family:var(--display); font-size:16px; letter-spacing:.06em; color:var(--ink); margin:28px 0 8px; text-transform:uppercase;}
+  p{max-width:66ch; margin:12px 0;}
+  li{max-width:62ch; margin:6px 0;}
+  a{color:var(--teal);}
+  /* ---------- verdict card ---------- */
+  .verdict{
+    background:var(--ground-2); border:1px solid var(--line); border-radius:6px;
+    padding:26px 28px; margin:28px 0 0;
+  }
+  .verdict p{margin:8px 0;}
+  .stat-row{display:flex; flex-wrap:wrap; gap:12px; margin:18px 0 4px;}
+  .stat{
+    flex:1 1 150px; border:1px solid var(--line); border-radius:6px;
+    padding:14px 16px; background:var(--ground);
+  }
+  .stat .n{
+    font-family:var(--display); font-size:26px; color:var(--neon);
+    font-variant-numeric:tabular-nums; letter-spacing:.02em;
+  }
+  .stat .l{font-size:13px; color:var(--ink-dim); letter-spacing:.04em;}
+  /* ---------- tables ---------- */
+  .tbl-scroll{overflow-x:auto; margin:18px 0;}
+  table{border-collapse:collapse; width:100%; min-width:560px; font-size:15px;}
+  th{
+    font-family:var(--display); font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--ink-dim); text-align:left; padding:10px 14px; border-bottom:1px solid var(--line);
+  }
+  td{padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top;}
+  td.num{font-variant-numeric:tabular-nums; white-space:nowrap;}
+  tr.pick td{background:rgba(255,92,138,.08);}
+  .pill{
+    display:inline-block; font-family:var(--display); font-size:11px; letter-spacing:.1em;
+    text-transform:uppercase; padding:3px 10px; border-radius:999px; border:1px solid var(--teal);
+    color:var(--teal);
+  }
+  .pill.warn{border-color:var(--dusk); color:var(--dusk);}
+  .pill.pick{border-color:var(--neon); color:var(--neon);}
+  /* ---------- covers ---------- */
+  .covers{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px; margin:24px 0;}
+  .cover{border:1px solid var(--line); border-radius:6px; overflow:hidden; background:var(--ground-2);}
+  .cover svg{display:block; width:100%; height:auto;}
+  .cover .cap{padding:12px 14px; font-size:13.5px; color:var(--ink-dim);}
+  .cover .cap b{color:var(--ink); font-family:var(--display); letter-spacing:.06em;}
+  .thumb{border:1px solid var(--line); border-radius:6px; overflow:hidden; margin:20px 0;}
+  .thumb svg{display:block; width:100%; height:auto;}
+  /* ---------- prompt blocks ---------- */
+  .prompt{
+    background:var(--ground-2); border:1px solid var(--line); border-left:3px solid var(--teal);
+    border-radius:4px; padding:14px 18px; margin:14px 0;
+    font-family:var(--mono); font-size:13.5px; line-height:1.6; color:var(--ink);
+    overflow-x:auto;
+  }
+  .prompt .t{font-family:var(--display); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--teal); margin:0 0 6px;}
+  /* ---------- checklist ---------- */
+  .risk{border-left:3px solid var(--dusk); padding:2px 0 2px 18px; margin:18px 0;}
+  .risk b{color:var(--dusk);}
+  .ok{border-left:3px solid var(--teal); padding:2px 0 2px 18px; margin:18px 0;}
+  .ok b{color:var(--teal);}
+  .footer{margin-top:64px; padding-top:24px; border-top:1px solid var(--line); font-size:13.5px; color:var(--ink-dim);}
+  .footer a{color:var(--ink-dim);}
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <p class="eyebrow">Channel Launch Package · 컨펌용 최종 보고서 · 2026.07</p>
+  <h1>Motel Nowhere</h1>
+  <p class="sub"><b>Sleep soundscapes from imaginary American nights.</b><br>
+  해외(미국·영국·캐나다·호주) 타깃 수면 앰비언트 채널 — 조사 기준 음악계열 최고 RPM 니치에,
+  레트로 아메리카나 팝아트 비주얼로 차별화한 런칭 패키지입니다.</p>
+</header>
+
+<!-- ================= 1. VERDICT ================= -->
+<section>
+  <p class="kicker">01 · Verdict</p>
+  <h2>결론 먼저: 수면 사운드스케이프 니치</h2>
+  <div class="verdict">
+    <p>음악 계열 니치를 전수 비교한 결과, <b>Sleep Soundscapes(수면용 앰비언트)</b>가
+    수익성·경쟁도·지속성 3박자가 가장 좋습니다. 로파이가 아니라 수면입니다 —
+    로파이는 이미 레드오션이고 RPM도 낮습니다.</p>
+    <div class="stat-row">
+      <div class="stat"><div class="n">$10.92</div><div class="l">니치 평균 RPM (음악계열 1위)</div></div>
+      <div class="stat"><div class="n">~20K</div><div class="l">경쟁 채널 수 (로파이 대비 극소)</div></div>
+      <div class="stat"><div class="n">$16–20</div><div class="l">수면앱·웰니스 광고주 CPM</div></div>
+      <div class="stat"><div class="n">8h+</div><div class="l">영상당 시청시간 (미드롤 다수)</div></div>
+    </div>
+    <p style="margin-top:16px">핵심 논리: 수면 영상은 <b>틀어놓고 잠드는</b> 콘텐츠라 8시간짜리 영상에
+    미드롤 광고가 계속 걸리고, Calm·Headspace 같은 수면앱과 웰니스 브랜드가 이 시청자에게
+    프리미엄 CPM을 지불합니다. 검색 수요("rain sounds for sleeping", "8 hour sleep music")는
+    유행을 타지 않아 3년 전 영상도 계속 조회수가 나옵니다 — 요청하신 "연금" 구조 그 자체입니다.</p>
+  </div>
+</section>
+
+<!-- ================= 2. MARKET ================= -->
+<section>
+  <p class="kicker">02 · Market Research</p>
+  <h2>니치 비교 데이터</h2>
+  <div class="tbl-scroll">
+    <table>
+      <tr><th>니치</th><th>RPM (US/UK 시청자)</th><th>경쟁도</th><th>판정</th></tr>
+      <tr class="pick"><td>수면 사운드스케이프 / 앰비언트</td><td class="num">$6–11</td><td>낮음 (~20K 채널)</td><td><span class="pill pick">선정</span></td></tr>
+      <tr><td>시네마틱 앰비언트 (오리지널 비주얼)</td><td class="num">$3–8</td><td>중간</td><td><span class="pill">2순위</span></td></tr>
+      <tr><td>재즈/카페 플레이리스트</td><td class="num">$2–5</td><td>높음</td><td><span class="pill warn">보류</span></td></tr>
+      <tr><td>로파이 힙합</td><td class="num">$1–4</td><td>매우 높음 (포화)</td><td><span class="pill warn">탈락</span></td></tr>
+      <tr><td>제네릭 비트 / 타입비트</td><td class="num">$0.3–1</td><td>포화 + 스팸 취급</td><td><span class="pill warn">탈락</span></td></tr>
+    </table>
+  </div>
+  <p>주의할 점 하나: 같은 "수면 음악"이라도 <b>차별화 없는 채널은 $0.5–2.5 RPM로 추락</b>합니다.
+  격차를 만드는 요인은 오리지널 비주얼, 큐레이션된 구성(타임스탬프·앨범 단위 기획),
+  브랜드 정체성 — 그래서 아래 03의 브랜드 설계가 수익성의 절반입니다.</p>
+</section>
+
+<!-- ================= 3. BRAND ================= -->
+<section>
+  <p class="kicker">03 · Brand Identity</p>
+  <h2>Motel Nowhere — 밤의 아메리카나 팝아트</h2>
+  <p>해외 리스너 조사 반영: 서구권 커버아트 트렌드는 <b>레트로 노스탤지어(70–90s)</b>,
+  볼드 타이포그래피, 제한된 색(1–3색), 서리얼 일러스트가 주도하고 있고, 유튜브 썸네일은
+  어두운 피드에서 <b>고대비·고채도가 클릭률을 지배</b>합니다. 수면 채널 썸네일 대부분이
+  흐릿한 실사 밤하늘이라, 플랫한 네온 팝아트는 피드에서 즉시 구분됩니다 — CTR 우위가 곧 추천량입니다.</p>
+  <p>세계관: <b>"미국 어딘가, 존재하지 않는 국도변 모텔의 밤."</b> 네온 간판, 새벽 2시의 다이너,
+  지직거리는 브라운관 — 서구권 리스너의 향수를 정면으로 겨냥한 아메리카나 무드입니다.
+  모든 앨범과 영상이 이 모텔의 "객실 하나"라는 컨셉으로 무한 확장됩니다.</p>
+
+  <h3>커버 아트 시안 (Album 1–3)</h3>
+  <div class="covers">
+
+    <!-- Cover 1 : VACANCY -->
+    <figure class="cover" style="margin:0">
+      <svg viewBox="0 0 600 600" role="img" aria-label="Vacancy — neon motel sign at dusk">
+        <defs>
+          <linearGradient id="sky1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1c1240"/><stop offset=".55" stop-color="#57256b"/>
+            <stop offset=".85" stop-color="#d4553f"/><stop offset="1" stop-color="#ff8c4b"/>
+          </linearGradient>
+          <pattern id="dots1" width="14" height="14" patternUnits="userSpaceOnUse">
+            <circle cx="7" cy="7" r="2.4" fill="#ffd36b" opacity=".28"/>
+          </pattern>
+        </defs>
+        <rect width="600" height="600" fill="url(#sky1)"/>
+        <rect width="600" height="290" fill="url(#dots1)"/>
+        <circle cx="430" cy="330" r="95" fill="#ffd36b"/>
+        <circle cx="430" cy="330" r="95" fill="none" stroke="#1c1240" stroke-width="4"/>
+        <rect y="430" width="600" height="170" fill="#120b26"/>
+        <rect y="424" width="600" height="8" fill="#ff5c8a"/>
+        <!-- sign pole -->
+        <rect x="150" y="180" width="16" height="260" fill="#120b26"/>
+        <!-- sign board -->
+        <rect x="86" y="96" width="146" height="230" rx="10" fill="#120b26" stroke="#ff5c8a" stroke-width="5"/>
+        <text x="159" y="152" font-family="'Futura','Trebuchet MS',sans-serif" font-size="40" font-weight="700" fill="#3ecfb8" text-anchor="middle" letter-spacing="6">MO</text>
+        <text x="159" y="200" font-family="'Futura','Trebuchet MS',sans-serif" font-size="40" font-weight="700" fill="#3ecfb8" text-anchor="middle" letter-spacing="6">TEL</text>
+        <rect x="102" y="222" width="114" height="42" rx="6" fill="#ff5c8a"/>
+        <text x="159" y="251" font-family="'Futura','Trebuchet MS',sans-serif" font-size="21" font-weight="700" fill="#120b26" text-anchor="middle" letter-spacing="2">VACANCY</text>
+        <text x="159" y="300" font-family="'Futura','Trebuchet MS',sans-serif" font-size="16" fill="#f2ead9" text-anchor="middle" letter-spacing="4">OPEN ALL NITE</text>
+        <!-- road -->
+        <rect x="0" y="540" width="600" height="60" fill="#0c0719"/>
+        <rect x="40" y="566" width="70" height="9" fill="#ffd36b"/>
+        <rect x="180" y="566" width="70" height="9" fill="#ffd36b"/>
+        <rect x="320" y="566" width="70" height="9" fill="#ffd36b"/>
+        <rect x="460" y="566" width="70" height="9" fill="#ffd36b"/>
+        <text x="580" y="500" font-family="'Futura','Trebuchet MS',sans-serif" font-size="26" font-weight="700" fill="#f2ead9" text-anchor="end" letter-spacing="3">MOTEL NOWHERE</text>
+        <text x="580" y="524" font-family="'Futura','Trebuchet MS',sans-serif" font-size="15" fill="#ff8c4b" text-anchor="end" letter-spacing="3">ROOM 01 · VACANCY</text>
+      </svg>
+      <figcaption class="cap"><b>Album 1 — VACANCY</b><br>시그니처 커버. 채널 아이콘·배너도 이 간판으로 통일.</figcaption>
+    </figure>
+
+    <!-- Cover 2 : OPEN ALL NIGHT -->
+    <figure class="cover" style="margin:0">
+      <svg viewBox="0 0 600 600" role="img" aria-label="Open All Night — pop-art diner coffee">
+        <defs>
+          <pattern id="dots2" width="16" height="16" patternUnits="userSpaceOnUse">
+            <circle cx="8" cy="8" r="3" fill="#0e5f54" opacity=".5"/>
+          </pattern>
+        </defs>
+        <rect width="600" height="600" fill="#3ecfb8"/>
+        <rect width="600" height="600" fill="url(#dots2)"/>
+        <text x="300" y="92" font-family="'Futura','Trebuchet MS',sans-serif" font-size="52" font-weight="700" fill="#120b26" text-anchor="middle" letter-spacing="6">OPEN</text>
+        <text x="300" y="150" font-family="'Futura','Trebuchet MS',sans-serif" font-size="52" font-weight="700" fill="#f2ead9" text-anchor="middle" letter-spacing="6">ALL NIGHT</text>
+        <!-- steam -->
+        <path d="M250 240 q-14 -28 0 -52 q14 -24 0 -46" fill="none" stroke="#f2ead9" stroke-width="10" stroke-linecap="round"/>
+        <path d="M300 232 q-14 -28 0 -52 q14 -24 0 -46" fill="none" stroke="#f2ead9" stroke-width="10" stroke-linecap="round"/>
+        <path d="M350 240 q-14 -28 0 -52 q14 -24 0 -46" fill="none" stroke="#f2ead9" stroke-width="10" stroke-linecap="round"/>
+        <!-- cup -->
+        <path d="M180 270 h240 l-26 190 a24 24 0 0 1 -24 20 h-140 a24 24 0 0 1 -24 -20 z" fill="#ff5c8a" stroke="#120b26" stroke-width="8"/>
+        <path d="M420 300 h44 a36 36 0 0 1 0 84 h-56" fill="none" stroke="#120b26" stroke-width="8"/>
+        <rect x="196" y="318" width="208" height="34" fill="#120b26"/>
+        <text x="300" y="342" font-family="'Futura','Trebuchet MS',sans-serif" font-size="19" font-weight="700" fill="#ffd36b" text-anchor="middle" letter-spacing="3">DECAF DREAMS</text>
+        <text x="300" y="548" font-family="'Futura','Trebuchet MS',sans-serif" font-size="22" font-weight="700" fill="#120b26" text-anchor="middle" letter-spacing="4">MOTEL NOWHERE · ROOM 02</text>
+      </svg>
+      <figcaption class="cap"><b>Album 2 — OPEN ALL NIGHT</b><br>다이너 무드. 벤데이 도트 + 3색 제한 팔레트.</figcaption>
+    </figure>
+
+    <!-- Cover 3 : CHANNEL 0AM -->
+    <figure class="cover" style="margin:0">
+      <svg viewBox="0 0 600 600" role="img" aria-label="Channel 0AM — retro TV static">
+        <defs>
+          <filter id="static3"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" result="n"/>
+            <feColorMatrix in="n" type="matrix" values="0 0 0 0 .95 0 0 0 0 .92 0 0 0 0 .85 0 0 0 .5 0"/></filter>
+          <pattern id="dots3" width="14" height="14" patternUnits="userSpaceOnUse">
+            <circle cx="7" cy="7" r="2.2" fill="#ff5c8a" opacity=".25"/>
+          </pattern>
+        </defs>
+        <rect width="600" height="600" fill="#120b26"/>
+        <rect width="600" height="600" fill="url(#dots3)"/>
+        <circle cx="490" cy="105" r="52" fill="#ffd36b"/>
+        <circle cx="472" cy="92" r="14" fill="#120b26" opacity=".18"/>
+        <circle cx="505" cy="120" r="9" fill="#120b26" opacity=".18"/>
+        <!-- antenna -->
+        <line x1="250" y1="205" x2="185" y2="115" stroke="#f2ead9" stroke-width="8" stroke-linecap="round"/>
+        <line x1="290" y1="205" x2="345" y2="105" stroke="#f2ead9" stroke-width="8" stroke-linecap="round"/>
+        <!-- tv body -->
+        <rect x="110" y="200" width="380" height="280" rx="26" fill="#3ecfb8" stroke="#f2ead9" stroke-width="8"/>
+        <rect x="140" y="232" width="250" height="216" rx="12" fill="#0c0719"/>
+        <rect x="140" y="232" width="250" height="216" rx="12" filter="url(#static3)"/>
+        <text x="265" y="352" font-family="'Futura','Trebuchet MS',sans-serif" font-size="34" font-weight="700" fill="#f2ead9" text-anchor="middle" letter-spacing="4">0:00 AM</text>
+        <circle cx="440" cy="272" r="17" fill="#120b26"/><circle cx="440" cy="272" r="7" fill="#ff5c8a"/>
+        <circle cx="440" cy="326" r="17" fill="#120b26"/><circle cx="440" cy="326" r="7" fill="#ffd36b"/>
+        <rect x="424" y="368" width="32" height="8" rx="4" fill="#120b26"/>
+        <rect x="424" y="388" width="32" height="8" rx="4" fill="#120b26"/>
+        <text x="300" y="548" font-family="'Futura','Trebuchet MS',sans-serif" font-size="22" font-weight="700" fill="#f2ead9" text-anchor="middle" letter-spacing="4">MOTEL NOWHERE · ROOM 03</text>
+      </svg>
+      <figcaption class="cap"><b>Album 3 — CHANNEL 0AM</b><br>브라운관 정전기 노이즈(실제 필터 렌더링) — 화이트노이즈 앨범용.</figcaption>
+    </figure>
+  </div>
+
+  <h3>유튜브 썸네일 목업 (1280×720)</h3>
+  <div class="thumb">
+    <svg viewBox="0 0 1280 720" role="img" aria-label="YouTube thumbnail mockup">
+      <defs>
+        <linearGradient id="skyT" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1c1240"/><stop offset=".6" stop-color="#57256b"/><stop offset="1" stop-color="#d4553f"/>
+        </linearGradient>
+        <pattern id="dotsT" width="16" height="16" patternUnits="userSpaceOnUse">
+          <circle cx="8" cy="8" r="2.6" fill="#ffd36b" opacity=".22"/>
+        </pattern>
+        <pattern id="rainT" width="26" height="42" patternUnits="userSpaceOnUse" patternTransform="rotate(12)">
+          <rect x="6" y="4" width="4" height="20" rx="2" fill="#3ecfb8" opacity=".55"/>
+        </pattern>
+      </defs>
+      <rect width="1280" height="720" fill="url(#skyT)"/>
+      <rect width="1280" height="720" fill="url(#dotsT)"/>
+      <rect width="1280" height="720" fill="url(#rainT)"/>
+      <circle cx="1020" cy="240" r="120" fill="#ffd36b"/>
+      <rect y="560" width="1280" height="160" fill="#120b26"/>
+      <rect y="552" width="1280" height="10" fill="#ff5c8a"/>
+      <!-- sign -->
+      <rect x="120" y="150" width="24" height="420" fill="#120b26"/>
+      <rect x="60" y="60" width="200" height="310" rx="14" fill="#120b26" stroke="#ff5c8a" stroke-width="7"/>
+      <text x="160" y="140" font-family="'Futura','Trebuchet MS',sans-serif" font-size="56" font-weight="700" fill="#3ecfb8" text-anchor="middle" letter-spacing="8">MO</text>
+      <text x="160" y="206" font-family="'Futura','Trebuchet MS',sans-serif" font-size="56" font-weight="700" fill="#3ecfb8" text-anchor="middle" letter-spacing="8">TEL</text>
+      <rect x="82" y="236" width="156" height="56" rx="8" fill="#ff5c8a"/>
+      <text x="160" y="274" font-family="'Futura','Trebuchet MS',sans-serif" font-size="27" font-weight="700" fill="#120b26" text-anchor="middle" letter-spacing="2">VACANCY</text>
+      <text x="160" y="336" font-family="'Futura','Trebuchet MS',sans-serif" font-size="21" fill="#f2ead9" text-anchor="middle" letter-spacing="5">OPEN ALL NITE</text>
+      <!-- title -->
+      <text x="360" y="380" font-family="'Futura','Trebuchet MS',sans-serif" font-size="86" font-weight="700" fill="#f2ead9" letter-spacing="2">RAIN ON A</text>
+      <text x="360" y="470" font-family="'Futura','Trebuchet MS',sans-serif" font-size="86" font-weight="700" fill="#ffd36b" letter-spacing="2">MOTEL ROOF</text>
+      <rect x="364" y="505" width="330" height="54" rx="27" fill="#3ecfb8"/>
+      <text x="529" y="541" font-family="'Futura','Trebuchet MS',sans-serif" font-size="28" font-weight="700" fill="#120b26" text-anchor="middle" letter-spacing="3">8 HOURS · 4K</text>
+      <text x="640" y="660" font-family="'Futura','Trebuchet MS',sans-serif" font-size="30" font-weight="700" fill="#f2ead9" text-anchor="middle" letter-spacing="6">MOTEL NOWHERE</text>
+    </svg>
+  </div>
+  <p style="font-size:14.5px;color:var(--ink-dim)">위 시안은 전부 벡터 원본이라 그대로 4K로 내보낼 수 있고,
+  영상 배경은 이 아트에 비·네온 깜빡임만 얹은 느린 루프 애니메이션으로 제작합니다(오리지널 비주얼 = 정책 방어의 핵심).</p>
+</section>
+
+<!-- ================= 4. POLICY ================= -->
+<section>
+  <p class="kicker">04 · Compliance</p>
+  <h2>수익화 정책 리스크와 설계된 방어선</h2>
+  <div class="risk"><b>리스크 1 — "비진정성 콘텐츠" 정책(2025.7 개정).</b>
+  앰비언트·수면 채널은 반복 콘텐츠 감지로 수익화 거절률이 가장 높은 축입니다.
+  <br>→ 방어: 앨범 단위 기획("Room" 시리즈), 오리지널 아트·애니메이션, 타임스탬프·트랙리스트,
+  설명란에 제작 노트 기재. "사람이 큐레이션한 채널"의 증거를 모든 영상에 남깁니다.</div>
+  <div class="risk"><b>리스크 2 — 완전 AI 음원은 Content ID 등록 불가(2025.7~).</b>
+  내 채널 수익화는 가능하지만, 남이 내 곡을 퍼가도 자동 징수가 안 됩니다.
+  <br>→ 방어: Suno 결과물을 그대로 쓰지 않고 <b>DAW에서 편곡·레이어링·마스터링을 거친 하이브리드 트랙</b>으로 완성.
+  사람의 창작 기여가 실질화되면 저작권 등록·Content ID 경로가 열리고 정책 리스크도 함께 내려갑니다.</div>
+  <div class="risk"><b>리스크 3 — 유통사별 AI 정책 상이.</b> TuneCore·CD Baby는 100% AI 거절.
+  <br>→ 방어: <b>DistroKid</b>(AI 허용 + 고지 의무) 채택, 업로드 시 AI 사용 고지. 스트리밍 플랫폼 미고지 시 계정 정지 리스크가 있으므로 고지는 무조건 합니다.</div>
+  <div class="ok"><b>전제 조건.</b> Suno는 Pro/Premier 구독에서만 상업적 권리가 확보됩니다(월 $10~).
+  수익화 심사는 구독 1,000명 + 시청 4,000시간 — 수면 니치는 시청시간이 길어 통상 시간 조건이 먼저 충족됩니다.</div>
+</section>
+
+<!-- ================= 5. PRODUCTION ================= -->
+<section>
+  <p class="kicker">05 · Production Pipeline</p>
+  <h2>Album 1 «Vacancy» — 트랙 제작 프롬프트 팩</h2>
+  <p>Suno(현 시점 폼 최상위 세대 모델) 기준, 붙여넣기만 하면 되는 스타일 프롬프트입니다.
+  전 트랙 공통 규칙: <b>드럼 없음 · 50–60 BPM · 페이드인/아웃 · 보컬 없음</b> (수면 리텐션 최적화).</p>
+  <div class="prompt"><p class="t">공통 베이스 프롬프트</p>
+ambient sleep music, warm analog synth pads, slow evolving drones, tape hiss texture,
+no drums, no vocals, 55 bpm, nostalgic late-night American roadside atmosphere,
+soft Rhodes piano, distant highway hum, gentle and hypnotic, seamless loop</div>
+  <div class="tbl-scroll">
+    <table>
+      <tr><th>#</th><th>트랙</th><th>추가 프롬프트 (베이스에 덧붙임)</th></tr>
+      <tr><td class="num">1</td><td>Check-In (12:04 AM)</td><td>soft door chime intro, warm hum of a lobby at midnight</td></tr>
+      <tr><td class="num">2</td><td>Rain on a Motel Roof</td><td>gentle rain on tin roof, distant thunder, cozy interior warmth</td></tr>
+      <tr><td class="num">3</td><td>Neon Through Curtains</td><td>slow pulsing warm synth swells, flickering neon ambience</td></tr>
+      <tr><td class="num">4</td><td>Ice Machine Hum</td><td>deep mechanical drone, soft white noise bed, hypnotic low end</td></tr>
+      <tr><td class="num">5</td><td>Highway Lullaby</td><td>faraway passing cars, doppler swells, warm tape saturation</td></tr>
+      <tr><td class="num">6</td><td>Room 7, Lights Off</td><td>near-silent drone, sub-bass warmth, air conditioner texture</td></tr>
+      <tr><td class="num">7</td><td>Diner Closing Time</td><td>muffled jazz through a wall, clinking fading, melancholic warmth</td></tr>
+      <tr><td class="num">8</td><td>Static Channel</td><td>soft TV static bed, slow dreamy pad washes underneath</td></tr>
+      <tr><td class="num">9</td><td>3AM Pool Glow</td><td>underwater-feeling pads, gentle chlorine-blue shimmer, weightless</td></tr>
+      <tr><td class="num">10</td><td>Check-Out (Dawn)</td><td>first birdsong far away, warming major drone, hopeful sunrise resolve</td></tr>
+    </table>
+  </div>
+  <h3>완성 공정 (사람 손이 들어가는 구간 — 정책 방어 + 퀄리티)</h3>
+  <ol>
+    <li>Suno에서 트랙당 4–6개 생성 → 베스트 테이크 선별</li>
+    <li>DAW(무료 Reaper/Ableton)에서 EQ·리버브·크로스페이드, 트랙 간 톤 통일 마스터링 (타깃 −20 LUFS, 수면용은 일반 음원보다 훨씬 조용하게)</li>
+    <li>10트랙 × 앨범 1시간 → 같은 소스로 8시간 루프 확장판 렌더</li>
+    <li>ffmpeg으로 커버 아트 루프 애니메이션 + 오디오 합성 → 4K 업로드본</li>
+    <li>DistroKid로 앨범 발매(AI 고지 체크) → Spotify 수면 플레이리스트 피칭</li>
+  </ol>
+  <h3>영상 SEO 템플릿 (영어 고정 — 해외 타깃)</h3>
+  <div class="prompt"><p class="t">제목 공식</p>
+Rain on a Motel Roof — 8 Hours of Ambient Sleep Music (No Ads Mid-Sleep Version follows)
+[소재] + [8 Hours] + [Ambient Sleep Music / for Deep Sleep] 구조.
+검색 타깃: "rain sounds for sleeping" "8 hour sleep music" "ambient sleep"</div>
+  <p>설명란: 첫 줄에 핵심 키워드 문장, 트랙리스트 타임스탬프 10개, 제작 노트 2–3줄(정책 방어),
+  Spotify/Apple Music 링크(스트리밍 수익 연결). 태그·해시태그 리스트는 저장소의 seo-templates에 포함.</p>
+</section>
+
+<!-- ================= 6. ROADMAP ================= -->
+<section>
+  <p class="kicker">06 · Roadmap</p>
+  <h2>90일 런칭 로드맵</h2>
+  <div class="tbl-scroll">
+    <table>
+      <tr><th>구간</th><th>할 일</th><th>산출물</th></tr>
+      <tr><td class="num">Week 1–2</td><td>채널 개설(브랜딩 적용), Suno Pro + DistroKid 가입, Album 1 제작</td><td>10트랙 + 8시간 확장판 2본</td></tr>
+      <tr><td class="num">Week 3–4</td><td>영상 4본 업로드(1h×2, 8h×2), Shorts 6본(아트 루프+한 소절)</td><td>주 2회 업로드 리듬 확립</td></tr>
+      <tr><td class="num">Month 2</td><td>Album 2 «Open All Night», CTR 데이터로 썸네일 A/B</td><td>영상 8본 누적, DistroKid 발매 1건</td></tr>
+      <tr><td class="num">Month 3</td><td>Album 3 «Channel 0AM»(화이트노이즈 — 검색량 최대 서브니치), 반응 좋은 무드에 물량 집중</td><td>영상 16본 누적, 수익화 심사 요건 진입 궤도</td></tr>
+    </table>
+  </div>
+  <p>업로드 배합은 검증된 성장 공식대로: <b>Shorts 40%(발견) · 롱폼 40% · 쇼케이스 20%</b>.
+  주 2회 롱폼 + 주 3회 Shorts가 기본 케이던스입니다.</p>
+
+  <h3>수익 시나리오 (12개월 시점, 월 기준)</h3>
+  <div class="tbl-scroll">
+    <table>
+      <tr><th>시나리오</th><th>월 조회수</th><th>적용 RPM</th><th>광고 수익</th><th>스트리밍 등 부수익</th><th>월 합계</th></tr>
+      <tr><td>보수</td><td class="num">80K</td><td class="num">$4</td><td class="num">$320</td><td class="num">$50</td><td class="num">~$370</td></tr>
+      <tr><td>기본</td><td class="num">250K</td><td class="num">$6</td><td class="num">$1,500</td><td class="num">$200</td><td class="num">~$1,700</td></tr>
+      <tr><td>상방</td><td class="num">800K</td><td class="num">$8</td><td class="num">$6,400</td><td class="num">$800+</td><td class="num">~$7,200+</td></tr>
+    </table>
+  </div>
+  <p style="font-size:14.5px;color:var(--ink-dim)">정직한 전제: 첫 6개월은 수익화 전 구간이라 수익 0에 가깝습니다.
+  월 고정비는 Suno Pro $10 + DistroKid ~$2 수준. 이 니치의 강점은 12개월 이후 —
+  카탈로그가 쌓일수록 옛 영상이 계속 벌어오는 복리 구조입니다.</p>
+</section>
+
+<!-- ================= 7. CONFIRM ================= -->
+<section>
+  <p class="kicker">07 · Your Call</p>
+  <h2>컨펌 필요한 것 3가지</h2>
+  <ol>
+    <li><b>브랜드 컨펌</b> — "Motel Nowhere" 세계관과 팝아트 방향 (수정 원하면 시안 즉시 재작업)</li>
+    <li><b>구독 결제</b> — Suno Pro(월 $10)와 DistroKid(연 $22.99)는 계정 주인만 결제 가능</li>
+    <li><b>첫 앨범 GO</b> — 컨펌 시 Album 1 프롬프트 팩으로 생성 → 위 파이프라인 순서대로 진행</li>
+  </ol>
+</section>
+
+<footer class="footer">
+  <p>조사 출처:
+  <a href="https://outlierkit.com/resources/faceless-youtube-channels/">OutlierKit — Faceless Niches &amp; CPM Data</a> ·
+  <a href="https://outlierkit.com/resources/ai-generated-music-youtube-monetization-2026/">OutlierKit — AI Music Monetization 2026</a> ·
+  <a href="https://milx.app/en/trends/youtube-cpm-rpm-rates-2026-average-niches-countries-more">MilX — CPM/RPM by Niche &amp; Country</a> ·
+  <a href="https://terms.law/ai-output-rights/suno/">Terms.Law — Suno Commercial Rights</a> ·
+  <a href="https://lastplaydistro.com/blog/ai-music-monetization-distribution-policies-2026">DistroKid AI Policy 2026</a> ·
+  <a href="https://dynamoi.com/learn/faqs/ambient-music-channel-monetization-rules">Dynamoi — Ambient Monetization Rules</a> ·
+  <a href="https://buycoverarts.com/album-cover-art-trends-2026/">Cover Art Trends 2026</a> ·
+  <a href="https://www.chartlex.com/blog/marketing/grow-youtube-channel-musician-2026">Chartlex — Music Channel Growth</a></p>
+  <p>Motel Nowhere Launch Package · 리서치/전략/디자인/파이프라인 통합 보고서 · 2026-07-19</p>
+</footer>
+
+</div>
