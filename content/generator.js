@@ -9,6 +9,10 @@ const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL   = 'claude-sonnet-5';
 
 function callClaude(prompt, systemPrompt, maxTokens = 4096) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return Promise.reject(new Error('ANTHROPIC_API_KEY 미설정 — Railway Variables에 추가하세요'));
+  }
+
   const body = JSON.stringify({
     model: MODEL,
     max_tokens: maxTokens,
@@ -31,14 +35,16 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
       res.on('end', () => {
         try {
           const json = JSON.parse(data);
-          if (json.error) return reject(new Error(json.error.message));
-          resolve(json.content?.[0]?.text || '');
+          if (json.error) return reject(new Error(`Claude API 오류: ${json.error.message}`));
+          const text = json.content?.[0]?.text;
+          if (!text) return reject(new Error(`Claude 빈 응답 (status ${res.statusCode})`));
+          resolve(text);
         } catch (e) {
-          reject(e);
+          reject(new Error(`응답 파싱 실패: ${e.message} | 원본: ${data.slice(0, 200)}`));
         }
       });
     });
-    req.on('error', reject);
+    req.on('error', e => reject(new Error(`네트워크 오류: ${e.message}`)));
     req.write(body);
     req.end();
   });
@@ -104,11 +110,20 @@ JSON 형식으로만 응답:
   "imageKeywords": ["english keyword 1", "english keyword 2", "english keyword 3", "english keyword 4"]
 }`;
 
-  const raw = await callClaude(prompt, SYSTEM_PROMPT, 4096);
-  const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
-  const json = JSON.parse(cleaned);
-
-  if (!json.title || !json.content) throw new Error('글 생성 결과 불완전');
+  let json;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const raw     = await callClaude(prompt, SYSTEM_PROMPT, 4096);
+    const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
+    try {
+      json = JSON.parse(cleaned);
+      if (json.title && json.content) break;
+      if (attempt === 2) throw new Error('글 생성 결과 불완전 (제목/본문 누락)');
+      console.warn('[Generator] JSON 불완전, 재시도 중...');
+    } catch (e) {
+      if (attempt === 2) throw new Error(`JSON 파싱 실패: ${e.message}`);
+      console.warn('[Generator] JSON 파싱 실패, 재시도 중...');
+    }
+  }
 
   // 이미지 플레이스홀더를 실제 이미지 태그로 교체
   let content = json.content;

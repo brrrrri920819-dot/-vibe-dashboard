@@ -147,6 +147,48 @@ app.get('/api/status', auth, (req, res) => {
   });
 });
 
+/** Claude API 연결 테스트 (키 설정 후 이걸로 확인) */
+app.get('/api/test-claude', auth, async (req, res) => {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({ ok: false, error: 'ANTHROPIC_API_KEY 미설정' });
+  }
+  const https = require('https');
+  const body  = JSON.stringify({
+    model: 'claude-sonnet-5',
+    max_tokens: 10,
+    messages: [{ role: 'user', content: '안녕' }],
+  });
+  try {
+    await new Promise((resolve, reject) => {
+      const req = https.request('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body),
+        },
+      }, (r) => {
+        let d = '';
+        r.on('data', c => { d += c; });
+        r.on('end', () => {
+          try {
+            const j = JSON.parse(d);
+            if (j.error) return reject(new Error(j.error.message));
+            resolve(j);
+          } catch (e) { reject(e); }
+        });
+      });
+      req.on('error', reject);
+      req.write(body);
+      req.end();
+    });
+    res.json({ ok: true, message: 'Claude API 연결 성공 ✅' });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 /** 즉시 발행 */
 app.post('/api/publish', auth, upload.array('images', 10), async (req, res) => {
   const { title, content, tags, platforms } = req.body;
