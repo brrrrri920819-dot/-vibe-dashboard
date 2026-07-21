@@ -270,6 +270,8 @@ app.get('/api/trending', auth, async (req, res) => {
 app.post('/api/generate', auth, async (req, res) => {
   const { keyword, accountId } = req.body;
   if (!keyword) return res.status(400).json({ error: 'keyword 필수' });
+  const clientKey = req.headers['x-anthropic-key'];
+  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
   const accounts = readAccounts();
   const account = (accountId && accounts.find(a => a.id === accountId)) || accounts[0] || {};
   try {
@@ -346,6 +348,8 @@ app.get('/api/income-report', auth, async (req, res) => {
   if (!force && incomeReportCache.data && incomeReportCache.date === today) {
     return res.json(incomeReportCache.data);
   }
+  const clientKey = req.headers['x-anthropic-key'];
+  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
   try {
     const report = await generateIncomeReport();
     incomeReportCache = { data: { ...report, generatedAt: new Date().toISOString() }, date: today };
@@ -364,6 +368,8 @@ app.get('/api/income-hustles', auth, (req, res) => {
 app.post('/api/card-news', auth, async (req, res) => {
   const { title, content, tags } = req.body;
   if (!title || !content) return res.status(400).json({ error: 'title, content 필수' });
+  const clientKey = req.headers['x-anthropic-key'];
+  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
   try {
     const result = await generateCardNews(title, content, Array.isArray(tags) ? tags : []);
     res.json({ success: true, ...result });
@@ -376,6 +382,8 @@ app.post('/api/card-news', auth, async (req, res) => {
 app.post('/api/shorts-script', auth, async (req, res) => {
   const { title, content, tags } = req.body;
   if (!title || !content) return res.status(400).json({ error: 'title, content 필수' });
+  const clientKey = req.headers['x-anthropic-key'];
+  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
   try {
     const scriptData = await generateShortsScript(title, content, Array.isArray(tags) ? tags : []);
     const html       = renderScriptHtml(scriptData);
@@ -408,6 +416,8 @@ app.get('/api/affiliates/stats', auth, async (req, res) => {
 // ── 부업 파이프라인 API ───────────────────────────────────
 app.post('/api/hustle-pipeline/:hustleId', auth, async (req, res) => {
   const { hustleId } = req.params;
+  const clientKey = req.headers['x-anthropic-key'];
+  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
   try {
     const result = await executePipeline(hustleId);
     res.json({ success: true, ...result });

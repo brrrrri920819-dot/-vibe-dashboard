@@ -727,7 +727,7 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
             <div class="bp-name">블로거</div>
             <div class="bp-status na" id="plat-blogger-status">확인 중</div>
           </div>
-          <div class="bp-platform" id="plat-ai" style="cursor:default;opacity:1;background:linear-gradient(135deg,#1a0a2e,#2d1b69)">
+          <div class="bp-platform" id="plat-ai" style="cursor:pointer;opacity:1;background:linear-gradient(135deg,#1a0a2e,#2d1b69)" onclick="bpShowApiKeyModal()">
             <div class="bp-plat-icon" style="background:#7c3aed">AI</div>
             <div class="bp-name">Claude API</div>
             <div class="bp-status na" id="plat-ai-status">확인 중</div>
@@ -1206,6 +1206,15 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 </div><!-- /app -->
 
 <!-- Pipeline Modal -->
+<div id="apikey-modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:24px;width:100%;max-width:420px">
+    <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px">🔑 Claude API 키 설정</div>
+    <div style="font-size:12px;color:#888;margin-bottom:16px">console.anthropic.com에서 발급한 키를 입력하세요</div>
+    <input id="apikey-input" type="password" placeholder="sk-ant-api03-..." style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #444;border-radius:8px;padding:12px;color:#fff;font-size:13px;font-family:monospace;margin-bottom:12px">
+    <button onclick="bpSaveApiKey()" style="width:100%;background:linear-gradient(135deg,#7c3aed,#ec4899);border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">저장</button>
+  </div>
+</div>
+
 <div id="pipeline-modal-bg" class="pipeline-modal-bg" style="display:none" onclick="if(event.target===this)closePipelineModal()">
   <div class="pipeline-modal" id="pipeline-modal-inner">
     <div class="pipeline-modal-header">
@@ -1506,14 +1515,17 @@ async function loadDashTrending() {
 // ── BLOG PUBLISHER ────────────────────────────────────────
 var bpAccounts = [];
 var bpTrending = [];
-var BP_SERVER   = localStorage.getItem('riri_bp_server') || (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:3000' : (location.origin || ''));
-var BP_PASSWORD = localStorage.getItem('riri_bp_password') || '';
+var BP_SERVER        = localStorage.getItem('riri_bp_server') || (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:3000' : (location.origin || ''));
+var BP_PASSWORD      = localStorage.getItem('riri_bp_password') || '';
+var BP_ANTHROPIC_KEY = localStorage.getItem('riri_anthropic_key') || '';
 var bpSelectedPlatforms = ['naver','tistory','blogger'];
 var bpImageFiles = [];
 
 async function bpFetch(path, opts) {
   var url = BP_SERVER + path;
-  var headers = Object.assign({ 'x-dashboard-password': BP_PASSWORD }, (opts && opts.headers) || {});
+  var extra = {};
+  if (BP_ANTHROPIC_KEY) extra['x-anthropic-key'] = BP_ANTHROPIC_KEY;
+  var headers = Object.assign({ 'x-dashboard-password': BP_PASSWORD }, extra, (opts && opts.headers) || {});
   try {
     var res = await fetch(url, Object.assign({}, opts, { headers: headers }));
     if (!res.ok) {
@@ -1527,6 +1539,21 @@ async function bpFetch(path, opts) {
     if (e.message && e.message.startsWith('서버 연결 실패:')) throw e;
     throw new Error('서버 연결 실패: ' + e.message);
   }
+}
+
+function bpShowApiKeyModal() {
+  var inp = document.getElementById('apikey-input');
+  if (inp) inp.value = BP_ANTHROPIC_KEY || '';
+  document.getElementById('apikey-modal-bg').style.display = 'flex';
+}
+function bpSaveApiKey() {
+  var val = (document.getElementById('apikey-input').value || '').trim();
+  if (!val) { bpToast('키를 입력해주세요', 'err'); return; }
+  BP_ANTHROPIC_KEY = val;
+  localStorage.setItem('riri_anthropic_key', val);
+  document.getElementById('apikey-modal-bg').style.display = 'none';
+  bpToast('✅ API 키 저장됨', 'ok');
+  bpCheckServerStatus();
 }
 
 async function bpCheckServerStatus() {
