@@ -114,15 +114,15 @@ JSON 형식으로만 응답:
   for (let attempt = 1; attempt <= 2; attempt++) {
     const raw     = await callClaude(prompt, SYSTEM_PROMPT, 4096);
     const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
-    try {
-      json = JSON.parse(cleaned);
-      if (json.title && json.content) break;
-      if (attempt === 2) throw new Error('글 생성 결과 불완전 (제목/본문 누락)');
-      console.warn('[Generator] JSON 불완전, 재시도 중...');
-    } catch (e) {
+    let parsed = null;
+    try { parsed = JSON.parse(cleaned); } catch (e) {
       if (attempt === 2) throw new Error(`JSON 파싱 실패: ${e.message}`);
       console.warn('[Generator] JSON 파싱 실패, 재시도 중...');
+      continue;
     }
+    if (parsed.title && parsed.content) { json = parsed; break; }
+    if (attempt === 2) throw new Error('글 생성 결과 불완전 (제목/본문 누락)');
+    console.warn('[Generator] JSON 불완전, 재시도 중...');
   }
 
   // 이미지 플레이스홀더를 실제 이미지 태그로 교체

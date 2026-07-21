@@ -91,6 +91,9 @@ function fetchUrl(url, opts = {}) {
 }
 
 function callClaude(prompt, system = '당신은 한국 부업·수익화 전문 컨설턴트입니다.', maxTokens = 2048) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return Promise.reject(new Error('ANTHROPIC_API_KEY 미설정 — Railway Variables에 추가하세요'));
+  }
   const body = JSON.stringify({
     model: MODEL,
     max_tokens: maxTokens,
@@ -112,12 +115,14 @@ function callClaude(prompt, system = '당신은 한국 부업·수익화 전문 
       res.on('end', () => {
         try {
           const json = JSON.parse(data);
-          if (json.error) return reject(new Error(json.error.message));
-          resolve(json.content?.[0]?.text || '');
-        } catch (e) { reject(e); }
+          if (json.error) return reject(new Error(`Claude API 오류: ${json.error.message}`));
+          const text = json.content?.[0]?.text;
+          if (!text) return reject(new Error(`Claude 빈 응답 (status ${res.statusCode})`));
+          resolve(text);
+        } catch (e) { reject(new Error(`응답 파싱 실패: ${e.message}`)); }
       });
     });
-    req.on('error', reject);
+    req.on('error', e => reject(new Error(`네트워크 오류: ${e.message}`)));
     req.write(body);
     req.end();
   });
