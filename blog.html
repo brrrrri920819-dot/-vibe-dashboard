@@ -1548,6 +1548,8 @@ async function bpCheckServerStatus() {
       var el = document.getElementById('plat-' + p + '-status');
       if (el) { el.className = 'bp-status na'; el.textContent = '서버 미연결'; }
     });
+    var aiEl = document.getElementById('plat-ai-status');
+    if (aiEl) { aiEl.className = 'bp-status na'; aiEl.textContent = '서버 미연결'; }
   }
 }
 
