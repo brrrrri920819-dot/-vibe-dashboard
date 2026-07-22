@@ -638,6 +638,9 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
       <button class="nav-item" id="nav-month" onclick="showView('month')">
         <span class="ni">📅</span> 한달 스케줄
       </button>
+      <button class="nav-item" id="nav-drafts" onclick="showView('drafts')">
+        <span class="ni">📝</span> 생성된 글 <span id="draft-count-badge" style="margin-left:auto;background:rgba(236,72,153,.25);color:#f9a8d4;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;display:none">0</span>
+      </button>
       <div class="nav-section">수익 관리</div>
       <button class="nav-item" id="nav-income" onclick="showView('income')">
         <span class="ni">📈</span> 부업 분석 리포트
@@ -1165,6 +1168,19 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
       </div>
     </div>
 
+    <!-- 📝 생성된 글 -->
+    <div id="view-drafts" style="display:none">
+      <div class="page-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="page-title-wrap">
+          <div class="page-title">📝 생성된 글</div>
+          <div class="page-date">AI가 생성한 글 — 검수 후 발행하세요</div>
+        </div>
+        <button class="add-btn" onclick="showView('keywords')">+ 새 글 생성</button>
+      </div>
+      <div id="drafts-list"></div>
+    </div>
+
     <!-- 📈 부업 분석 리포트 -->
     <div id="view-income" style="display:none">
       <div class="page-header">
@@ -1370,6 +1386,7 @@ function enterApp() {
   bpCheckServerStatus();
   bpLoadQueue();
   loadHeroStats();
+  bpFetch('/api/drafts').then(function(ds){ updateDraftBadge(ds.filter(function(d){return d.status==='draft';}).length); }).catch(function(){});
 }
 
 function lockApp() {
@@ -1410,7 +1427,7 @@ function showView(v) {
   // 키워드 뷰 벗어나면 타이머 정리
   if (v !== 'keywords' && kwRefreshTimer) { clearInterval(kwRefreshTimer); kwRefreshTimer = null; }
   currentView = v;
-  ['blog','keywords','month','affiliate','income','cardnews','shorts','write','blog-log','blog-accounts','blog-setup'].forEach(function(id) {
+  ['blog','keywords','month','drafts','affiliate','income','cardnews','shorts','write','blog-log','blog-accounts','blog-setup'].forEach(function(id) {
     var btn = document.getElementById('nav-' + id);
     if (btn) btn.classList.toggle('active', id === v);
     var view = document.getElementById('view-' + id);
@@ -1434,6 +1451,7 @@ function showView(v) {
   if (v === 'shorts')    { loadShortsView(); }
   if (v === 'blog-log')  { loadBlogLog(); }
   if (v === 'blog-setup'){ bpLoadServerSettings(); }
+  if (v === 'drafts')    { loadDraftsView(); }
   if (v === 'blog-accounts') { bpLoadAccounts(); bpFetchTrending(); }
 
   if (window.innerWidth <= 720) closeSidebar();
@@ -1729,6 +1747,98 @@ async function bpLoadQueue() {
     if (cnt) cnt.textContent = '';
     wrap.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><div class="et">서버에 연결할 수 없습니다<br><small style="color:var(--t3)">' + e.message + '</small></div></div>';
   }
+}
+
+// ── 드래프트 뷰 ───────────────────────────────────────────
+async function loadDraftsView() {
+  var wrap = document.getElementById('drafts-list');
+  wrap.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t3)"><span class="bp-spinner"></span> 불러오는 중...</div>';
+  try {
+    var drafts = await bpFetch('/api/drafts');
+    updateDraftBadge(drafts.length);
+    if (!drafts.length) {
+      wrap.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--t3)"><div style="font-size:48px;margin-bottom:16px">📝</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">아직 생성된 글이 없어요</div><div style="font-size:13px;margin-bottom:24px">키워드 탭에서 AI로 글을 생성해보세요</div><button class="add-btn" onclick="showView(\'keywords\')">+ 글 생성하러 가기</button></div>';
+      return;
+    }
+    wrap.innerHTML = drafts.map(function(d) {
+      var dt = new Date(d.generatedAt);
+      var dtStr = dt.toLocaleDateString('ko-KR') + ' ' + dt.toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'});
+      var statusBadge = d.status === 'published'
+        ? '<span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">✅ 발행됨</span>'
+        : '<span style="background:rgba(236,72,153,.15);color:#f9a8d4;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">📝 초안</span>';
+      var tags = (d.tags || []).slice(0, 4).map(function(t){ return '<span class="bp-tag">#'+escHtml(t)+'</span>'; }).join('');
+      return '<div class="section" style="margin-bottom:12px" id="draft-' + d.id + '">'
+        + '<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">'
+        + '<div style="flex:1;min-width:0">'
+        + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'
+        + statusBadge
+        + '<span style="color:var(--t3);font-size:11px">' + escHtml(dtStr) + '</span>'
+        + '<span style="background:var(--s2);color:var(--t2);font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px">🔑 ' + escHtml(d.keyword || '') + '</span>'
+        + '</div>'
+        + '<div style="color:#fff;font-size:15px;font-weight:700;margin-bottom:8px;line-height:1.4">' + escHtml(d.title || '') + '</div>'
+        + '<div style="display:flex;flex-wrap:wrap;gap:4px">' + tags + '</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:6px;flex-shrink:0;align-items:flex-start;flex-wrap:wrap">'
+        + (d.status !== 'published' ? '<button onclick="draftPublish(\'' + d.id + '\')" style="background:linear-gradient(135deg,#ec4899,#f43f5e);border:none;color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🚀 발행</button>' : '')
+        + '<button onclick="draftPreview(\'' + d.id + '\')" style="background:var(--s2);border:1px solid var(--bd2);color:var(--t1);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">👁 미리보기</button>'
+        + '<button onclick="draftDelete(\'' + d.id + '\')" style="background:transparent;border:1px solid rgba(239,68,68,.3);color:#ef4444;padding:7px 10px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit">🗑</button>'
+        + '</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    wrap.innerHTML = '<div style="text-align:center;padding:40px;color:var(--err)">오류: ' + escHtml(e.message) + '</div>';
+  }
+}
+
+function updateDraftBadge(count) {
+  var badge = document.getElementById('draft-count-badge');
+  if (!badge) return;
+  if (count > 0) { badge.textContent = count; badge.style.display = ''; }
+  else badge.style.display = 'none';
+}
+
+var _draftPreviewData = {};
+function draftPreview(id) {
+  bpFetch('/api/drafts').then(function(drafts) {
+    var d = drafts.find(function(x){ return x.id === id; });
+    if (!d) return;
+    _draftPreviewData = d;
+    genPost = d;
+    genKeyword = d.keyword;
+    document.getElementById('gen-preview-title').textContent = d.title || d.keyword;
+    document.getElementById('gen-preview-tags').innerHTML = (d.tags || []).map(function(t){ return '<span class="bp-tag">#'+escHtml(t)+'</span>'; }).join('');
+    document.getElementById('gen-preview-content').innerHTML = d.content || '';
+    document.getElementById('gen-loading-wrap').style.display = 'none';
+    document.getElementById('gen-preview-wrap').style.display = 'block';
+    document.getElementById('gen-modal-bg').style.display = 'flex';
+  }).catch(function(e){ bpToast('오류: ' + e.message, 'err'); });
+}
+
+async function draftDelete(id) {
+  if (!confirm('이 글을 삭제할까요?')) return;
+  try {
+    await bpFetch('/api/drafts/' + id, { method: 'DELETE' });
+    var el = document.getElementById('draft-' + id);
+    if (el) el.remove();
+    bpToast('삭제됨', 'ok');
+    var remaining = document.querySelectorAll('#drafts-list .section').length;
+    updateDraftBadge(remaining);
+    if (remaining === 0) loadDraftsView();
+  } catch(e) { bpToast('오류: ' + e.message, 'err'); }
+}
+
+async function draftPublish(id) {
+  var platform = 'blogger';
+  try {
+    var drafts = await bpFetch('/api/drafts');
+    var d = drafts.find(function(x){ return x.id === id; });
+    if (!d) return;
+    genPost = d; genKeyword = d.keyword;
+    await publishGenerated(platform);
+    await bpFetch('/api/drafts/' + id, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({status:'published'}) });
+    loadDraftsView();
+  } catch(e) { bpToast('오류: ' + e.message, 'err'); }
 }
 
 async function loadBlogLog() {
@@ -2176,6 +2286,8 @@ async function generateFromKeyword(keyword) {
     if (!data.success) throw new Error(data.error || '생성 실패');
 
     genPost = data;
+    // 드래프트 뱃지 비동기 갱신
+    bpFetch('/api/drafts').then(function(ds){ updateDraftBadge(ds.length); }).catch(function(){});
     document.getElementById('gen-preview-title').textContent = data.title || keyword;
     document.getElementById('gen-preview-tags').innerHTML = (data.tags || []).map(function(t) {
       return '<span class="bp-tag">#' + escHtml(t) + '</span>';

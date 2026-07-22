@@ -266,6 +266,45 @@ app.get('/api/trending', auth, async (req, res) => {
   res.json(data);
 });
 
+// ── 드래프트 저장소 ───────────────────────────────────────
+const DRAFTS_FILE = path.join(__dirname, 'scheduler', 'drafts.json');
+function readDrafts() {
+  try { return JSON.parse(fs.readFileSync(DRAFTS_FILE, 'utf8')); } catch { return []; }
+}
+function writeDrafts(drafts) {
+  fs.mkdirSync(path.dirname(DRAFTS_FILE), { recursive: true });
+  fs.writeFileSync(DRAFTS_FILE, JSON.stringify(drafts, null, 2));
+}
+function saveDraft(draft) {
+  const drafts = readDrafts();
+  drafts.unshift(draft);
+  if (drafts.length > 200) drafts.splice(200);
+  writeDrafts(drafts);
+  return draft;
+}
+
+/** 드래프트 목록 */
+app.get('/api/drafts', auth, (req, res) => {
+  res.json(readDrafts());
+});
+
+/** 드래프트 삭제 */
+app.delete('/api/drafts/:id', auth, (req, res) => {
+  const drafts = readDrafts().filter(d => d.id !== req.params.id);
+  writeDrafts(drafts);
+  res.json({ success: true });
+});
+
+/** 드래프트 발행 상태 업데이트 */
+app.patch('/api/drafts/:id', auth, (req, res) => {
+  const drafts = readDrafts();
+  const d = drafts.find(d => d.id === req.params.id);
+  if (!d) return res.status(404).json({ error: 'not found' });
+  Object.assign(d, req.body);
+  writeDrafts(drafts);
+  res.json({ success: true, draft: d });
+});
+
 /** AI 글 즉시 생성 (발행 전 미리보기용) */
 app.post('/api/generate', auth, async (req, res) => {
   const { keyword, accountId } = req.body;
@@ -281,7 +320,16 @@ app.post('/api/generate', auth, async (req, res) => {
       tone:     account.tone     || '친근한',
       platform: (account.platforms || ['blogger'])[0],
     });
-    res.json({ success: true, keyword, ...post });
+    const draft = saveDraft({
+      id:          `draft_${Date.now()}`,
+      keyword,
+      title:       post.title,
+      content:     post.content,
+      tags:        post.tags,
+      status:      'draft',
+      generatedAt: new Date().toISOString(),
+    });
+    res.json({ success: true, keyword, draftId: draft.id, ...post });
   } catch (err) {
     console.error('[Generate] 오류:', err.message);
     res.status(500).json({ success: false, error: err.message });
