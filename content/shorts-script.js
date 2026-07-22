@@ -155,9 +155,21 @@ ${tagStr}
   "tips": ["편집 팁1", "촬영 팁2", "업로드 최적 시간"]
 }`;
 
-  const raw     = await callClaude(prompt, SYSTEM_PROMPT, 2048);
-  const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
-  const result  = JSON.parse(cleaned);
+  let result;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const raw     = await callClaude(prompt, SYSTEM_PROMPT, 2048);
+    const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
+    try {
+      result = JSON.parse(cleaned);
+    } catch (e) {
+      if (attempt === 2) throw new Error(`숏츠 대본 JSON 파싱 실패: ${e.message}`);
+      console.warn('[ShortsScript] JSON 파싱 실패, 재시도 중...');
+      continue;
+    }
+    if (result.script && Array.isArray(result.script) && result.script.length > 0) break;
+    if (attempt === 2) throw new Error('숏츠 대본 생성 결과 불완전 — script 배열이 없습니다');
+    console.warn('[ShortsScript] 결과 불완전, 재시도 중...');
+  }
 
   if (!result.script || !Array.isArray(result.script) || result.script.length === 0) {
     throw new Error('숏츠 대본 생성 결과 불완전 — script 배열이 없습니다');

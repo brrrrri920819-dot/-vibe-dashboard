@@ -356,8 +356,10 @@ JSON 형식으로만 응답:
   content = content.replace(/\[IMAGE:([^\]]*)\]/g, (_, kw) => {
     const keyword = kw || imgKws[imgIdx] || 'side hustle';
     imgIdx++;
-    const sig = Math.floor(Math.random() * 9999);
-    const url = `https://source.unsplash.com/1200x630/?${encodeURIComponent(keyword.replace(/\s+/g, ','))}&sig=${sig}`;
+    const seed = (keyword + imgIdx).slice(0, 20);
+    const hash = [...seed].reduce((h, c) => (Math.imul(31, h) + c.charCodeAt(0)) | 0, 0);
+    const id = Math.abs(hash) % 1000;
+    const url = `https://picsum.photos/seed/${id}/1200/630`;
     return `<figure style="text-align:center;margin:28px 0"><img src="${url}" alt="${keyword}" style="max-width:100%;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.15)"><figcaption style="color:#888;font-size:13px;margin-top:8px">${keyword}</figcaption></figure>`;
   });
 

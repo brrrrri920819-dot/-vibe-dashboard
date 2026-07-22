@@ -136,6 +136,8 @@ async function publishJob(job) {
 
 /** 상태 체크 */
 app.get('/api/status', auth, (req, res) => {
+  const clientKey = req.headers['x-anthropic-key'];
+  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
   res.json({
     ok: true,
     anthropicKey: !!process.env.ANTHROPIC_API_KEY,
@@ -267,11 +269,17 @@ app.get('/api/trending', auth, async (req, res) => {
 });
 
 // ── 드래프트 저장소 ───────────────────────────────────────
+// Railway/클라우드: 재시작 시 파일이 사라지므로 메모리 사용
+const _isCloud = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RENDER || process.env.FLY_APP_NAME);
 const DRAFTS_FILE = path.join(__dirname, 'scheduler', 'drafts.json');
+let _memDrafts = [];
+
 function readDrafts() {
+  if (_isCloud) return [..._memDrafts];
   try { return JSON.parse(fs.readFileSync(DRAFTS_FILE, 'utf8')); } catch { return []; }
 }
 function writeDrafts(drafts) {
+  if (_isCloud) { _memDrafts = drafts; return; }
   fs.mkdirSync(path.dirname(DRAFTS_FILE), { recursive: true });
   fs.writeFileSync(DRAFTS_FILE, JSON.stringify(drafts, null, 2));
 }

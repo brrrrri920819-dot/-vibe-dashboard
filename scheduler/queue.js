@@ -74,6 +74,15 @@ function updateJobStatus(id, status, result = {}) {
 function startScheduler(publishFn) {
   console.log(`[Scheduler] 시작됨 (1분 간격, 환경: ${isCloud ? '클라우드' : '로컬'})`);
 
+  // 서버 재시작 시 'running' 상태로 중단된 작업을 'pending'으로 복구
+  const queue = readQueue();
+  const stuck = queue.filter(j => j.status === 'running');
+  if (stuck.length > 0) {
+    stuck.forEach(j => { j.status = 'pending'; delete j.updatedAt; });
+    writeQueue(queue);
+    console.log(`[Scheduler] ${stuck.length}개 중단된 작업 복구됨 (running → pending)`);
+  }
+
   cron.schedule('* * * * *', async () => {
     const queue = readQueue();
     const now   = new Date();

@@ -128,7 +128,7 @@ async function runDailyPipeline() {
 
     // 4. 발행 큐 등록 (시간 분산)
     const scheduledAt = spreadPublishTime(8, i);
-    const platforms   = account.platforms || [account.platform].filter(Boolean) || ['naver'];
+    const platforms   = (account.platforms && account.platforms.length > 0) ? account.platforms : (account.platform ? [account.platform] : ['naver']);
 
     enqueue({
       id:          `daily_${account.id}_${Date.now()}`,
