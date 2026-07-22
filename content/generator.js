@@ -38,10 +38,11 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
           const json = JSON.parse(data);
           if (json.error) return reject(new Error(`Claude API 오류: ${json.error.type} — ${json.error.message}`));
           if (json.stop_reason === 'max_tokens') return reject(new Error('응답이 너무 길어 잘렸습니다 (max_tokens 초과)'));
-          const text = json.content?.[0]?.text;
+          const textBlock = json.content?.find(b => b.type === 'text');
+          const text = textBlock?.text;
           if (!text) {
             console.error('[Claude] 빈 응답 원본:', data.slice(0, 500));
-            return reject(new Error(`Claude 빈 응답 — stop_reason: ${json.stop_reason}, content type: ${json.content?.[0]?.type}`));
+            return reject(new Error(`Claude 빈 응답 — stop_reason: ${json.stop_reason}, blocks: ${JSON.stringify((json.content||[]).map(b=>b.type))}`));
           }
           resolve(text);
         } catch (e) {

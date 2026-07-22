@@ -60,8 +60,8 @@ function callClaude(prompt, systemPrompt, maxTokens = 5000) {
         try {
           const json = JSON.parse(data);
           if (json.error) return reject(new Error(`Claude API 오류: ${json.error.message}`));
-          const text = json.content?.[0]?.text;
-          if (!text) return reject(new Error(`Claude 빈 응답 (status ${res.statusCode})`));
+          const text = json.content?.find(b => b.type === 'text')?.text;
+          if (!text) return reject(new Error(`Claude 빈 응답 — blocks: ${JSON.stringify((json.content||[]).map(b=>b.type))}`));
           resolve(text);
         } catch (e) { reject(new Error(`응답 파싱 실패: ${e.message}`)); }
       });
