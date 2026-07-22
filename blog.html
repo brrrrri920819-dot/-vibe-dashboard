@@ -1541,8 +1541,7 @@ async function bpFetch(path, opts) {
     }
     return await res.json();
   } catch (e) {
-    if (e.message && e.message.startsWith('서버 연결 실패:')) throw e;
-    throw new Error('서버 연결 실패: ' + e.message);
+    throw e;
   }
 }
 

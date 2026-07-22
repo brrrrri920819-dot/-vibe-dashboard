@@ -36,6 +36,7 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
         try {
           const json = JSON.parse(data);
           if (json.error) return reject(new Error(`Claude API 오류: ${json.error.message}`));
+          if (json.stop_reason === 'max_tokens') return reject(new Error('응답이 너무 길어 잘렸습니다 (max_tokens 초과)'));
           const text = json.content?.[0]?.text;
           if (!text) return reject(new Error(`Claude 빈 응답 (status ${res.statusCode})`));
           resolve(text);
@@ -50,11 +51,12 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
   });
 }
 
-// Unsplash 무료 이미지 — sig 파라미터로 매번 다른 사진
+// picsum.photos — 안정적인 무료 이미지 (Unsplash source API 2023년 종료됨)
 function getImageUrl(keyword) {
-  const encoded = encodeURIComponent(keyword.replace(/\s+/g, ','));
-  const sig = Math.floor(Math.random() * 9999);
-  return `https://source.unsplash.com/1200x630/?${encoded}&sig=${sig}`;
+  const seed = encodeURIComponent(keyword) + Math.floor(Math.random() * 1000);
+  const hash = [...seed].reduce((h, c) => (Math.imul(31, h) + c.charCodeAt(0)) | 0, 0);
+  const id = Math.abs(hash) % 1000;
+  return `https://picsum.photos/seed/${id}/1200/630`;
 }
 
 // 이미지 HTML 태그 생성
@@ -112,7 +114,7 @@ JSON 형식으로만 응답:
 
   let json;
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const raw     = await callClaude(prompt, SYSTEM_PROMPT, 4096);
+    const raw     = await callClaude(prompt, SYSTEM_PROMPT, 8192);
     const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
     let parsed = null;
     try { parsed = JSON.parse(cleaned); } catch (e) {
