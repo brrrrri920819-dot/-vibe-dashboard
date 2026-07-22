@@ -271,7 +271,8 @@ app.post('/api/generate', auth, async (req, res) => {
   const { keyword, accountId } = req.body;
   if (!keyword) return res.status(400).json({ error: 'keyword 필수' });
   const clientKey = req.headers['x-anthropic-key'];
-  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
+  if (clientKey) { process.env.ANTHROPIC_API_KEY = clientKey; console.log('[Generate] API key received from client, length:', clientKey.length); }
+  else console.warn('[Generate] x-anthropic-key 헤더 없음, env 키 사용:', !!process.env.ANTHROPIC_API_KEY);
   const accounts = readAccounts();
   const account = (accountId && accounts.find(a => a.id === accountId)) || accounts[0] || {};
   try {

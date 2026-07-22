@@ -33,14 +33,19 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
       let data = '';
       res.on('data', c => { data += c; });
       res.on('end', () => {
+        console.log(`[Claude] HTTP ${res.statusCode}, body length: ${data.length}`);
         try {
           const json = JSON.parse(data);
-          if (json.error) return reject(new Error(`Claude API 오류: ${json.error.message}`));
+          if (json.error) return reject(new Error(`Claude API 오류: ${json.error.type} — ${json.error.message}`));
           if (json.stop_reason === 'max_tokens') return reject(new Error('응답이 너무 길어 잘렸습니다 (max_tokens 초과)'));
           const text = json.content?.[0]?.text;
-          if (!text) return reject(new Error(`Claude 빈 응답 (status ${res.statusCode})`));
+          if (!text) {
+            console.error('[Claude] 빈 응답 원본:', data.slice(0, 500));
+            return reject(new Error(`Claude 빈 응답 — stop_reason: ${json.stop_reason}, content type: ${json.content?.[0]?.type}`));
+          }
           resolve(text);
         } catch (e) {
+          console.error('[Claude] 파싱 실패 원본:', data.slice(0, 500));
           reject(new Error(`응답 파싱 실패: ${e.message} | 원본: ${data.slice(0, 200)}`));
         }
       });
