@@ -162,7 +162,7 @@ async function inputContentInFrame(frame, content, imagePaths) {
         }
         if (i < paragraphs.length - 1) {
           await frame.keyboard.press('Enter');
-          await frame.waitForTimeout(randomDelay(100, 300));
+          await new Promise(r => setTimeout(r, randomDelay(100, 300)));
         }
       }
     }

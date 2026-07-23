@@ -128,7 +128,8 @@ async function exchangeTistoryToken(clientId, clientSecret, code, redirectUri) {
   });
   // 응답: "access_token=xxxxx"
   const match = res.data.match(/access_token=([^&]+)/);
-  return match ? match[1] : null;
+  if (!match) throw new Error(`티스토리 토큰 발급 실패 (응답: ${res.data.slice(0, 100)})`);
+  return match[1];
 }
 
 module.exports = { publishToTistory, getTistoryCategories, getTistoryAuthUrl, exchangeTistoryToken };
