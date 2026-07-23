@@ -321,6 +321,19 @@ app.get('/api/drafts', auth, (req, res) => {
   res.json(readDrafts());
 });
 
+/** 드래프트 일괄 복원 (클라이언트 캐시 → 서버, Railway 재시작 후 복구) */
+app.post('/api/drafts/restore', auth, (req, res) => {
+  const incoming = Array.isArray(req.body) ? req.body : [];
+  if (!incoming.length) return res.json({ success: true, count: 0 });
+  const existing = readDrafts();
+  const existingIds = new Set(existing.map(d => d.id));
+  const toAdd = incoming.filter(d => d.id && d.title && !existingIds.has(d.id));
+  const merged = [...toAdd, ...existing].slice(0, 200);
+  writeDrafts(merged);
+  console.log(`[Drafts] 복원: ${toAdd.length}개 추가됨`);
+  res.json({ success: true, count: toAdd.length });
+});
+
 /** 드래프트 삭제 */
 app.delete('/api/drafts/:id', auth, (req, res) => {
   const drafts = readDrafts().filter(d => d.id !== req.params.id);

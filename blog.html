@@ -1838,15 +1838,40 @@ async function bpLoadQueue() {
 }
 
 // ── 드래프트 뷰 ───────────────────────────────────────────
+// 드래프트 캐시 — Railway 재시작 후에도 브라우저 세션/localStorage에서 복원
+var _draftsCache = {};
+(function() {
+  try {
+    var c = JSON.parse(localStorage.getItem('riri_drafts_ls') || '[]');
+    c.forEach(function(d) { _draftsCache[d.id] = d; });
+  } catch {}
+})();
+function _saveDraftsCache(drafts) {
+  drafts.forEach(function(d) { _draftsCache[d.id] = d; });
+  try { localStorage.setItem('riri_drafts_ls', JSON.stringify(Object.values(_draftsCache).slice(0, 200))); } catch {}
+}
+
 async function loadDraftsView() {
   var wrap = document.getElementById('drafts-list');
   wrap.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t3)"><span class="bp-spinner"></span> 불러오는 중...</div>';
   try {
     var drafts = await bpFetch('/api/drafts');
+    _saveDraftsCache(drafts);  // 캐시 저장
     updateDraftBadge(drafts.filter(function(d){return d.status==='draft';}).length);
     if (!drafts.length) {
-      wrap.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--t3)"><div style="font-size:48px;margin-bottom:16px">📝</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">아직 생성된 글이 없어요</div><div style="font-size:13px;margin-bottom:24px">키워드 탭에서 AI로 글을 생성해보세요</div><button class="add-btn" onclick="showView(\'keywords\')">+ 글 생성하러 가기</button></div>';
-      return;
+      // 서버 메모리 초기화 시 localStorage 캐시에서 복원 후 서버에 bulk 복구
+      var cached = Object.values(_draftsCache).filter(function(d){ return d.title && d.content; });
+      if (cached.length > 0) {
+        drafts = cached;
+        bpFetch('/api/drafts/restore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cached),
+        }).then(function(){ bpToast('⚠️ 서버 재시작 — ' + cached.length + '개 초안 캐시에서 복원됨', 'warn'); }).catch(function(){});
+      } else {
+        wrap.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--t3)"><div style="font-size:48px;margin-bottom:16px">📝</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">아직 생성된 글이 없어요</div><div style="font-size:13px;margin-bottom:24px">키워드 탭에서 AI로 글을 생성해보세요</div><button class="add-btn" onclick="showView(\'keywords\')">+ 글 생성하러 가기</button></div>';
+        return;
+      }
     }
     wrap.innerHTML = drafts.map(function(d) {
       var dt = new Date(d.generatedAt);
@@ -1889,8 +1914,10 @@ function updateDraftBadge(count) {
 var _draftPreviewData = {};
 function draftPreview(id) {
   bpFetch('/api/drafts').then(function(drafts) {
-    var d = drafts.find(function(x){ return x.id === id; });
-    if (!d) return;
+    _saveDraftsCache(drafts);
+    // 서버에 없으면 로컬 캐시에서 복원 (Railway 재시작 후 메모리 초기화 대응)
+    var d = drafts.find(function(x){ return x.id === id; }) || _draftsCache[id];
+    if (!d) { bpToast('글 데이터를 찾을 수 없습니다', 'err'); return; }
     _draftPreviewData = d;
     genPost = d;
     genKeyword = d.keyword;
@@ -1922,8 +1949,9 @@ async function draftPublish(id) {
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>발행 중...'; }
   try {
     var drafts = await bpFetch('/api/drafts');
-    var d = drafts.find(function(x){ return x.id === id; });
-    if (!d) return;
+    _saveDraftsCache(drafts);
+    var d = drafts.find(function(x){ return x.id === id; }) || _draftsCache[id];
+    if (!d) { bpToast('글 데이터를 찾을 수 없습니다', 'err'); return; }
     var platform = document.getElementById('gen-platform-select') ? document.getElementById('gen-platform-select').value : 'blogger';
     var fd = new FormData();
     fd.append('title',     d.title    || d.keyword);
@@ -2376,7 +2404,10 @@ function _genShowResult(data) {
   var stepIds = ['gstep-1','gstep-2','gstep-3','gstep-4'];
   stepIds.forEach(function(id) { var el = document.getElementById(id); if (el) el.className = 'gen-step done'; });
   genPost = data;
-  bpFetch('/api/drafts').then(function(ds){ updateDraftBadge(ds.filter(function(d){return d.status==='draft';}).length); }).catch(function(){});
+  // 생성 완료된 글도 캐시에 저장 (draftId 또는 id로 저장)
+  var cacheId = data.draftId || data.id;
+  if (cacheId) { _draftsCache[cacheId] = Object.assign({}, data, { id: cacheId }); _saveDraftsCache([]); }
+  bpFetch('/api/drafts').then(function(ds){ _saveDraftsCache(ds); updateDraftBadge(ds.filter(function(d){return d.status==='draft';}).length); }).catch(function(){});
   document.getElementById('gen-preview-title').textContent = data.title || genKeyword;
   document.getElementById('gen-preview-tags').innerHTML = (data.tags || []).map(function(t){ return '<span class="bp-tag">#' + escHtml(t) + '</span>'; }).join('');
   document.getElementById('gen-preview-content').innerHTML = data.content || '';
