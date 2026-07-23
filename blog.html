@@ -1578,18 +1578,30 @@ async function bpFetch(path, opts) {
 /** 발행 jobId 폴링 — 최대 3분 대기, 결과 반환 */
 async function bpPollPublish(jobId) {
   var attempts = 0;
+  var notFoundStreak = 0;
   return new Promise(function(resolve, reject) {
     var timer = setInterval(async function() {
       attempts++;
       if (attempts > 90) { clearInterval(timer); reject(new Error('발행 시간 초과 (3분)')); return; }
       try {
         var s = await bpFetch('/api/publish-status/' + jobId);
+        notFoundStreak = 0;
         if (s.status === 'done' || s.status === 'error') {
           clearInterval(timer);
           resolve(s);
         }
       } catch (pe) {
-        if (attempts > 15) { clearInterval(timer); reject(pe); }
+        // "job not found" = 서버 재시작으로 job 소실 → 빠르게 실패 처리
+        if (pe.message && pe.message.includes('job not found')) {
+          notFoundStreak++;
+          if (notFoundStreak >= 2) {
+            clearInterval(timer);
+            reject(new Error('서버가 재시작됐어요. 발행 버튼을 다시 눌러주세요.'));
+          }
+        } else if (attempts > 15) {
+          clearInterval(timer);
+          reject(pe);
+        }
       }
     }, 2000);
   });
@@ -1968,12 +1980,13 @@ async function draftPublish(id) {
     _saveDraftsCache(drafts);
     var d = drafts.find(function(x){ return x.id === id; }) || _draftsCache[id];
     if (!d) { bpToast('글 데이터를 찾을 수 없습니다', 'err'); return; }
-    var platform = document.getElementById('gen-platform-select') ? document.getElementById('gen-platform-select').value : 'blogger';
+    // 설정된 플랫폼 사용 (없으면 blogger 폴백)
+    var platforms = (bpSelectedPlatforms && bpSelectedPlatforms.length > 0) ? bpSelectedPlatforms : ['blogger'];
     var fd = new FormData();
     fd.append('title',     d.title    || d.keyword);
     fd.append('content',   d.content  || '');
     fd.append('tags',      JSON.stringify(d.tags || []));
-    fd.append('platforms', JSON.stringify([platform]));
+    fd.append('platforms', JSON.stringify(platforms));
     var res = await fetch(BP_SERVER + '/api/publish', {
       method: 'POST',
       headers: { 'x-dashboard-password': BP_PASSWORD },
