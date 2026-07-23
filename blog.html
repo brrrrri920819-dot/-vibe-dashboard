@@ -171,6 +171,7 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 .bp-toast.show{transform:translateY(0);opacity:1}
 .bp-toast.toast-ok{border-left:3px solid var(--ok)}
 .bp-toast.toast-err{border-left:3px solid var(--err)}
+.bp-toast.toast-warn{border-left:3px solid var(--warn)}
 .bp-spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--bd2);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -1681,15 +1682,20 @@ async function publishNow() {
       body: fd,
     });
     var data = await res.json();
-    if (data.success) {
-      var msgs = Object.keys(data.results || {}).map(function(p) {
-        var r = data.results[p];
-        return r.success ? p + ' 발행 완료' : p + ' 실패: ' + r.error;
-      });
-      bpToast('🚀 ' + msgs.join(' | '), 'ok');
+    var platIcons = { naver:'🟢', tistory:'🟠', blogger:'🔵' };
+    var platResults = data.results || {};
+    var successPlatforms = Object.keys(platResults).filter(function(p){ return platResults[p] && platResults[p].success; });
+    var failedPlatforms  = Object.keys(platResults).filter(function(p){ return platResults[p] && !platResults[p].success; });
+    if (data.success && successPlatforms.length > 0) {
+      var successMsg = successPlatforms.map(function(p){ return (platIcons[p]||p)+' 완료'; }).join(' | ');
+      if (failedPlatforms.length > 0) {
+        bpToast('⚠️ ' + successMsg + ' / 실패: ' + failedPlatforms.map(function(p){ return p+': '+(platResults[p].error||'?'); }).join(', '), 'warn');
+      } else {
+        bpToast('🚀 ' + successMsg, 'ok');
+      }
       bpResetForm(); bpLoadQueue(); loadHeroStats();
     } else {
-      bpToast('발행 실패: ' + (data.error || '알 수 없는 오류'), 'err');
+      bpToast('❌ 발행 실패: ' + (data.error || '알 수 없는 오류'), 'err');
     }
   } catch (e) {
     bpToast('서버 연결 오류: ' + e.message, 'err');
@@ -1853,13 +1859,26 @@ async function draftPublish(id) {
       body: fd,
     });
     var data = await res.json();
-    if (!data.success) throw new Error(data.error || '발행 실패');
+    var platResults = data.results || {};
+    var successPlatforms = Object.keys(platResults).filter(function(p){ return platResults[p] && platResults[p].success; });
+    var failedPlatforms  = Object.keys(platResults).filter(function(p){ return platResults[p] && !platResults[p].success; });
+    if (!data.success || successPlatforms.length === 0) {
+      var errDetail = data.error || (failedPlatforms.length > 0 ? failedPlatforms.map(function(p){ return p+': '+(platResults[p].error||'오류'); }).join(', ') : '발행 실패');
+      throw new Error(errDetail);
+    }
+    // 하나라도 성공 시 발행됨 처리
     await bpFetch('/api/drafts/' + id, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({status:'published'}) });
-    bpToast('🚀 발행 완료!', 'ok');
+    var icons = { naver:'🟢', tistory:'🟠', blogger:'🔵' };
+    var successMsg = successPlatforms.map(function(p){ return (icons[p]||p)+' 완료'; }).join(' | ');
+    if (failedPlatforms.length > 0) {
+      bpToast('⚠️ ' + successMsg + ' / 실패: ' + failedPlatforms.map(function(p){ return p; }).join(', '), 'warn');
+    } else {
+      bpToast('🚀 ' + successMsg, 'ok');
+    }
     loadDraftsView();
     loadHeroStats();
   } catch(e) {
-    bpToast('오류: ' + e.message, 'err');
+    bpToast('❌ 발행 실패: ' + e.message, 'err');
     if (btn) { btn.disabled = false; btn.textContent = '🚀 발행'; }
   }
 }
@@ -2105,7 +2124,7 @@ function bpToast(msg, type) {
   var el = document.getElementById('bp-toast');
   if (!el) return;
   el.textContent = msg;
-  el.className = 'bp-toast show ' + (type === 'ok' ? 'toast-ok' : type === 'err' ? 'toast-err' : '');
+  el.className = 'bp-toast show ' + (type === 'ok' ? 'toast-ok' : type === 'err' ? 'toast-err' : type === 'warn' ? 'toast-warn' : '');
   clearTimeout(bpToastTimer);
   bpToastTimer = setTimeout(function() { el.classList.remove('show'); }, 4000);
 }
@@ -2384,9 +2403,19 @@ async function publishGenerated() {
       body: fd,
     });
     var data = await res.json();
-    if (data.success) {
-      bpToast('🚀 발행 완료!', 'ok');
-      // 드래프트에서 발행한 경우 상태 업데이트
+    // 플랫폼별 결과 확인
+    var platResults = data.results || {};
+    var successPlatforms = Object.keys(platResults).filter(function(p){ return platResults[p] && platResults[p].success; });
+    var failedPlatforms  = Object.keys(platResults).filter(function(p){ return platResults[p] && !platResults[p].success; });
+    if (data.success && successPlatforms.length > 0) {
+      var successMsg = successPlatforms.map(function(p){ var icons={naver:'🟢',tistory:'🟠',blogger:'🔵'}; return (icons[p]||p)+' 완료'; }).join(' | ');
+      if (failedPlatforms.length > 0) {
+        var failMsg = failedPlatforms.map(function(p){ return p + ': ' + (platResults[p].error || '실패'); }).join(', ');
+        bpToast('⚠️ ' + successMsg + ' / 실패: ' + failMsg, 'warn');
+      } else {
+        bpToast('🚀 ' + successMsg, 'ok');
+      }
+      // 드래프트에서 발행한 경우 상태 업데이트 (하나라도 성공 시)
       // 신규 생성 흐름: genPost.draftId, 미리보기 흐름: genPost.id
       var _pubDraftId = (genPost.draftId && String(genPost.draftId).startsWith('draft_')) ? genPost.draftId
                       : (genPost.id    && String(genPost.id).startsWith('draft_'))    ? genPost.id
@@ -2399,7 +2428,8 @@ async function publishGenerated() {
       closeGenModal();
       loadHeroStats();
     } else {
-      bpToast('발행 실패: ' + (data.error || '알 수 없는 오류'), 'err');
+      var errDetail = data.error || (failedPlatforms.length > 0 ? failedPlatforms.map(function(p){ return p+': '+(platResults[p].error||'오류'); }).join(', ') : '알 수 없는 오류');
+      bpToast('❌ 발행 실패: ' + errDetail, 'err');
     }
   } catch (e) {
     bpToast('오류: ' + e.message, 'err');

@@ -205,7 +205,11 @@ app.post('/api/publish', auth, upload.array('images', 10), async (req, res) => {
 
   try {
     const results = await publishJob({ title, content, tags: parsedTags, imagePaths, platforms: parsedPlatforms });
-    res.json({ success: true, results });
+    // 하나라도 성공한 플랫폼이 있어야 success:true
+    const resultValues = Object.values(results);
+    const anySuccess   = resultValues.some(r => r && r.success);
+    const allErrors    = resultValues.filter(r => r && !r.success).map(r => r.error).filter(Boolean).join(' | ');
+    res.json({ success: anySuccess, results, error: anySuccess ? undefined : (allErrors || '모든 플랫폼 발행 실패') });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
