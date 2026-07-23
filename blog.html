@@ -3029,11 +3029,27 @@ async function triggerCardNewsGen() {
   statusEl.textContent = '클로드가 6장짜리 카드뉴스를 디자인하고 있어요 ✨';
 
   try {
-    var data = await bpFetch('/api/card-news', {
+    var init = await bpFetch('/api/card-news', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-dashboard-password': BP_PASSWORD },
       body: JSON.stringify({ title, content, tags }),
     });
+    if (!init.jobId) throw new Error(init.error || '카드뉴스 생성 시작 실패');
+
+    var elapsed = 0;
+    var data = await new Promise(function(resolve, reject) {
+      var timer = setInterval(async function() {
+        elapsed += 2;
+        if (elapsed > 180) { clearInterval(timer); reject(new Error('카드뉴스 생성 시간 초과 (3분)')); return; }
+        statusEl.textContent = '클로드가 6장짜리 카드뉴스를 디자인하고 있어요 ✨ (' + elapsed + '초)';
+        try {
+          var s = await bpFetch('/api/card-news-status/' + init.jobId);
+          if (s.status === 'done') { clearInterval(timer); resolve(s); }
+          else if (s.status === 'error') { clearInterval(timer); reject(new Error(s.error || '카드뉴스 생성 실패')); }
+        } catch (e) { clearInterval(timer); reject(e); }
+      }, 2000);
+    });
+
     cnGeneratedData = data;
     renderCardNewsPreviews(data);
     statusEl.textContent = '✅ ' + (data.cardCount || 6) + '장 생성 완료! 클릭해서 크게 보세요.';
@@ -3148,11 +3164,27 @@ async function triggerShortsGen() {
   statusEl.textContent = '클로드가 60초 숏츠 대본을 작성하고 있어요 🎬';
 
   try {
-    var data = await bpFetch('/api/shorts-script', {
+    var init = await bpFetch('/api/shorts-script', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-dashboard-password': BP_PASSWORD },
       body: JSON.stringify({ title, content, tags }),
     });
+    if (!init.jobId) throw new Error(init.error || '대본 생성 시작 실패');
+
+    var elapsed = 0;
+    var data = await new Promise(function(resolve, reject) {
+      var timer = setInterval(async function() {
+        elapsed += 2;
+        if (elapsed > 180) { clearInterval(timer); reject(new Error('대본 생성 시간 초과 (3분)')); return; }
+        statusEl.textContent = '클로드가 60초 숏츠 대본을 작성하고 있어요 🎬 (' + elapsed + '초)';
+        try {
+          var s = await bpFetch('/api/shorts-status/' + init.jobId);
+          if (s.status === 'done') { clearInterval(timer); resolve(s); }
+          else if (s.status === 'error') { clearInterval(timer); reject(new Error(s.error || '대본 생성 실패')); }
+        } catch (e) { clearInterval(timer); reject(e); }
+      }, 2000);
+    });
+
     shGeneratedData = data;
     renderShortsScript(data);
     statusEl.textContent = '✅ 대본 완성! 세그먼트별로 확인하고 바로 촬영하세요.';
@@ -3283,13 +3315,10 @@ async function loadDailyReport(force) {
   var btn        = document.getElementById('income-refresh-btn');
   if (!reportWrap) return;
 
-  reportWrap.innerHTML = '<div style="text-align:center;padding:28px;color:var(--t3)"><span class="bp-spinner"></span> AI 리포트 분석 중... (30~60초 소요)</div>';
+  reportWrap.innerHTML = '<div style="text-align:center;padding:28px;color:var(--t3)"><span class="bp-spinner"></span> AI 리포트 분석 중... (30~90초 소요)</div>';
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>분석 중...'; }
 
-  try {
-    var url = '/api/income-report' + (force ? '?refresh=1' : '');
-    var data = await bpFetch(url);
-
+  function applyReport(data) {
     if (data.rankedHustles && data.rankedHustles.length) {
       incomeViewState.hustles = data.rankedHustles;
       renderHustleCards(data.rankedHustles);
@@ -3302,8 +3331,53 @@ async function loadDailyReport(force) {
       reportWrap.innerHTML = '<div class="empty-state"><div class="ei">📝</div><div class="et">리포트 없음</div></div>';
     }
     incomeViewState.reportLoaded = true;
+  }
+
+  try {
+    var url = '/api/income-report' + (force ? '?refresh=1' : '');
+    var init = await bpFetch(url);
+
+    // 캐시된 데이터 즉시 표시
+    if (init.cached && init.content) {
+      applyReport(init);
+      if (btn) { btn.disabled = false; btn.innerHTML = '⟳ 새로고침'; }
+      return;
+    }
+
+    // 비동기 잡 폴링
+    if (!init.jobId) {
+      // 구버전 호환: content 있으면 바로 표시
+      if (init.content) { applyReport(init); return; }
+      throw new Error(init.error || '리포트 생성 실패');
+    }
+
+    var attempts = 0;
+    await new Promise(function(resolve, reject) {
+      var timer = setInterval(async function() {
+        attempts++;
+        if (attempts > 60) { clearInterval(timer); reject(new Error('분석 시간 초과 (2분)')); return; }
+        try {
+          var s = await bpFetch('/api/income-report-status/' + init.jobId);
+          if (s.status === 'done') {
+            clearInterval(timer);
+            applyReport(s);
+            resolve();
+          } else if (s.status === 'error') {
+            clearInterval(timer);
+            reject(new Error(s.error || '리포트 생성 실패'));
+          } else {
+            // 진행 중 — 경과 시간 표시
+            var elapsed = Math.round(attempts * 2);
+            reportWrap.innerHTML = '<div style="text-align:center;padding:28px;color:var(--t3)"><span class="bp-spinner"></span> AI 분석 중... (' + elapsed + '초 경과)</div>';
+          }
+        } catch(pe) {
+          if (attempts > 10) { clearInterval(timer); reject(pe); }
+        }
+      }, 2000);
+    });
   } catch (e) {
-    reportWrap.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><div class="et">서버에 연결해주세요<br><small style="color:var(--t3)">' + escHtml(e.message) + '</small></div></div>';
+    reportWrap.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><div class="et">리포트 생성 실패<br><small style="color:var(--t3)">' + escHtml(e.message) + '</small></div></div>';
+    bpToast('❌ 부업 리포트: ' + e.message, 'err');
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = '⟳ 새로고침'; }
   }

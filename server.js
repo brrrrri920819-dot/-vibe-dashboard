@@ -529,24 +529,48 @@ app.get('/api/affiliates', auth, async (req, res) => {
   res.json(data);
 });
 
-/** 부업 분석 리포트 (캐시: 오늘 하루) */
+/** 부업 분석 리포트 — 비동기 잡 패턴 (Railway 30초 타임아웃 우회) */
 let incomeReportCache = { data: null, date: '' };
+const _incomeJobs = new Map();
 
 app.get('/api/income-report', auth, async (req, res) => {
-  const today  = new Date().toISOString().slice(0, 10);
-  const force  = req.query.refresh === '1';
-  if (!force && incomeReportCache.data && incomeReportCache.date === today) {
-    return res.json(incomeReportCache.data);
-  }
+  const today    = new Date().toISOString().slice(0, 10);
+  const force    = req.query.refresh === '1';
   const clientKey = req.headers['x-anthropic-key'];
   if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
+
+  // 캐시 유효하면 즉시 반환
+  if (!force && incomeReportCache.data && incomeReportCache.date === today) {
+    return res.json({ ...incomeReportCache.data, cached: true });
+  }
+
+  // 이미 진행 중인 잡이 있으면 그 jobId 반환
+  const existingJob = [..._incomeJobs.values()].find(j => j.status === 'running');
+  if (existingJob) {
+    return res.json({ jobId: existingJob.jobId, status: 'running' });
+  }
+
+  const jobId = `income_${Date.now()}`;
+  _incomeJobs.set(jobId, { jobId, status: 'running', startedAt: new Date().toISOString() });
+  res.json({ jobId, status: 'running' });
+
   try {
     const report = await generateIncomeReport();
-    incomeReportCache = { data: { ...report, generatedAt: new Date().toISOString() }, date: today };
-    res.json(incomeReportCache.data);
+    const data = { ...report, generatedAt: new Date().toISOString() };
+    incomeReportCache = { data, date: today };
+    _incomeJobs.set(jobId, { jobId, status: 'done', ...data });
+    console.log(`[Income] 리포트 완료: "${report.title}"`);
   } catch (err) {
-    res.status(500).json({ error: err.message, hustles: SIDE_HUSTLES });
+    console.error('[Income] 리포트 오류:', err.message);
+    _incomeJobs.set(jobId, { jobId, status: 'error', error: err.message, hustles: SIDE_HUSTLES });
   }
+  setTimeout(() => _incomeJobs.delete(jobId), 2 * 60 * 60 * 1000);
+});
+
+app.get('/api/income-report-status/:jobId', auth, (req, res) => {
+  const job = _incomeJobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'job not found' });
+  res.json(job);
 });
 
 /** 부업 기본 데이터 (빠른 로딩용) */
@@ -554,33 +578,53 @@ app.get('/api/income-hustles', auth, (req, res) => {
   res.json(SIDE_HUSTLES);
 });
 
-/** 인스타그램 카드뉴스 생성 */
+/** 인스타그램 카드뉴스 생성 — 비동기 잡 패턴 */
+const _cardNewsJobs = new Map();
 app.post('/api/card-news', auth, async (req, res) => {
   const { title, content, tags } = req.body;
   if (!title || !content) return res.status(400).json({ error: 'title, content 필수' });
   const clientKey = req.headers['x-anthropic-key'];
   if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
+  const jobId = `cn_${Date.now()}`;
+  _cardNewsJobs.set(jobId, { status: 'running' });
+  res.json({ success: true, jobId });
   try {
     const result = await generateCardNews(title, content, Array.isArray(tags) ? tags : []);
-    res.json({ success: true, ...result });
+    _cardNewsJobs.set(jobId, { status: 'done', success: true, ...result });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    _cardNewsJobs.set(jobId, { status: 'error', success: false, error: err.message });
   }
+  setTimeout(() => _cardNewsJobs.delete(jobId), 30 * 60 * 1000);
+});
+app.get('/api/card-news-status/:jobId', auth, (req, res) => {
+  const job = _cardNewsJobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'job not found' });
+  res.json(job);
 });
 
-/** 유튜브 숏츠 대본 생성 */
+/** 유튜브 숏츠 대본 생성 — 비동기 잡 패턴 */
+const _shortsJobs = new Map();
 app.post('/api/shorts-script', auth, async (req, res) => {
   const { title, content, tags } = req.body;
   if (!title || !content) return res.status(400).json({ error: 'title, content 필수' });
   const clientKey = req.headers['x-anthropic-key'];
   if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
+  const jobId = `sh_${Date.now()}`;
+  _shortsJobs.set(jobId, { status: 'running' });
+  res.json({ success: true, jobId });
   try {
     const scriptData = await generateShortsScript(title, content, Array.isArray(tags) ? tags : []);
-    const html       = renderScriptHtml(scriptData);
-    res.json({ success: true, html, scriptData });
+    const html = renderScriptHtml(scriptData);
+    _shortsJobs.set(jobId, { status: 'done', success: true, html, scriptData });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    _shortsJobs.set(jobId, { status: 'error', success: false, error: err.message });
   }
+  setTimeout(() => _shortsJobs.delete(jobId), 30 * 60 * 1000);
+});
+app.get('/api/shorts-status/:jobId', auth, (req, res) => {
+  const job = _shortsJobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'job not found' });
+  res.json(job);
 });
 
 // ── 제휴 로그인 & 통계 API ────────────────────────────────
