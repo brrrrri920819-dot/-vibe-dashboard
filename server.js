@@ -276,18 +276,31 @@ app.post('/api/publish', auth, upload.array('images', 10), async (req, res) => {
   res.json({ success: true, jobId });
 
   // 백그라운드 발행
+  console.log(`[Publish] 시작: ${jobId} | 플랫폼: ${parsedPlatforms.join(',')} | 제목: "${title}"`);
   try {
     const results = await publishJob({ title, content, tags: parsedTags, imagePaths, platforms: parsedPlatforms });
     const anySuccess = Object.values(results).some(r => r && r.success);
     const allErrors  = Object.values(results).filter(r => r && !r.success).map(r => r.error).filter(Boolean).join(' | ');
+
+    // 플랫폼별 결과 로깅
+    Object.entries(results).forEach(([p, r]) => {
+      if (r && r.success) console.log(`[Publish] ✅ ${p}: ${r.url || '완료'}`);
+      else if (r) console.error(`[Publish] ❌ ${p}: ${r.error || '실패'}`);
+    });
+
     _pubJobs.set(jobId, {
       status:  anySuccess ? 'done' : 'error',
       success: anySuccess,
       results,
       error:   anySuccess ? undefined : (allErrors || '모든 플랫폼 발행 실패'),
     });
+
+    // 직접 발행도 로그에 기록
+    appendLog({ id: jobId, title, platforms: parsedPlatforms, status: anySuccess ? 'done' : 'failed', results, error: anySuccess ? undefined : allErrors });
   } catch (err) {
+    console.error(`[Publish] 예외: ${jobId}:`, err.message);
     _pubJobs.set(jobId, { status: 'error', success: false, error: err.message });
+    appendLog({ id: jobId, title, platforms: parsedPlatforms, status: 'failed', error: err.message });
   }
   setTimeout(() => _pubJobs.delete(jobId), 60 * 60 * 1000);
 });
@@ -668,20 +681,25 @@ app.get('/api/public', (req, res) => {
 
 // ── Tistory OAuth ────────────────────────────────────────
 app.get('/oauth/tistory', (req, res) => {
+  const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+  if (!process.env.TISTORY_CLIENT_ID) {
+    return res.send('<h2>설정 필요</h2><p>Railway에 TISTORY_CLIENT_ID가 설정되지 않았습니다.</p>');
+  }
   const url = getTistoryAuthUrl(
     process.env.TISTORY_CLIENT_ID,
-    `http://localhost:${PORT}/oauth/tistory/callback`,
+    `${baseUrl}/oauth/tistory/callback`,
   );
   res.redirect(url);
 });
 
 app.get('/oauth/tistory/callback', async (req, res) => {
+  const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
   const { code } = req.query;
   const token = await exchangeTistoryToken(
     process.env.TISTORY_CLIENT_ID,
     process.env.TISTORY_CLIENT_SECRET,
     code,
-    `http://localhost:${PORT}/oauth/tistory/callback`,
+    `${baseUrl}/oauth/tistory/callback`,
   );
   res.send(`<h2>티스토리 인증 완료!</h2><p>아래 토큰을 .env 의 TISTORY_ACCESS_TOKEN 에 저장하세요:</p><code>${token}</code>`);
 });

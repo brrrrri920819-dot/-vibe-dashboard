@@ -872,25 +872,24 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
       <div class="section" style="margin-bottom:14px">
         <div class="bp-section-title">🟠 티스토리 OAuth 인증</div>
         <div class="bp-humanize-tip">
-          1. <a href="https://www.tistory.com/guide/api/manage/register" target="_blank" style="color:var(--ac)">티스토리 앱 등록</a>에서 앱을 만드세요<br>
-          2. 서버 .env에 TISTORY_CLIENT_ID, TISTORY_CLIENT_SECRET 입력<br>
-          3. 아래 버튼으로 OAuth 인증 후 발급된 토큰을 TISTORY_ACCESS_TOKEN에 저장
+          토큰이 만료되면 발행이 안 됩니다. 아래 버튼으로 재인증하세요.<br>
+          ※ Railway에 <code style="background:var(--s3);padding:1px 5px;border-radius:4px">BASE_URL=https://your-app.up.railway.app</code> 설정 필수<br>
+          ※ 티스토리 앱 콜백 URL도 <code style="background:var(--s3);padding:1px 5px;border-radius:4px">https://your-app.up.railway.app/oauth/tistory/callback</code>으로 등록
         </div>
         <button class="bp-pub-btn" style="max-width:200px" onclick="window.open(BP_SERVER+'/oauth/tistory','_blank')">
-          티스토리 인증하기
+          🔑 티스토리 재인증
         </button>
       </div>
 
       <div class="section" style="margin-bottom:14px">
         <div class="bp-section-title">🔵 블로그스팟 (Google Blogger)</div>
         <div class="bp-humanize-tip">
-          1. <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--ac)">Google Cloud Console</a>에서 OAuth 클라이언트 생성<br>
-          2. Blogger API v3 활성화, Redirect URI: <code style="background:var(--s3);padding:1px 6px;border-radius:4px">http://localhost:3000/oauth/blogger/callback</code><br>
-          3. 서버 .env에 BLOGGER_CLIENT_ID, BLOGGER_CLIENT_SECRET 입력<br>
-          4. 아래 버튼으로 인증 후 BLOGGER_REFRESH_TOKEN, BLOGGER_BLOG_ID 저장
+          Google OAuth 토큰이 만료되면 발행이 안 됩니다. 아래 버튼으로 재인증하세요.<br>
+          ※ Railway에 <code style="background:var(--s3);padding:1px 5px;border-radius:4px">BASE_URL=https://your-app.up.railway.app</code> 설정 필수<br>
+          ※ Google Cloud Console OAuth 리다이렉트 URI에 <code style="background:var(--s3);padding:1px 5px;border-radius:4px">https://your-app.up.railway.app/oauth/blogger/callback</code> 추가
         </div>
         <button class="bp-pub-btn" style="max-width:200px" onclick="window.open(BP_SERVER+'/oauth/blogger','_blank')">
-          블로그스팟 인증하기
+          🔑 블로그스팟 재인증
         </button>
       </div>
 
