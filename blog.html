@@ -2471,10 +2471,17 @@ function _genShowResult(data) {
 
 function _genShowError(msg) {
   clearInterval(_genStepTimer); clearInterval(_genPollTimer);
-  document.getElementById('gen-loading-kw').textContent = '오류: ' + msg;
-  var subEl = document.getElementById('gen-loading-wrap').querySelector('.gen-loading-sub');
-  if (subEl) subEl.textContent = (msg.includes('API') || msg.includes('auth')) ? 'Railway에서 ANTHROPIC_API_KEY 환경변수 확인' : '잠시 후 다시 시도해주세요';
-  document.getElementById('gen-big-spinner').style.display = 'none';
+  var kwEl = document.getElementById('gen-loading-kw');
+  if (kwEl) kwEl.textContent = '⚠️ ' + msg;
+  var subEl = document.getElementById('gen-loading-wrap') && document.getElementById('gen-loading-wrap').querySelector('.gen-loading-sub');
+  if (subEl) subEl.textContent = (msg.includes('API') || msg.includes('auth') || msg.includes('KEY')) ? 'Railway에서 ANTHROPIC_API_KEY 환경변수 확인' : msg.includes('시간 초과') ? '서버가 바빠요. 잠시 후 다시 시도해주세요' : '잠시 후 다시 시도해주세요';
+  var spinEl = document.getElementById('gen-big-spinner');
+  if (spinEl) spinEl.style.display = 'none';
+  // 로딩 화면 유지 (에러 메시지 보여주기 위해) — 4초 후 모달 닫기
+  setTimeout(function() {
+    var bg = document.getElementById('gen-modal-bg');
+    if (bg && bg.style.display !== 'none') closeGenModal();
+  }, 4000);
 }
 
 async function generateFromKeyword(keyword) {

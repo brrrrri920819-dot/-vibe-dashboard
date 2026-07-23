@@ -8,6 +8,8 @@ const https = require('https');
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL   = 'claude-sonnet-5';
 
+const CLAUDE_TIMEOUT_MS = 100000; // 100초 — Claude API 최대 대기
+
 function callClaude(prompt, systemPrompt, maxTokens = 4096) {
   if (!process.env.ANTHROPIC_API_KEY) {
     return Promise.reject(new Error('ANTHROPIC_API_KEY 미설정 — Railway Variables에 추가하세요'));
@@ -21,6 +23,9 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
   });
 
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const done = (fn, val) => { if (!settled) { settled = true; fn(val); } };
+
     const req = https.request(API_URL, {
       method: 'POST',
       headers: {
@@ -36,22 +41,29 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
         console.log(`[Claude] HTTP ${res.statusCode}, body length: ${data.length}`);
         try {
           const json = JSON.parse(data);
-          if (json.error) return reject(new Error(`Claude API 오류: ${json.error.type} — ${json.error.message}`));
-          if (json.stop_reason === 'max_tokens') return reject(new Error('응답이 너무 길어 잘렸습니다 (max_tokens 초과)'));
+          if (json.error) return done(reject, new Error(`Claude API 오류: ${json.error.type} — ${json.error.message}`));
+          if (json.stop_reason === 'max_tokens') return done(reject, new Error('응답이 너무 길어 잘렸습니다 (max_tokens 초과)'));
           const textBlock = json.content?.find(b => b.type === 'text');
           const text = textBlock?.text;
           if (!text) {
             console.error('[Claude] 빈 응답 원본:', data.slice(0, 500));
-            return reject(new Error(`Claude 빈 응답 — stop_reason: ${json.stop_reason}, blocks: ${JSON.stringify((json.content||[]).map(b=>b.type))}`));
+            return done(reject, new Error(`Claude 빈 응답 — stop_reason: ${json.stop_reason}`));
           }
-          resolve(text);
+          done(resolve, text);
         } catch (e) {
           console.error('[Claude] 파싱 실패 원본:', data.slice(0, 500));
-          reject(new Error(`응답 파싱 실패: ${e.message} | 원본: ${data.slice(0, 200)}`));
+          done(reject, new Error(`응답 파싱 실패: ${e.message} | 원본: ${data.slice(0, 200)}`));
         }
       });
     });
-    req.on('error', e => reject(new Error(`네트워크 오류: ${e.message}`)));
+
+    // 타임아웃 — 연결/응답 지연 시 무한 pending 방지
+    req.setTimeout(CLAUDE_TIMEOUT_MS, () => {
+      req.destroy();
+      done(reject, new Error(`Claude API 응답 시간 초과 (${CLAUDE_TIMEOUT_MS / 1000}초)`));
+    });
+
+    req.on('error', e => done(reject, new Error(`네트워크 오류: ${e.message}`)));
     req.write(body);
     req.end();
   });
@@ -120,7 +132,7 @@ JSON 형식으로만 응답:
 
   let json;
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const raw     = await callClaude(prompt, SYSTEM_PROMPT, 8192);
+    const raw     = await callClaude(prompt, SYSTEM_PROMPT, 4096);
     const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
     let parsed = null;
     try { parsed = JSON.parse(cleaned); } catch (e) {
