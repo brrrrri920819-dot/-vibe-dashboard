@@ -60,6 +60,7 @@ function callClaude(prompt, systemPrompt, maxTokens = 5000) {
         try {
           const json = JSON.parse(data);
           if (json.error) return reject(new Error(`Claude API 오류: ${json.error.message}`));
+          if (json.stop_reason === 'max_tokens') return reject(new Error('응답이 너무 길어 잘렸습니다 (max_tokens 초과)'));
           const text = json.content?.find(b => b.type === 'text')?.text;
           if (!text) return reject(new Error(`Claude 빈 응답 — blocks: ${JSON.stringify((json.content||[]).map(b=>b.type))}`));
           resolve(text);
@@ -345,7 +346,9 @@ JSON 형식으로만 응답:
 
   const raw     = await callClaude(prompt, REPORT_SYSTEM, 5000);
   const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
-  const json    = JSON.parse(cleaned);
+  let json;
+  try { json = JSON.parse(cleaned); }
+  catch (e) { throw new Error(`리포트 JSON 파싱 실패: ${e.message} | 원본 앞: ${raw.slice(0, 200)}`); }
 
   if (!json.title || !json.content) throw new Error('리포트 생성 불완전');
 

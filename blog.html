@@ -1827,13 +1827,16 @@ async function draftDelete(id) {
     var el = document.getElementById('draft-' + id);
     if (el) el.remove();
     bpToast('삭제됨', 'ok');
+    // 서버에서 정확한 초안 수 조회
+    bpFetch('/api/drafts').then(function(ds){ updateDraftBadge(ds.filter(function(d){return d.status==='draft';}).length); }).catch(function(){});
     var remaining = document.querySelectorAll('#drafts-list .section').length;
-    updateDraftBadge(remaining);
     if (remaining === 0) loadDraftsView();
   } catch(e) { bpToast('오류: ' + e.message, 'err'); }
 }
 
 async function draftPublish(id) {
+  var btn = document.querySelector('#draft-' + id + ' button');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>발행 중...'; }
   try {
     var drafts = await bpFetch('/api/drafts');
     var d = drafts.find(function(x){ return x.id === id; });
@@ -1855,7 +1858,10 @@ async function draftPublish(id) {
     bpToast('🚀 발행 완료!', 'ok');
     loadDraftsView();
     loadHeroStats();
-  } catch(e) { bpToast('오류: ' + e.message, 'err'); }
+  } catch(e) {
+    bpToast('오류: ' + e.message, 'err');
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 발행'; }
+  }
 }
 
 async function loadBlogLog() {
@@ -2091,7 +2097,7 @@ async function bpRunNow() {
 }
 
 function escHtml(str) {
-  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 var bpToastTimer = null;
@@ -2381,8 +2387,12 @@ async function publishGenerated() {
     if (data.success) {
       bpToast('🚀 발행 완료!', 'ok');
       // 드래프트에서 발행한 경우 상태 업데이트
-      if (genPost && genPost.id && genPost.id.startsWith('draft_')) {
-        bpFetch('/api/drafts/' + genPost.id, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({status:'published'}) })
+      // 신규 생성 흐름: genPost.draftId, 미리보기 흐름: genPost.id
+      var _pubDraftId = (genPost.draftId && String(genPost.draftId).startsWith('draft_')) ? genPost.draftId
+                      : (genPost.id    && String(genPost.id).startsWith('draft_'))    ? genPost.id
+                      : null;
+      if (_pubDraftId) {
+        bpFetch('/api/drafts/' + _pubDraftId, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({status:'published'}) })
           .then(function(){ bpFetch('/api/drafts').then(function(ds){ updateDraftBadge(ds.filter(function(d){return d.status==='draft';}).length); }).catch(function(){}); })
           .catch(function(){});
       }

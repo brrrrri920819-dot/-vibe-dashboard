@@ -565,25 +565,24 @@ ${cleanContent}
   "hashtags": ["#태그1", "#태그2", "#태그3", "#태그4", "#태그5", "#태그6", "#태그7", "#태그8", "#태그9", "#태그10"]
 }`;
 
-  // ── Call Claude ────────────────────────────────────────────────────────────
-  const raw = await callClaude(userPrompt, CARD_SYSTEM, 2048);
-
-  // Strip code fences if Claude wraps the JSON anyway
-  let cleaned = raw.trim();
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned
-      .replace(/^```(?:json)?\s*/i, '')
-      .replace(/\s*```$/, '')
-      .trim();
-  }
-
+  // ── Call Claude (2회 재시도) ───────────────────────────────────────────────
   let parsed;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch (e) {
-    throw new Error(
-      `[CardNews] JSON 파싱 실패: ${e.message}\n응답 앞부분: ${raw.slice(0, 300)}`
-    );
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const raw = await callClaude(userPrompt, CARD_SYSTEM, 2048);
+    let cleaned = raw.trim();
+    if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    }
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch (e) {
+      if (attempt === 2) throw new Error(`[CardNews] JSON 파싱 실패: ${e.message}\n앞부분: ${raw.slice(0, 200)}`);
+      console.warn('[CardNews] JSON 파싱 실패, 재시도 중...');
+      continue;
+    }
+    if (parsed.cards && Array.isArray(parsed.cards) && parsed.cards.length > 0) break;
+    if (attempt === 2) throw new Error('[CardNews] 카드 배열 없음 — 생성 실패');
+    console.warn('[CardNews] cards 배열 없음, 재시도 중...');
   }
 
   let { cards = [], hashtags = [] } = parsed;
