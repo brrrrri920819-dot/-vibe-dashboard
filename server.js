@@ -191,7 +191,10 @@ app.get('/api/test-claude', auth, async (req, res) => {
   }
 });
 
-/** 즉시 발행 */
+// 발행 비동기 잡 스토어 (Railway 30초 타임아웃 우회 — Naver Playwright 30-60초 소요)
+const _pubJobs = new Map();
+
+/** 즉시 발행 — jobId 반환 후 백그라운드 발행 (Railway 30초 타임아웃 우회) */
 app.post('/api/publish', auth, upload.array('images', 10), async (req, res) => {
   const { title, content, tags, platforms } = req.body;
   const imagePaths = (req.files || []).map(f => f.path);
@@ -203,16 +206,34 @@ app.post('/api/publish', auth, upload.array('images', 10), async (req, res) => {
   const parsedPlatforms = JSON.parse(platforms || '["naver"]');
   const parsedTags      = JSON.parse(tags       || '[]');
 
+  const jobId = `pub_${Date.now()}`;
+  _pubJobs.set(jobId, { status: 'running', startedAt: new Date().toISOString() });
+
+  // jobId 즉시 반환 (Railway 30초 타임아웃 완전 우회)
+  res.json({ success: true, jobId });
+
+  // 백그라운드 발행
   try {
     const results = await publishJob({ title, content, tags: parsedTags, imagePaths, platforms: parsedPlatforms });
-    // 하나라도 성공한 플랫폼이 있어야 success:true
-    const resultValues = Object.values(results);
-    const anySuccess   = resultValues.some(r => r && r.success);
-    const allErrors    = resultValues.filter(r => r && !r.success).map(r => r.error).filter(Boolean).join(' | ');
-    res.json({ success: anySuccess, results, error: anySuccess ? undefined : (allErrors || '모든 플랫폼 발행 실패') });
+    const anySuccess = Object.values(results).some(r => r && r.success);
+    const allErrors  = Object.values(results).filter(r => r && !r.success).map(r => r.error).filter(Boolean).join(' | ');
+    _pubJobs.set(jobId, {
+      status:  anySuccess ? 'done' : 'error',
+      success: anySuccess,
+      results,
+      error:   anySuccess ? undefined : (allErrors || '모든 플랫폼 발행 실패'),
+    });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    _pubJobs.set(jobId, { status: 'error', success: false, error: err.message });
   }
+  setTimeout(() => _pubJobs.delete(jobId), 60 * 60 * 1000);
+});
+
+/** 발행 상태 폴링 */
+app.get('/api/publish-status/:jobId', auth, (req, res) => {
+  const job = _pubJobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'job not found' });
+  res.json(job);
 });
 
 /** 예약 발행 */

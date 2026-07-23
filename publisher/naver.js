@@ -12,8 +12,11 @@ const NAVER_LOGIN_URL = 'https://nid.naver.com/nidlogin.login';
 const BLOG_WRITE_URL  = 'https://blog.naver.com/ArticleWrite.naver';
 
 async function publishToNaver({ id, pw, blogId, title, content, tags = [], imagePaths = [], category = '' }) {
+  // Docker 환경: PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH 또는 시스템 chromium 사용
+  const execPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
   const browser = await chromium.launch({
     headless: true,
+    executablePath: execPath,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled'],
   });
 

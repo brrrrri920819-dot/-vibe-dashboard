@@ -42,7 +42,6 @@ async function publishToTistory({
       title,
       content: finalContent,
       visibility,
-      published: '',
       tag: tags.slice(0, 20).join(','),
     });
 

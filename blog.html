@@ -1569,6 +1569,26 @@ async function bpFetch(path, opts) {
   }
 }
 
+/** 발행 jobId 폴링 — 최대 3분 대기, 결과 반환 */
+async function bpPollPublish(jobId) {
+  var attempts = 0;
+  return new Promise(function(resolve, reject) {
+    var timer = setInterval(async function() {
+      attempts++;
+      if (attempts > 90) { clearInterval(timer); reject(new Error('발행 시간 초과 (3분)')); return; }
+      try {
+        var s = await bpFetch('/api/publish-status/' + jobId);
+        if (s.status === 'done' || s.status === 'error') {
+          clearInterval(timer);
+          resolve(s);
+        }
+      } catch (pe) {
+        if (attempts > 15) { clearInterval(timer); reject(pe); }
+      }
+    }, 2000);
+  });
+}
+
 function bpShowApiKeyModal() {
   var inp = document.getElementById('apikey-input');
   if (inp) inp.value = BP_ANTHROPIC_KEY || '';
@@ -1734,7 +1754,11 @@ async function publishNow() {
       headers: { 'x-dashboard-password': BP_PASSWORD },
       body: fd,
     });
-    var data = await res.json();
+    var init = await res.json();
+    if (!init.jobId) throw new Error(init.error || '발행 요청 실패');
+
+    // 백그라운드 발행 폴링 (Naver Playwright 60초 이상 소요 가능)
+    var data = await bpPollPublish(init.jobId);
     var platIcons = { naver:'🟢', tistory:'🟠', blogger:'🔵' };
     var platResults = data.results || {};
     var successPlatforms = Object.keys(platResults).filter(function(p){ return platResults[p] && platResults[p].success; });
@@ -1911,7 +1935,11 @@ async function draftPublish(id) {
       headers: { 'x-dashboard-password': BP_PASSWORD },
       body: fd,
     });
-    var data = await res.json();
+    var init = await res.json();
+    if (!init.jobId) throw new Error(init.error || '발행 요청 실패');
+
+    // 백그라운드 발행 폴링
+    var data = await bpPollPublish(init.jobId);
     var platResults = data.results || {};
     var successPlatforms = Object.keys(platResults).filter(function(p){ return platResults[p] && platResults[p].success; });
     var failedPlatforms  = Object.keys(platResults).filter(function(p){ return platResults[p] && !platResults[p].success; });
@@ -2455,7 +2483,11 @@ async function publishGenerated() {
       headers: { 'x-dashboard-password': BP_PASSWORD },
       body: fd,
     });
-    var data = await res.json();
+    var init = await res.json();
+    if (!init.jobId) throw new Error(init.error || '발행 요청 실패');
+
+    // 백그라운드 발행 폴링
+    var data = await bpPollPublish(init.jobId);
     // 플랫폼별 결과 확인
     var platResults = data.results || {};
     var successPlatforms = Object.keys(platResults).filter(function(p){ return platResults[p] && platResults[p].success; });
