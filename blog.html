@@ -1547,7 +1547,7 @@ var _kc = '_LPNXNe3vfQghiyoJuw91Mxqnd39xfbo';
 var _kd = 'MEKGzPP4qLjmH5Da0ex02Q-M0aA5gAA';
 var BP_ANTHROPIC_KEY = localStorage.getItem('riri_anthropic_key') || (_ka+_kb+_kc+_kd);
 if (BP_ANTHROPIC_KEY && !localStorage.getItem('riri_anthropic_key')) { localStorage.setItem('riri_anthropic_key', BP_ANTHROPIC_KEY); }
-var bpSelectedPlatforms = ['naver','tistory','blogger'];
+var bpSelectedPlatforms = []; // bpCheckServerStatus() 후 설정된 플랫폼으로 자동 채워짐
 var bpImageFiles = [];
 
 async function bpFetch(path, opts) {
@@ -1704,7 +1704,14 @@ function buildFormData() {
   var title   = (document.getElementById('bp-title').value || '').trim();
   var content = (document.getElementById('bp-content').value || '').trim();
   if (!title || !content) { bpToast('제목과 본문을 입력해주세요', 'err'); return null; }
-  if (bpSelectedPlatforms.length === 0) { bpToast('플랫폼을 선택해주세요', 'err'); return null; }
+  if (bpSelectedPlatforms.length === 0) {
+    if (_configuredPlatforms.length > 0) {
+      bpSelectedPlatforms = _configuredPlatforms.slice();
+    } else {
+      bpToast('발행할 플랫폼이 없습니다. 설정 탭에서 플랫폼 연동을 확인하세요.', 'err');
+      return null;
+    }
+  }
   var tags = (document.getElementById('bp-tags').value || '').split(',').map(function(t){ return t.trim(); }).filter(Boolean);
   var fd = new FormData();
   fd.append('title', title);
