@@ -142,9 +142,9 @@ app.get('/api/status', auth, (req, res) => {
     ok: true,
     anthropicKey: !!process.env.ANTHROPIC_API_KEY,
     platforms: {
-      naver:   !!(process.env.NAVER_ID && process.env.NAVER_PW),
-      tistory: !!process.env.TISTORY_ACCESS_TOKEN,
-      blogger: !!(process.env.BLOGGER_CLIENT_ID && process.env.BLOGGER_REFRESH_TOKEN),
+      naver:   !!(process.env.NAVER_ID && process.env.NAVER_PW && process.env.NAVER_BLOG_ID),
+      tistory: !!(process.env.TISTORY_ACCESS_TOKEN && process.env.TISTORY_BLOG_NAME),
+      blogger: !!(process.env.BLOGGER_CLIENT_ID && process.env.BLOGGER_CLIENT_SECRET && process.env.BLOGGER_REFRESH_TOKEN && process.env.BLOGGER_BLOG_ID),
     },
   });
 });

@@ -1584,20 +1584,33 @@ function bpSaveApiKey() {
   bpCheckServerStatus();
 }
 
+var _configuredPlatforms = []; // Railway에 실제로 설정된 플랫폼 목록
+
 async function bpCheckServerStatus() {
   try {
     var data = await bpFetch('/api/status');
+    var available = [];
     ['naver','tistory','blogger'].forEach(function(p) {
       var el = document.getElementById('plat-' + p + '-status');
       if (!el) return;
-      el.className = data.platforms[p] ? 'bp-status ok' : 'bp-status err';
-      el.textContent = data.platforms[p] ? '연결됨' : '설정 필요';
+      if (data.platforms[p]) {
+        el.className = 'bp-status ok';
+        el.textContent = '연결됨';
+        available.push(p);
+      } else {
+        el.className = 'bp-status err';
+        el.textContent = '설정 필요';
+      }
     });
     var aiEl = document.getElementById('plat-ai-status');
     if (aiEl) {
       aiEl.className = data.anthropicKey ? 'bp-status ok' : 'bp-status err';
       aiEl.textContent = data.anthropicKey ? '연결됨' : '❌ API 키 미설정';
     }
+
+    // 설정된 플랫폼만 자동 선택
+    _configuredPlatforms = available;
+    _autoSelectPlatforms(available);
   } catch {
     ['naver','tistory','blogger'].forEach(function(p) {
       var el = document.getElementById('plat-' + p + '-status');
@@ -1605,6 +1618,39 @@ async function bpCheckServerStatus() {
     });
     var aiEl = document.getElementById('plat-ai-status');
     if (aiEl) { aiEl.className = 'bp-status na'; aiEl.textContent = '서버 미연결'; }
+  }
+}
+
+function _autoSelectPlatforms(available) {
+  if (!available || available.length === 0) return;
+
+  // 1) 직접 발행 탭: bpSelectedPlatforms → 설정된 것만
+  bpSelectedPlatforms = available.slice();
+  ['naver','tistory','blogger'].forEach(function(p) {
+    var el = document.getElementById('plat-' + p + '2');
+    if (!el) return;
+    if (available.includes(p)) el.classList.add('selected');
+    else el.classList.remove('selected');
+  });
+
+  // 2) 생성 모달 플랫폼 셀렉트 → 첫 번째 설정된 플랫폼으로
+  var sel = document.getElementById('gen-platform-select');
+  if (sel) {
+    // 설정된 플랫폼 옵션에 "✅" 표시, 없는 건 "(미설정)" 표시
+    Array.from(sel.options).forEach(function(opt) {
+      var p = opt.value;
+      if (available.includes(p)) {
+        opt.text = opt.text.replace(' (미설정)','');
+        opt.disabled = false;
+      } else {
+        if (!opt.text.includes('미설정')) opt.text += ' (미설정)';
+        opt.disabled = true;
+      }
+    });
+    // 현재 선택값이 미설정이면 첫 번째 설정된 플랫폼으로 전환
+    if (!available.includes(sel.value)) {
+      sel.value = available[0];
+    }
   }
 }
 
