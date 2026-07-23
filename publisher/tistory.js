@@ -58,7 +58,12 @@ async function publishToTistory({
       return { success: true, url: postUrl, postId: data.postId, platform: 'tistory' };
     }
 
-    throw new Error(data?.error_message || '알 수 없는 오류');
+    const errMsg = data?.error_message || '알 수 없는 오류';
+    // 토큰 만료 시 사용자 친화적 메시지
+    if (data?.status === '401' || errMsg.includes('Authentication') || errMsg.includes('expired')) {
+      throw new Error('티스토리 토큰 만료 — 설정 탭 > 티스토리 인증하기로 토큰 재발급 필요');
+    }
+    throw new Error(errMsg);
 
   } catch (err) {
     console.error('[Tistory] 발행 실패:', err.message);

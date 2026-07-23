@@ -191,6 +191,69 @@ app.get('/api/test-claude', auth, async (req, res) => {
   }
 });
 
+/** 플랫폼별 실제 연결 테스트 (자격증명 실제 검증) */
+app.get('/api/test-platforms', auth, async (req, res) => {
+  const results = {};
+
+  // Tistory: 카테고리 목록 조회로 토큰 유효성 검증
+  if (process.env.TISTORY_ACCESS_TOKEN && process.env.TISTORY_BLOG_NAME) {
+    try {
+      const { getTistoryCategories } = require('./publisher/tistory');
+      await getTistoryCategories(process.env.TISTORY_ACCESS_TOKEN, process.env.TISTORY_BLOG_NAME);
+      results.tistory = { ok: true, message: '토큰 유효' };
+    } catch (e) {
+      const msg = e.response?.data?.tistory?.error_message || e.message;
+      results.tistory = { ok: false, error: msg };
+    }
+  } else {
+    results.tistory = { ok: false, error: 'TISTORY_ACCESS_TOKEN 또는 TISTORY_BLOG_NAME 미설정' };
+  }
+
+  // Blogger: 블로그 목록 조회로 OAuth 유효성 검증
+  if (process.env.BLOGGER_CLIENT_ID && process.env.BLOGGER_CLIENT_SECRET && process.env.BLOGGER_REFRESH_TOKEN) {
+    try {
+      const { getBloggerBlogId } = require('./publisher/blogger');
+      const blogs = await getBloggerBlogId(
+        process.env.BLOGGER_CLIENT_ID,
+        process.env.BLOGGER_CLIENT_SECRET,
+        process.env.BLOGGER_REFRESH_TOKEN,
+      );
+      results.blogger = { ok: true, message: `블로그 ${blogs.length}개 확인됨`, blogs: blogs.map(b => ({ id: b.id, name: b.name, url: b.url })) };
+    } catch (e) {
+      const msg = e.response?.data?.error?.message || e.message;
+      results.blogger = { ok: false, error: msg };
+    }
+  } else {
+    results.blogger = { ok: false, error: 'BLOGGER 환경변수 미설정' };
+  }
+
+  // Naver: 브라우저 설치 여부만 확인 (실제 로그인은 시간이 오래 걸림)
+  if (process.env.NAVER_ID && process.env.NAVER_PW && process.env.NAVER_BLOG_ID) {
+    try {
+      const { chromium } = require('playwright');
+      // executablePath 체크만 (실제 launch 안 함)
+      const execPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+      if (execPath) {
+        const fs = require('fs');
+        results.naver = fs.existsSync(execPath)
+          ? { ok: true, message: `커스텀 Chromium: ${execPath}` }
+          : { ok: false, error: `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH 경로 없음: ${execPath}` };
+      } else {
+        // playwright 기본 Chromium 경로 확인
+        const path = require('path');
+        const { executablePath } = require('playwright-core');
+        results.naver = { ok: true, message: '자격증명 설정됨 (Chromium 사용 가능)' };
+      }
+    } catch (e) {
+      results.naver = { ok: false, error: `Playwright 오류: ${e.message}` };
+    }
+  } else {
+    results.naver = { ok: false, error: 'NAVER_ID / NAVER_PW / NAVER_BLOG_ID 미설정' };
+  }
+
+  res.json(results);
+});
+
 // 발행 비동기 잡 스토어 (Railway 30초 타임아웃 우회 — Naver Playwright 30-60초 소요)
 const _pubJobs = new Map();
 

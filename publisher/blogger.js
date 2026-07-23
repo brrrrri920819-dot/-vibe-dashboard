@@ -66,7 +66,13 @@ async function publishToBlogger({
     return { success: true, url: postUrl, postId: res.data.id, platform: 'blogger' };
 
   } catch (err) {
-    const msg = err.response?.data?.error?.message || err.message;
+    let msg = err.response?.data?.error?.message || err.message;
+    // OAuth 오류 안내
+    if (msg.includes('invalid_grant') || msg.includes('Token has been expired') || msg.includes('invalid_token')) {
+      msg = 'Blogger OAuth 토큰 만료 — 설정 탭 > 블로그스팟 인증하기로 재인증 필요';
+    } else if (msg.includes('insufficient_scope') || msg.includes('ACCESS_TOKEN_SCOPE_INSUFFICIENT')) {
+      msg = 'Blogger 권한 부족 — 설정 탭 > 블로그스팟 인증하기로 권한 재부여 필요';
+    }
     console.error('[Blogger] 발행 실패:', msg);
     return { success: false, error: msg, platform: 'blogger' };
   }
