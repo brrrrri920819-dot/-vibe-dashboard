@@ -2263,70 +2263,100 @@ async function refreshKeywords() {
 // ── GENERATE MODAL ────────────────────────────────────────
 var genPost    = null;
 var genKeyword = null;
+var _genStepTimer = null;
+var _genPollTimer = null;
+
+function _genShowResult(data) {
+  var stepIds = ['gstep-1','gstep-2','gstep-3','gstep-4'];
+  stepIds.forEach(function(id) { var el = document.getElementById(id); if (el) el.className = 'gen-step done'; });
+  genPost = data;
+  bpFetch('/api/drafts').then(function(ds){ updateDraftBadge(ds.filter(function(d){return d.status==='draft';}).length); }).catch(function(){});
+  document.getElementById('gen-preview-title').textContent = data.title || genKeyword;
+  document.getElementById('gen-preview-tags').innerHTML = (data.tags || []).map(function(t){ return '<span class="bp-tag">#' + escHtml(t) + '</span>'; }).join('');
+  document.getElementById('gen-preview-content').innerHTML = data.content || '';
+  setTimeout(function() {
+    document.getElementById('gen-loading-wrap').style.display = 'none';
+    document.getElementById('gen-preview-wrap').style.display = 'block';
+  }, 300);
+}
+
+function _genShowError(msg) {
+  clearInterval(_genStepTimer); clearInterval(_genPollTimer);
+  document.getElementById('gen-loading-kw').textContent = '오류: ' + msg;
+  var subEl = document.getElementById('gen-loading-wrap').querySelector('.gen-loading-sub');
+  if (subEl) subEl.textContent = (msg.includes('API') || msg.includes('auth')) ? 'Railway에서 ANTHROPIC_API_KEY 환경변수 확인' : '잠시 후 다시 시도해주세요';
+  document.getElementById('gen-big-spinner').style.display = 'none';
+}
 
 async function generateFromKeyword(keyword) {
-  genKeyword = keyword;
-  genPost    = null;
+  genKeyword = keyword; genPost = null;
+  clearInterval(_genStepTimer); clearInterval(_genPollTimer);
 
-  // 모달 열기
   document.getElementById('gen-modal-bg').style.display = 'flex';
   document.getElementById('gen-loading-wrap').style.display = 'flex';
   document.getElementById('gen-preview-wrap').style.display = 'none';
   document.getElementById('gen-loading-kw').textContent = '"' + keyword + '"';
-  ['gstep-1','gstep-2','gstep-3','gstep-4'].forEach(function(id, i) {
-    var el = document.getElementById(id);
-    if (el) el.className = 'gen-step' + (i === 0 ? ' active' : '');
-  });
+  document.getElementById('gen-big-spinner').style.display = '';
 
-  // 단계 애니메이션
-  var stepTimer = setInterval(function() {
-    var active = document.querySelector('.gen-step.active');
-    if (!active) { clearInterval(stepTimer); return; }
-    active.className = 'gen-step done';
-    var next = active.nextElementSibling;
-    if (next) next.className = 'gen-step active';
-    else clearInterval(stepTimer);
+  // 단계 애니메이션 — 루프 (생성 완료 때까지)
+  var stepIdx = 0;
+  var stepIds = ['gstep-1','gstep-2','gstep-3','gstep-4'];
+  stepIds.forEach(function(id, i) { var el = document.getElementById(id); if (el) el.className = 'gen-step' + (i === 0 ? ' active' : ''); });
+  _genStepTimer = setInterval(function() {
+    stepIds.forEach(function(id, i) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (i < stepIdx) el.className = 'gen-step done';
+      else if (i === stepIdx) el.className = 'gen-step active';
+      else el.className = 'gen-step';
+    });
+    stepIdx = (stepIdx + 1) % stepIds.length;
+    if (stepIdx === 0) stepIds.forEach(function(id) { var el = document.getElementById(id); if (el) el.className = 'gen-step'; });
   }, 1800);
 
   try {
-    var data = await bpFetch('/api/generate', {
+    // POST 즉시 jobId 반환 (Railway 30초 타임아웃 우회)
+    var init = await bpFetch('/api/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-dashboard-password': BP_PASSWORD },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ keyword }),
     });
-    clearInterval(stepTimer);
-    ['gstep-1','gstep-2','gstep-3','gstep-4'].forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) el.className = 'gen-step done';
+
+    if (!init.jobId) {
+      // 구버전 폴백: 서버가 직접 결과를 돌려준 경우
+      if (!init.success) throw new Error(init.error || '생성 실패');
+      clearInterval(_genStepTimer);
+      _genShowResult(init);
+      return;
+    }
+
+    // 2초마다 폴링 (최대 3분)
+    var jobId = init.jobId;
+    var attempts = 0;
+    await new Promise(function(resolve, reject) {
+      _genPollTimer = setInterval(async function() {
+        attempts++;
+        if (attempts > 90) { clearInterval(_genPollTimer); reject(new Error('생성 시간 초과 (3분)')); return; }
+        try {
+          var s = await bpFetch('/api/generate-status/' + jobId);
+          if (s.status === 'done')  { clearInterval(_genPollTimer); resolve(s); }
+          else if (s.status === 'error') { clearInterval(_genPollTimer); reject(new Error(s.error || '생성 실패')); }
+        } catch(pe) {
+          if (attempts > 15) { clearInterval(_genPollTimer); reject(pe); }
+        }
+      }, 2000);
+    }).then(function(data) {
+      clearInterval(_genStepTimer);
+      _genShowResult(data);
     });
 
-    if (!data.success) throw new Error(data.error || '생성 실패');
-
-    genPost = data;
-    // 드래프트 뱃지 비동기 갱신
-    bpFetch('/api/drafts').then(function(ds){ updateDraftBadge(ds.filter(function(d){return d.status==='draft';}).length); }).catch(function(){});
-    document.getElementById('gen-preview-title').textContent = data.title || keyword;
-    document.getElementById('gen-preview-tags').innerHTML = (data.tags || []).map(function(t) {
-      return '<span class="bp-tag">#' + escHtml(t) + '</span>';
-    }).join('');
-    var contentEl = document.getElementById('gen-preview-content');
-    contentEl.innerHTML = data.content || '';
-
-    setTimeout(function() {
-      document.getElementById('gen-loading-wrap').style.display = 'none';
-      document.getElementById('gen-preview-wrap').style.display = 'block';
-    }, 400);
-
   } catch (e) {
-    clearInterval(stepTimer);
-    document.getElementById('gen-loading-kw').textContent = '오류: ' + e.message;
-    var subEl = document.getElementById('gen-loading-wrap').querySelector('.gen-loading-sub');
-    if (subEl) subEl.textContent = e.message.includes('API 키') || e.message.includes('authentication') ? 'Railway에서 ANTHROPIC_API_KEY 환경변수 확인' : '서버 로그 확인 필요';
-    document.getElementById('gen-big-spinner').style.display = 'none';
+    _genShowError(e.message);
   }
 }
 
 function closeGenModal() {
+  clearInterval(_genStepTimer); clearInterval(_genPollTimer);
   document.getElementById('gen-modal-bg').style.display = 'none';
   genPost = null; genKeyword = null;
 }

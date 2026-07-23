@@ -313,13 +313,23 @@ app.patch('/api/drafts/:id', auth, (req, res) => {
   res.json({ success: true, draft: d });
 });
 
-/** AI 글 즉시 생성 (발행 전 미리보기용) */
+// 글 생성 비동기 잡 스토어 (Railway 30초 타임아웃 우회)
+const _genJobs = new Map();
+
+/** AI 글 생성 — jobId 즉시 반환 후 백그라운드 생성 */
 app.post('/api/generate', auth, async (req, res) => {
   const { keyword, accountId } = req.body;
   if (!keyword) return res.status(400).json({ error: 'keyword 필수' });
   const clientKey = req.headers['x-anthropic-key'];
-  if (clientKey) { process.env.ANTHROPIC_API_KEY = clientKey; console.log('[Generate] API key received from client, length:', clientKey.length); }
-  else console.warn('[Generate] x-anthropic-key 헤더 없음, env 키 사용:', !!process.env.ANTHROPIC_API_KEY);
+  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
+
+  const jobId = `gen_${Date.now()}`;
+  _genJobs.set(jobId, { status: 'running', startedAt: new Date().toISOString() });
+
+  // 즉시 jobId 반환 → Railway 30초 타임아웃 완전 우회
+  res.json({ success: true, jobId });
+
+  // 백그라운드 생성
   const accounts = readAccounts();
   const account = (accountId && accounts.find(a => a.id === accountId)) || accounts[0] || {};
   try {
@@ -337,11 +347,20 @@ app.post('/api/generate', auth, async (req, res) => {
       status:      'draft',
       generatedAt: new Date().toISOString(),
     });
-    res.json({ success: true, keyword, draftId: draft.id, ...post });
+    _genJobs.set(jobId, { status: 'done', keyword, draftId: draft.id, ...post });
+    console.log(`[Generate] 완료: "${post.title}"`);
   } catch (err) {
     console.error('[Generate] 오류:', err.message);
-    res.status(500).json({ success: false, error: err.message });
+    _genJobs.set(jobId, { status: 'error', error: err.message });
   }
+  setTimeout(() => _genJobs.delete(jobId), 30 * 60 * 1000);
+});
+
+/** 생성 상태 폴링 */
+app.get('/api/generate-status/:jobId', auth, (req, res) => {
+  const job = _genJobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'job not found' });
+  res.json(job);
 });
 
 /** 한달치 자동발행 예약 */
