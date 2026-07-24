@@ -872,21 +872,30 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
       <div class="section" style="margin-bottom:14px">
         <div class="bp-section-title">🟠 티스토리 OAuth 인증</div>
         <div class="bp-humanize-tip" id="tistory-oauth-info">
-          토큰이 만료되면 발행이 안 됩니다. 아래 버튼으로 재인증하세요.
+          토큰이 만료되면 발행이 안 됩니다.
         </div>
-        <button class="bp-pub-btn" style="max-width:200px" onclick="window.open(BP_SERVER+'/oauth/tistory','_blank')">
-          🔑 티스토리 재인증
-        </button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="bp-pub-btn" style="max-width:180px" id="tistory-auto-btn" onclick="autoAuthTistory()">
+            🤖 자동 인증 (권장)
+          </button>
+          <button class="bp-sch-btn" style="max-width:160px" onclick="window.open(BP_SERVER+'/oauth/tistory','_blank')">
+            🔑 수동 재인증
+          </button>
+        </div>
+        <div id="tistory-auth-status" style="font-size:12px;color:var(--t3);margin-top:8px"></div>
       </div>
 
       <div class="section" style="margin-bottom:14px">
         <div class="bp-section-title">🔵 블로그스팟 (Google Blogger)</div>
         <div class="bp-humanize-tip" id="blogger-oauth-info">
-          Google OAuth 토큰이 만료되면 발행이 안 됩니다. 아래 버튼으로 재인증하세요.
+          Google OAuth 토큰이 만료되면 발행이 안 됩니다.
         </div>
-        <button class="bp-pub-btn" style="max-width:200px" onclick="window.open(BP_SERVER+'/oauth/blogger','_blank')">
-          🔑 블로그스팟 재인증
-        </button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="bp-pub-btn" style="max-width:180px" onclick="window.open(BP_SERVER+'/oauth/blogger','_blank')">
+            🔑 블로그스팟 재인증
+          </button>
+        </div>
+        <div style="font-size:12px;color:var(--t3);margin-top:6px">구글 계정 선택 → 허용 클릭 → 창 닫기. 토큰 자동저장됨.</div>
       </div>
 
       <div class="section">
@@ -2052,6 +2061,33 @@ async function loadBlogLog() {
     }).join('');
   } catch {
     wrap.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><div class="et">서버에 연결할 수 없습니다</div></div>';
+  }
+}
+
+async function autoAuthTistory() {
+  var btn = document.getElementById('tistory-auto-btn');
+  var statusEl = document.getElementById('tistory-auth-status');
+  btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>자동 인증 중...';
+  statusEl.textContent = '브라우저 자동화로 티스토리 로그인 중... (최대 40초)';
+  try {
+    await bpFetch('/api/auto-auth/tistory');
+    // 40초 후 결과 확인
+    statusEl.textContent = '인증 처리 중... (30초 후 결과 확인)';
+    await new Promise(function(r){ setTimeout(r, 35000); });
+    var status = await bpFetch('/api/status');
+    if (status.platforms && status.platforms.tistory) {
+      statusEl.textContent = '✅ 티스토리 자동 인증 완료!';
+      statusEl.style.color = 'var(--ok)';
+      bpToast('✅ 티스토리 연결됨', 'ok');
+    } else {
+      statusEl.textContent = '⚠️ 자동 인증 실패 — 수동 재인증 버튼을 눌러주세요';
+      statusEl.style.color = 'var(--err)';
+    }
+  } catch(e) {
+    statusEl.textContent = '⚠️ ' + e.message;
+    statusEl.style.color = 'var(--err)';
+  } finally {
+    btn.disabled = false; btn.innerHTML = '🤖 자동 인증 (권장)';
   }
 }
 

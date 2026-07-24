@@ -751,9 +751,18 @@ app.get('/api/public', (req, res) => {
   });
 });
 
+// ── 서버 자신의 URL 자동 감지 (BASE_URL 환경변수 없어도 동작) ──────
+function getBaseUrl(req) {
+  if (process.env.BASE_URL) return process.env.BASE_URL;
+  // Railway/프로덕션: x-forwarded-proto 헤더로 https 감지
+  const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+  const host  = req.headers['x-forwarded-host']  || req.get('host') || 'localhost';
+  return `${proto}://${host}`;
+}
+
 // ── Tistory OAuth ────────────────────────────────────────
 app.get('/oauth/tistory', (req, res) => {
-  const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+  const baseUrl = getBaseUrl(req);
   if (!process.env.TISTORY_CLIENT_ID) {
     return res.send('<h2>설정 필요</h2><p>Railway에 TISTORY_CLIENT_ID가 설정되지 않았습니다.</p>');
   }
@@ -765,7 +774,7 @@ app.get('/oauth/tistory', (req, res) => {
 });
 
 app.get('/oauth/tistory/callback', async (req, res) => {
-  const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+  const baseUrl = getBaseUrl(req);
   const { code } = req.query;
   try {
     const token = await exchangeTistoryToken(
@@ -783,17 +792,91 @@ app.get('/oauth/tistory/callback', async (req, res) => {
   }
 });
 
+// ── Tistory 자동 인증 (Playwright — TISTORY_ID/PW 이용) ──────────
+app.get('/api/auto-auth/tistory', auth, async (req, res) => {
+  const id  = tokens.get('TISTORY_ID')  || tokens.get('NAVER_ID');
+  const pw  = tokens.get('TISTORY_PW')  || tokens.get('NAVER_PW');
+  const clientId     = process.env.TISTORY_CLIENT_ID;
+  const clientSecret = process.env.TISTORY_CLIENT_SECRET;
+  const blogName     = tokens.get('TISTORY_BLOG_NAME');
+
+  if (!clientId || !clientSecret) return res.json({ ok: false, error: 'TISTORY_CLIENT_ID / TISTORY_CLIENT_SECRET 미설정' });
+  if (!id || !pw)                 return res.json({ ok: false, error: 'TISTORY_ID / TISTORY_PW (또는 NAVER_ID/PW) 미설정' });
+
+  res.json({ ok: true, message: '자동 인증 시작... 30초 정도 소요됩니다.' });
+
+  // 백그라운드로 Playwright 자동 인증
+  (async () => {
+    let browser;
+    try {
+      const { chromium } = require('playwright');
+      const baseUrl = process.env.BASE_URL || `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'localhost:' + PORT}`;
+      const callbackUrl = `${baseUrl}/oauth/tistory/callback`;
+      const authUrl = getTistoryAuthUrl(clientId, callbackUrl);
+
+      browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+      const page = await browser.newPage();
+
+      // Tistory OAuth 페이지로 이동
+      await page.goto(authUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      console.log('[AutoAuth] Tistory 로그인 페이지 이동:', page.url());
+
+      // 로그인 필요 여부 확인
+      const needsLogin = await page.$('#loginId') || await page.$('input[name="loginId"]') || await page.$('input[type="email"]');
+      if (needsLogin) {
+        // 카카오 로그인 폼 또는 티스토리 ID 로그인
+        const emailInput = await page.$('input[type="email"]') || await page.$('#loginId') || await page.$('input[name="loginId"]');
+        const pwInput    = await page.$('input[type="password"]') || await page.$('#loginPw');
+
+        if (emailInput) await emailInput.fill(id);
+        if (pwInput)    await pwInput.fill(pw);
+
+        // 로그인 버튼 클릭
+        const loginBtn = await page.$('button[type="submit"]') || await page.$('.btn_login') || await page.$('#btnLogin');
+        if (loginBtn) {
+          await loginBtn.click();
+          await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+        }
+        console.log('[AutoAuth] 로그인 후 URL:', page.url());
+      }
+
+      // 허용 버튼 클릭
+      await page.waitForTimeout(2000);
+      const allowBtn = await page.$('button.confirm') || await page.$('#authorizationButton') || await page.$('a.btn_allow') || await page.$('button:has-text("허용")');
+      if (allowBtn) {
+        await allowBtn.click();
+        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+        console.log('[AutoAuth] 허용 후 URL:', page.url());
+      }
+
+      // 콜백 URL에서 code 추출
+      const finalUrl = page.url();
+      const codeMatch = finalUrl.match(/[?&]code=([^&]+)/);
+      if (!codeMatch) throw new Error('code 파라미터 없음 — URL: ' + finalUrl.slice(0, 200));
+
+      const code = codeMatch[1];
+      const token = await exchangeTistoryToken(clientId, clientSecret, code, callbackUrl);
+      tokens.set('TISTORY_ACCESS_TOKEN', token);
+      console.log('[AutoAuth] Tistory 토큰 자동저장 완료 ✅');
+    } catch (err) {
+      console.error('[AutoAuth] Tistory 자동 인증 실패:', err.message);
+    } finally {
+      if (browser) await browser.close().catch(() => {});
+    }
+  })();
+});
+
 // ── Setup 페이지 (어떤 클라이언트 ID가 설정됐는지 확인) ──
 app.get('/setup', (req, res) => {
   const cid = process.env.BLOGGER_CLIENT_ID || '';
   const masked = cid ? cid.slice(0, 20) + '...' : '❌ 미설정';
-  const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-  res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:600px;width:100%}h2{color:#ec4899;margin-top:0}.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #222;font-size:14px}.label{color:#888}.val{color:#86efac;font-family:monospace}.btn{display:block;background:#ec4899;border:none;color:#fff;padding:14px;border-radius:8px;font-size:16px;cursor:pointer;width:100%;margin-top:24px;text-decoration:none;text-align:center}</style></head><body><div class="card"><h2>🔧 Blogger 설정 확인</h2><div class="row"><span class="label">BLOGGER_CLIENT_ID</span><span class="val">${masked}</span></div><div class="row"><span class="label">BLOGGER_CLIENT_SECRET</span><span class="val">${process.env.BLOGGER_CLIENT_SECRET ? '✅ 설정됨' : '❌ 미설정'}</span></div><div class="row"><span class="label">BLOGGER_REFRESH_TOKEN</span><span class="val">${process.env.BLOGGER_REFRESH_TOKEN ? '✅ 설정됨' : '❌ 미설정'}</span></div><div class="row"><span class="label">BLOGGER_BLOG_ID</span><span class="val">${process.env.BLOGGER_BLOG_ID || '❌ 미설정'}</span></div><a class="btn" href="/oauth/blogger">🔑 Blogger OAuth 인증 시작</a></div></body></html>`);
+  const baseUrl = getBaseUrl(req);
+  res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:600px;width:100%}h2{color:#ec4899;margin-top:0}.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #222;font-size:14px}.label{color:#888}.val{color:#86efac;font-family:monospace}.btn{display:block;background:#ec4899;border:none;color:#fff;padding:14px;border-radius:8px;font-size:16px;cursor:pointer;width:100%;margin-top:24px;text-decoration:none;text-align:center}</style></head><body><div class="card"><h2>🔧 Blogger 설정 확인</h2><div class="row"><span class="label">BLOGGER_CLIENT_ID</span><span class="val">${masked}</span></div><div class="row"><span class="label">BLOGGER_CLIENT_SECRET</span><span class="val">${process.env.BLOGGER_CLIENT_SECRET ? '✅ 설정됨' : '❌ 미설정'}</span></div><div class="row"><span class="label">BLOGGER_REFRESH_TOKEN</span><span class="val">${process.env.BLOGGER_REFRESH_TOKEN ? '✅ 설정됨' : '❌ 미설정'}</span></div><div class="row"><span class="label">BLOGGER_BLOG_ID</span><span class="val">${process.env.BLOGGER_BLOG_ID || '❌ 미설정'}</span></div><div class="row"><span class="label">감지된 서버 URL</span><span class="val">${baseUrl}</span></div><a class="btn" href="/oauth/blogger">🔑 Blogger OAuth 인증 시작</a></div></body></html>`);
 });
 
 // ── Blogger OAuth ────────────────────────────────────────
 app.get('/oauth/blogger', (req, res) => {
-  const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+  const baseUrl = getBaseUrl(req);
   const clientId = process.env.BLOGGER_CLIENT_ID;
   if (!clientId) {
     return res.send(`<h2>설정 필요</h2><p>Railway에 BLOGGER_CLIENT_ID 가 설정되지 않았습니다.</p>`);
@@ -803,7 +886,7 @@ app.get('/oauth/blogger', (req, res) => {
 });
 
 app.get('/oauth/blogger/callback', async (req, res) => {
-  const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+  const baseUrl = getBaseUrl(req);
   const { code, error } = req.query;
   if (error) {
     return res.send(`<h2>인증 실패</h2><p>오류: ${error}</p><p><a href="/oauth/blogger">다시 시도</a></p>`);
