@@ -33,28 +33,33 @@ function loadCookies() {
 }
 
 async function launchBrowser() {
-  // playwright-extra + stealth 시도, 실패 시 일반 playwright 사용
+  // Firefox 우선 시도 — 구글 봇 감지가 Chromium 위주라 Firefox가 더 잘 통과
   try {
-    const { chromium: chromiumExtra } = require('playwright-extra');
-    const stealth = require('puppeteer-extra-plugin-stealth');
-    chromiumExtra.use(stealth());
-    console.log('[Blogger-PW] 스텔스 모드 활성화');
-    const execPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
-    return await chromiumExtra.launch({
+    const { firefox } = require('playwright');
+    console.log('[Blogger-PW] Firefox 모드로 시도');
+    return await firefox.launch({
       headless: true,
-      executablePath: execPath,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
-             '--disable-blink-features=AutomationControlled', '--disable-features=IsolateOrigins'],
+      args: [],
     });
   } catch (e) {
-    console.warn('[Blogger-PW] 스텔스 모듈 없음, 기본 모드 사용:', e.message);
-    const { chromium } = require('playwright');
-    const execPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
-    return await chromium.launch({
-      headless: true,
-      executablePath: execPath,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled'],
-    });
+    console.warn('[Blogger-PW] Firefox 실패, Chromium 스텔스로 대체:', e.message);
+    try {
+      const { chromium: chromiumExtra } = require('playwright-extra');
+      const stealth = require('puppeteer-extra-plugin-stealth');
+      chromiumExtra.use(stealth());
+      const execPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
+      return await chromiumExtra.launch({
+        headless: true, executablePath: execPath,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled'],
+      });
+    } catch (e2) {
+      const { chromium } = require('playwright');
+      const execPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
+      return await chromium.launch({
+        headless: true, executablePath: execPath,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled'],
+      });
+    }
   }
 }
 

@@ -36,42 +36,45 @@ async function publishToBlogger({
   blogId, title, content,
   tags = [], imagePaths = [], isDraft = false,
 }) {
+  // blogId 없으면 자동 조회
+  let targetBlogId = blogId;
+
   try {
     const accessToken = await refreshAccessToken(clientId, clientSecret, refreshToken);
 
-    // 이미지가 있으면 Google Photos API로 업로드 (또는 base64 embed)
+    // blogId 없으면 첫 번째 블로그 자동 선택
+    if (!targetBlogId) {
+      const blogs = await getBloggerBlogId(clientId, clientSecret, refreshToken);
+      if (blogs.length > 0) {
+        targetBlogId = blogs[0].id;
+        console.log(`[Blogger] blogId 자동 감지: ${targetBlogId} (${blogs[0].name})`);
+      } else {
+        throw new Error('소유한 Blogger 블로그가 없습니다');
+      }
+    }
+
     let finalContent = content;
-    if (imagePaths.length > 0) {
+    if (imagePaths && imagePaths.length > 0) {
       finalContent = await embedImages(content, imagePaths);
     }
 
-    const body = {
-      kind: 'blogger#post',
-      title,
-      content: finalContent,
-      labels: tags,
-    };
-
-    const url = `${BLOGGER_API}/blogs/${blogId}/posts${isDraft ? '?isDraft=true' : ''}`;
+    const body = { kind: 'blogger#post', title, content: finalContent, labels: tags };
+    const url  = `${BLOGGER_API}/blogs/${targetBlogId}/posts${isDraft ? '?isDraft=true' : ''}`;
 
     const res = await axios.post(url, body, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     });
 
     const postUrl = res.data.url;
     console.log(`[Blogger] 발행 완료: ${postUrl}`);
-    return { success: true, url: postUrl, postId: res.data.id, platform: 'blogger' };
+    return { success: true, url: postUrl, postId: res.data.id, blogId: targetBlogId, platform: 'blogger' };
 
   } catch (err) {
     let msg = err.response?.data?.error?.message || err.message;
-    // OAuth 오류 안내
     if (msg.includes('invalid_grant') || msg.includes('Token has been expired') || msg.includes('invalid_token')) {
-      msg = 'Blogger OAuth 토큰 만료 — 설정 탭 > 블로그스팟 인증하기로 재인증 필요';
+      msg = '재인증 필요 — 설정 탭 > 블로그스팟 인증하기 클릭';
     } else if (msg.includes('insufficient_scope') || msg.includes('ACCESS_TOKEN_SCOPE_INSUFFICIENT')) {
-      msg = 'Blogger 권한 부족 — 설정 탭 > 블로그스팟 인증하기로 권한 재부여 필요';
+      msg = '권한 부족 — 설정 탭 > 블로그스팟 인증하기 클릭 (scope 재부여)';
     }
     console.error('[Blogger] 발행 실패:', msg);
     return { success: false, error: msg, platform: 'blogger' };

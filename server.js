@@ -112,20 +112,33 @@ async function publishJob(job) {
       }
 
     } else if (platform === 'blogger') {
-      const bloggerEmail = tokens.get('BLOGGER_EMAIL');
-      const bloggerPw    = tokens.get('BLOGGER_PW');
       const blogId       = tokens.get('BLOGGER_BLOG_ID');
-      if (bloggerEmail && bloggerPw) {
-        results.blogger = await publishToBloggerPlaywright({
-          email: bloggerEmail, pw: bloggerPw, blogId,
+      const clientId     = tokens.get('BLOGGER_CLIENT_ID');
+      const clientSecret = tokens.get('BLOGGER_CLIENT_SECRET');
+      const refreshToken = tokens.get('BLOGGER_REFRESH_TOKEN');
+
+      if (clientId && clientSecret && refreshToken) {
+        // OAuth 방식 (가장 안정적 — 자동 갱신)
+        results.blogger = await publishToBlogger({
+          clientId, clientSecret, refreshToken, blogId,
           title: variantTitle, content: variantContent, tags,
         });
-        // 발행 성공 후 blogId 자동저장 (다음 번 더 빠르게)
+        // 토큰 갱신 후 blogId 자동저장
         if (results.blogger.success && results.blogger.blogId && !blogId) {
           tokens.set('BLOGGER_BLOG_ID', results.blogger.blogId);
         }
       } else {
-        results.blogger = { success: false, error: 'Railway에 BLOGGER_EMAIL / BLOGGER_PW 설정 필요', platform: 'blogger' };
+        // Playwright 폴백 (BLOGGER_EMAIL/PW 있을 때)
+        const bloggerEmail = tokens.get('BLOGGER_EMAIL');
+        const bloggerPw    = tokens.get('BLOGGER_PW');
+        if (bloggerEmail && bloggerPw) {
+          results.blogger = await publishToBloggerPlaywright({
+            email: bloggerEmail, pw: bloggerPw, blogId,
+            title: variantTitle, content: variantContent, tags,
+          });
+        } else {
+          results.blogger = { success: false, error: '설정 탭 > 블로그스팟 인증하기 버튼을 클릭해서 Google 연결 필요', platform: 'blogger' };
+        }
       }
     }
 
@@ -152,7 +165,8 @@ app.get('/api/status', auth, (req, res) => {
       naver:   !!(tokens.get('NAVER_ID') && tokens.get('NAVER_PW') && tokens.get('NAVER_BLOG_ID')),
       tistory: !!(tokens.get('TISTORY_ID') && tokens.get('TISTORY_PW') &&
                   (tokens.get('TISTORY_BLOG_NAME') || '').replace(/\.tistory\.com.*$/, '').trim()),
-      blogger: !!(tokens.get('BLOGGER_EMAIL') && tokens.get('BLOGGER_PW')),
+      blogger: !!(tokens.get('BLOGGER_REFRESH_TOKEN') ||
+                  (tokens.get('BLOGGER_EMAIL') && tokens.get('BLOGGER_PW'))),
     },
   });
 });
