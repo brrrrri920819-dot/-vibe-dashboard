@@ -9,6 +9,7 @@ const cors     = require('cors');
 const multer   = require('multer');
 const path     = require('path');
 const fs       = require('fs');
+const tokens   = require('./config/token-store');
 
 const { publishToNaver }   = require('./publisher/naver');
 const { publishToTistory, getTistoryAuthUrl, exchangeTistoryToken, getTistoryCategories } = require('./publisher/tistory');
@@ -90,9 +91,9 @@ async function publishJob(job) {
 
     if (platform === 'naver') {
       results.naver = await publishToNaver({
-        id:       process.env.NAVER_ID,
-        pw:       process.env.NAVER_PW,
-        blogId:   process.env.NAVER_BLOG_ID,
+        id:       tokens.get('NAVER_ID'),
+        pw:       tokens.get('NAVER_PW'),
+        blogId:   tokens.get('NAVER_BLOG_ID'),
         title:    variantTitle,
         content:  variantContent,
         tags,
@@ -100,26 +101,36 @@ async function publishJob(job) {
       });
 
     } else if (platform === 'tistory') {
-      results.tistory = await publishToTistory({
-        accessToken: process.env.TISTORY_ACCESS_TOKEN,
-        blogName:    process.env.TISTORY_BLOG_NAME,
-        title:       variantTitle,
-        content:     variantContent,
-        tags,
-        imagePaths,
-      });
+      const tistoryToken = tokens.get('TISTORY_ACCESS_TOKEN');
+      if (!tistoryToken) {
+        results.tistory = { success: false, error: '티스토리 토큰 없음 — 설정 탭 > 🔑 티스토리 재인증 버튼 클릭', platform: 'tistory' };
+      } else {
+        results.tistory = await publishToTistory({
+          accessToken: tistoryToken,
+          blogName:    tokens.get('TISTORY_BLOG_NAME'),
+          title:       variantTitle,
+          content:     variantContent,
+          tags,
+          imagePaths,
+        });
+      }
 
     } else if (platform === 'blogger') {
-      results.blogger = await publishToBlogger({
-        clientId:     process.env.BLOGGER_CLIENT_ID,
-        clientSecret: process.env.BLOGGER_CLIENT_SECRET,
-        refreshToken: process.env.BLOGGER_REFRESH_TOKEN,
-        blogId:       process.env.BLOGGER_BLOG_ID,
-        title:        variantTitle,
-        content:      variantContent,
-        tags,
-        imagePaths,
-      });
+      const bloggerRefresh = tokens.get('BLOGGER_REFRESH_TOKEN');
+      if (!bloggerRefresh) {
+        results.blogger = { success: false, error: '블로거 토큰 없음 — 설정 탭 > 🔑 블로그스팟 재인증 버튼 클릭', platform: 'blogger' };
+      } else {
+        results.blogger = await publishToBlogger({
+          clientId:     tokens.get('BLOGGER_CLIENT_ID'),
+          clientSecret: tokens.get('BLOGGER_CLIENT_SECRET'),
+          refreshToken: bloggerRefresh,
+          blogId:       tokens.get('BLOGGER_BLOG_ID'),
+          title:        variantTitle,
+          content:      variantContent,
+          tags,
+          imagePaths,
+        });
+      }
     }
 
     // 플랫폼 간 자연스러운 딜레이 (3~8초)
@@ -142,9 +153,9 @@ app.get('/api/status', auth, (req, res) => {
     ok: true,
     anthropicKey: !!process.env.ANTHROPIC_API_KEY,
     platforms: {
-      naver:   !!(process.env.NAVER_ID && process.env.NAVER_PW && process.env.NAVER_BLOG_ID),
-      tistory: !!(process.env.TISTORY_ACCESS_TOKEN && process.env.TISTORY_BLOG_NAME),
-      blogger: !!(process.env.BLOGGER_CLIENT_ID && process.env.BLOGGER_CLIENT_SECRET && process.env.BLOGGER_REFRESH_TOKEN && process.env.BLOGGER_BLOG_ID),
+      naver:   !!(tokens.get('NAVER_ID') && tokens.get('NAVER_PW') && tokens.get('NAVER_BLOG_ID')),
+      tistory: !!(tokens.get('TISTORY_ACCESS_TOKEN') && tokens.get('TISTORY_BLOG_NAME')),
+      blogger: !!(tokens.get('BLOGGER_CLIENT_ID') && tokens.get('BLOGGER_CLIENT_SECRET') && tokens.get('BLOGGER_REFRESH_TOKEN') && tokens.get('BLOGGER_BLOG_ID')),
     },
   });
 });
@@ -756,13 +767,20 @@ app.get('/oauth/tistory', (req, res) => {
 app.get('/oauth/tistory/callback', async (req, res) => {
   const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
   const { code } = req.query;
-  const token = await exchangeTistoryToken(
-    process.env.TISTORY_CLIENT_ID,
-    process.env.TISTORY_CLIENT_SECRET,
-    code,
-    `${baseUrl}/oauth/tistory/callback`,
-  );
-  res.send(`<h2>티스토리 인증 완료!</h2><p>아래 토큰을 .env 의 TISTORY_ACCESS_TOKEN 에 저장하세요:</p><code>${token}</code>`);
+  try {
+    const token = await exchangeTistoryToken(
+      process.env.TISTORY_CLIENT_ID,
+      process.env.TISTORY_CLIENT_SECRET,
+      code,
+      `${baseUrl}/oauth/tistory/callback`,
+    );
+    // 토큰 자동저장 — Railway 재시작 후에도 유지
+    tokens.set('TISTORY_ACCESS_TOKEN', token);
+    console.log('[Tistory] 토큰 자동저장 완료');
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:480px;width:100%;text-align:center}h2{color:#22c55e;margin-top:0}p{color:#aaa;font-size:14px;line-height:1.6}.ok{font-size:64px;margin:16px 0}.btn{display:block;background:#ec4899;border:none;color:#fff;padding:14px;border-radius:8px;font-size:15px;cursor:pointer;width:100%;margin-top:16px;text-decoration:none;font-family:inherit}a.close{background:#333}</style></head><body><div class="card"><div class="ok">✅</div><h2>티스토리 인증 완료!</h2><p>토큰이 서버에 <strong>자동 저장</strong>되었습니다.<br>이제 창을 닫고 대시보드에서 발행하세요.</p><a class="btn close" href="javascript:window.close()">창 닫기</a></div></body></html>`);
+  } catch (err) {
+    res.send(`<h2>인증 실패</h2><p>${err.message}</p><p><a href="/oauth/tistory">다시 시도</a></p>`);
+  }
 });
 
 // ── Setup 페이지 (어떤 클라이언트 ID가 설정됐는지 확인) ──
@@ -797,7 +815,25 @@ app.get('/oauth/blogger/callback', async (req, res) => {
       code,
       `${baseUrl}/oauth/blogger/callback`,
     );
-    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:600px;width:100%}h2{color:#ec4899;margin-top:0}p{color:#aaa;font-size:14px}.token{background:#0d0d1a;border:1px solid #444;border-radius:8px;padding:16px;word-break:break-all;font-family:monospace;font-size:13px;color:#86efac;margin:16px 0}.btn{background:#ec4899;border:none;color:#fff;padding:12px 24px;border-radius:8px;font-size:15px;cursor:pointer;width:100%;margin-top:8px}p.tip{background:#1e2a1e;border:1px solid #2d4a2d;border-radius:8px;padding:12px;color:#86efac;font-size:13px}</style></head><body><div class="card"><h2>✅ Blogger 인증 완료!</h2><p>아래 토큰을 Railway의 <strong>BLOGGER_REFRESH_TOKEN</strong> 에 저장하세요:</p><div class="token" id="token">${refreshToken}</div><button class="btn" onclick="navigator.clipboard.writeText('${refreshToken}').then(()=>this.textContent='✅ 복사됨!')">📋 토큰 복사</button><p class="tip">💡 Railway → Variables → BLOGGER_REFRESH_TOKEN 값을 위 토큰으로 교체하세요.</p></div></body></html>`);
+    // 토큰 자동저장 — Railway 재시작 후에도 유지
+    tokens.set('BLOGGER_REFRESH_TOKEN', refreshToken);
+    console.log('[Blogger] 리프레시 토큰 자동저장 완료');
+
+    // 블로그 ID도 자동 조회 후 저장
+    try {
+      const { getBloggerBlogId } = require('./publisher/blogger');
+      const blogs = await getBloggerBlogId(
+        process.env.BLOGGER_CLIENT_ID,
+        process.env.BLOGGER_CLIENT_SECRET,
+        refreshToken,
+      );
+      if (blogs && blogs[0]) {
+        tokens.set('BLOGGER_BLOG_ID', blogs[0].id);
+        console.log(`[Blogger] 블로그 ID 자동저장: ${blogs[0].id} (${blogs[0].name})`);
+      }
+    } catch (_) {}
+
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:480px;width:100%;text-align:center}h2{color:#22c55e;margin-top:0}p{color:#aaa;font-size:14px;line-height:1.6}.ok{font-size:64px;margin:16px 0}.btn{display:block;background:#333;border:none;color:#fff;padding:14px;border-radius:8px;font-size:15px;cursor:pointer;width:100%;margin-top:16px;text-decoration:none;font-family:inherit}</style></head><body><div class="card"><div class="ok">✅</div><h2>블로그스팟 인증 완료!</h2><p>토큰이 서버에 <strong>자동 저장</strong>되었습니다.<br>블로그 ID도 자동으로 설정했습니다.<br>이제 창을 닫고 대시보드에서 발행하세요.</p><a class="btn" href="javascript:window.close()">창 닫기</a></div></body></html>`);
   } catch (err) {
     res.send(`<h2>토큰 교환 실패</h2><p>${err.message}</p><p><a href="/oauth/blogger">다시 시도</a></p>`);
   }
