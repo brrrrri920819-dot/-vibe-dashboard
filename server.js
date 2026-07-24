@@ -161,8 +161,8 @@ app.get('/api/status', auth, (req, res) => {
     anthropicKey: !!process.env.ANTHROPIC_API_KEY,
     platforms: {
       naver:   !!(tokens.get('NAVER_ID') && tokens.get('NAVER_PW') && tokens.get('NAVER_BLOG_ID')),
-      tistory: !!(tokens.get('TISTORY_ACCESS_TOKEN') && tokens.get('TISTORY_BLOG_NAME')),
-      blogger: !!(tokens.get('BLOGGER_CLIENT_ID') && tokens.get('BLOGGER_CLIENT_SECRET') && tokens.get('BLOGGER_REFRESH_TOKEN') && tokens.get('BLOGGER_BLOG_ID')),
+      tistory: !!(tokens.get('TISTORY_ID') && tokens.get('TISTORY_PW') && tokens.get('TISTORY_BLOG_NAME')),
+      blogger: !!(tokens.get('BLOGGER_EMAIL') && tokens.get('BLOGGER_PW')),
     },
   });
 });
@@ -213,36 +213,18 @@ app.get('/api/test-claude', auth, async (req, res) => {
 app.get('/api/test-platforms', auth, async (req, res) => {
   const results = {};
 
-  // Tistory: 카테고리 목록 조회로 토큰 유효성 검증
-  if (process.env.TISTORY_ACCESS_TOKEN && process.env.TISTORY_BLOG_NAME) {
-    try {
-      const { getTistoryCategories } = require('./publisher/tistory');
-      await getTistoryCategories(process.env.TISTORY_ACCESS_TOKEN, process.env.TISTORY_BLOG_NAME);
-      results.tistory = { ok: true, message: '토큰 유효' };
-    } catch (e) {
-      const msg = e.response?.data?.tistory?.error_message || e.message;
-      results.tistory = { ok: false, error: msg };
-    }
+  // Tistory: Playwright 방식 — 환경변수 존재 여부만 확인
+  if (tokens.get('TISTORY_ID') && tokens.get('TISTORY_PW') && tokens.get('TISTORY_BLOG_NAME')) {
+    results.tistory = { ok: true, message: `Playwright 로그인 방식 (${tokens.get('TISTORY_BLOG_NAME')})` };
   } else {
-    results.tistory = { ok: false, error: 'TISTORY_ACCESS_TOKEN 또는 TISTORY_BLOG_NAME 미설정' };
+    results.tistory = { ok: false, error: 'TISTORY_ID / TISTORY_PW / TISTORY_BLOG_NAME 미설정' };
   }
 
-  // Blogger: 블로그 목록 조회로 OAuth 유효성 검증
-  if (process.env.BLOGGER_CLIENT_ID && process.env.BLOGGER_CLIENT_SECRET && process.env.BLOGGER_REFRESH_TOKEN) {
-    try {
-      const { getBloggerBlogId } = require('./publisher/blogger');
-      const blogs = await getBloggerBlogId(
-        process.env.BLOGGER_CLIENT_ID,
-        process.env.BLOGGER_CLIENT_SECRET,
-        process.env.BLOGGER_REFRESH_TOKEN,
-      );
-      results.blogger = { ok: true, message: `블로그 ${blogs.length}개 확인됨`, blogs: blogs.map(b => ({ id: b.id, name: b.name, url: b.url })) };
-    } catch (e) {
-      const msg = e.response?.data?.error?.message || e.message;
-      results.blogger = { ok: false, error: msg };
-    }
+  // Blogger: Playwright 방식 — 환경변수 존재 여부만 확인
+  if (tokens.get('BLOGGER_EMAIL') && tokens.get('BLOGGER_PW')) {
+    results.blogger = { ok: true, message: `Playwright 로그인 방식 (${tokens.get('BLOGGER_EMAIL')})` };
   } else {
-    results.blogger = { ok: false, error: 'BLOGGER 환경변수 미설정' };
+    results.blogger = { ok: false, error: 'BLOGGER_EMAIL / BLOGGER_PW 미설정' };
   }
 
   // Naver: 브라우저 설치 여부만 확인 (실제 로그인은 시간이 오래 걸림)
