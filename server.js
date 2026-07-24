@@ -97,27 +97,21 @@ async function publishJob(job) {
       });
 
     } else if (platform === 'tistory') {
-      // Playwright 직접 로그인 우선 (토큰 만료 없음)
-      const tistoryId = tokens.get('TISTORY_ID') || tokens.get('NAVER_ID');
-      const tistoryPw = tokens.get('TISTORY_PW') || tokens.get('NAVER_PW');
-      const blogName  = tokens.get('TISTORY_BLOG_NAME');
+      const tistoryId = tokens.get('TISTORY_ID');
+      const tistoryPw = tokens.get('TISTORY_PW');
+      // TISTORY_BLOG_NAME: 풀 URL 입력해도 앞부분만 추출 (예: abc.tistory.com → abc)
+      const rawBlogName = tokens.get('TISTORY_BLOG_NAME') || '';
+      const blogName = rawBlogName.replace(/\.tistory\.com.*$/, '').replace(/https?:\/\//, '').trim();
       if (tistoryId && tistoryPw && blogName) {
         results.tistory = await publishToTistoryPlaywright({
           id: tistoryId, pw: tistoryPw, blogName,
           title: variantTitle, content: variantContent, tags,
         });
       } else {
-        // 폴백: OAuth 토큰 방식
-        const tistoryToken = tokens.get('TISTORY_ACCESS_TOKEN');
-        if (!tistoryToken) {
-          results.tistory = { success: false, error: 'TISTORY_ID/TISTORY_PW/TISTORY_BLOG_NAME 또는 TISTORY_ACCESS_TOKEN을 Railway에 설정해주세요', platform: 'tistory' };
-        } else {
-          results.tistory = await publishToTistory({ accessToken: tistoryToken, blogName, title: variantTitle, content: variantContent, tags, imagePaths });
-        }
+        results.tistory = { success: false, error: 'Railway에 TISTORY_ID / TISTORY_PW / TISTORY_BLOG_NAME 설정 필요', platform: 'tistory' };
       }
 
     } else if (platform === 'blogger') {
-      // Playwright 직접 로그인 우선 (토큰 만료 없음)
       const bloggerEmail = tokens.get('BLOGGER_EMAIL');
       const bloggerPw    = tokens.get('BLOGGER_PW');
       const blogId       = tokens.get('BLOGGER_BLOG_ID');
@@ -126,17 +120,12 @@ async function publishJob(job) {
           email: bloggerEmail, pw: bloggerPw, blogId,
           title: variantTitle, content: variantContent, tags,
         });
-      } else {
-        // 폴백: OAuth 리프레시 토큰 방식
-        const bloggerRefresh = tokens.get('BLOGGER_REFRESH_TOKEN');
-        if (!bloggerRefresh) {
-          results.blogger = { success: false, error: 'BLOGGER_EMAIL/BLOGGER_PW 또는 BLOGGER_REFRESH_TOKEN을 Railway에 설정해주세요', platform: 'blogger' };
-        } else {
-          results.blogger = await publishToBlogger({
-            clientId: tokens.get('BLOGGER_CLIENT_ID'), clientSecret: tokens.get('BLOGGER_CLIENT_SECRET'),
-            refreshToken: bloggerRefresh, blogId, title: variantTitle, content: variantContent, tags, imagePaths,
-          });
+        // 발행 성공 후 blogId 자동저장 (다음 번 더 빠르게)
+        if (results.blogger.success && results.blogger.blogId && !blogId) {
+          tokens.set('BLOGGER_BLOG_ID', results.blogger.blogId);
         }
+      } else {
+        results.blogger = { success: false, error: 'Railway에 BLOGGER_EMAIL / BLOGGER_PW 설정 필요', platform: 'blogger' };
       }
     }
 
@@ -161,7 +150,8 @@ app.get('/api/status', auth, (req, res) => {
     anthropicKey: !!process.env.ANTHROPIC_API_KEY,
     platforms: {
       naver:   !!(tokens.get('NAVER_ID') && tokens.get('NAVER_PW') && tokens.get('NAVER_BLOG_ID')),
-      tistory: !!(tokens.get('TISTORY_ID') && tokens.get('TISTORY_PW') && tokens.get('TISTORY_BLOG_NAME')),
+      tistory: !!(tokens.get('TISTORY_ID') && tokens.get('TISTORY_PW') &&
+                  (tokens.get('TISTORY_BLOG_NAME') || '').replace(/\.tistory\.com.*$/, '').trim()),
       blogger: !!(tokens.get('BLOGGER_EMAIL') && tokens.get('BLOGGER_PW')),
     },
   });

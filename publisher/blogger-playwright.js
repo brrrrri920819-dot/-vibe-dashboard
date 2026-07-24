@@ -223,8 +223,11 @@ async function publishToBloggerPlaywright({ email, pw, blogId, blogUrl, title, c
     }
 
     const postUrl = page.url();
+    // blogId 추출해서 반환 (다음 발행 시 빠르게 사용)
+    const blogIdMatch = newPostUrl.match(/\/(\d{10,})/);
+    const detectedBlogId = blogIdMatch ? blogIdMatch[1] : null;
     console.log('[Blogger-PW] 발행 완료:', postUrl);
-    return { success: true, url: postUrl, platform: 'blogger' };
+    return { success: true, url: postUrl, platform: 'blogger', blogId: detectedBlogId };
 
   } catch (err) {
     // 스크린샷 저장 (디버깅용)
