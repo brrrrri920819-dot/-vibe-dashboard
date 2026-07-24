@@ -1383,10 +1383,20 @@ async function unlockApp() {
     if (pwd !== pwd2) { errEl.textContent = '비밀번호가 일치하지 않습니다'; return; }
     if (pwd.length < 4) { errEl.textContent = '비밀번호는 4자 이상이어야 합니다'; return; }
     localStorage.setItem(PASS_KEY, await hashPwd(pwd));
+    // 서버 인증 비밀번호도 동일하게 자동 설정
+    BP_PASSWORD = pwd;
+    localStorage.setItem('riri_bp_password', pwd);
     enterApp();
   } else {
     var hash = await hashPwd(pwd);
     if (hash === localStorage.getItem(PASS_KEY)) {
+      // 서버 비밀번호 자동 동기화 (미설정 시에만)
+      if (!localStorage.getItem('riri_bp_password')) {
+        BP_PASSWORD = pwd;
+        localStorage.setItem('riri_bp_password', pwd);
+      } else {
+        BP_PASSWORD = localStorage.getItem('riri_bp_password');
+      }
       enterApp();
     } else {
       errEl.textContent = '비밀번호가 틀렸습니다 💔';
@@ -1572,6 +1582,12 @@ async function bpFetch(path, opts) {
       var errBody;
       try { errBody = await res.json(); } catch {}
       var errMsg = (errBody && (errBody.error || errBody.message)) || ('HTTP ' + res.status);
+      // 401: 서버 비밀번호 불일치 → 비밀번호를 초기화하고 재시도 안내
+      if (res.status === 401) {
+        localStorage.removeItem('riri_bp_password');
+        BP_PASSWORD = '';
+        bpToast('🔒 서버 인증 실패 — 설정에서 서버 비밀번호를 확인해주세요', 'err');
+      }
       throw new Error(errMsg);
     }
     return await res.json();
