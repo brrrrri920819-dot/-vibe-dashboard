@@ -6,3 +6,6 @@ data/
 .DS_Store
 scheduler/drafts.json
 config/tokens.json
+data/google-cookies.json
+data/tistory-cookies.json
+/tmp/
