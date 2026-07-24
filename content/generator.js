@@ -69,18 +69,19 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
   });
 }
 
-// picsum.photos — 안정적인 무료 이미지 (Unsplash source API 2023년 종료됨)
+// 키워드 관련 실제 이미지 URL (Unsplash 키워드 검색 + Flickr 폴백)
 function getImageUrl(keyword) {
-  const seed = encodeURIComponent(keyword) + Math.floor(Math.random() * 1000);
-  const hash = [...seed].reduce((h, c) => (Math.imul(31, h) + c.charCodeAt(0)) | 0, 0);
-  const id = Math.abs(hash) % 1000;
-  return `https://picsum.photos/seed/${id}/1200/630`;
+  // source.unsplash.com: 키워드에 맞는 실제 사진 반환 (무료, 키 불필요)
+  const encoded = encodeURIComponent(keyword.toLowerCase().replace(/\s+/g, ','));
+  return `https://source.unsplash.com/1200x630/?${encoded}`;
 }
 
 // 이미지 HTML 태그 생성
 function imageTag(keyword, alt) {
   const url = getImageUrl(keyword);
-  return `<figure style="text-align:center;margin:28px 0"><img src="${url}" alt="${alt}" style="max-width:100%;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.12)"><figcaption style="color:#888;font-size:13px;margin-top:8px">${alt}</figcaption></figure>`;
+  // loremflickr를 data-fallback으로 설정해 Unsplash 실패 시 자동 대체
+  const fallback = `https://loremflickr.com/1200/630/${encodeURIComponent(keyword)}`;
+  return `<figure style="text-align:center;margin:28px 0"><img src="${url}" alt="${alt}" onerror="this.onerror=null;this.src='${fallback}'" loading="lazy" style="max-width:100%;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.12)"><figcaption style="color:#888;font-size:13px;margin-top:8px">${alt}</figcaption></figure>`;
 }
 
 const SYSTEM_PROMPT = `당신은 대한민국 MZ세대가 즐겨 보는 정보성 블로그를 운영하는 20-30대 여성입니다.

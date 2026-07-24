@@ -1,13 +1,9 @@
 /**
  * publisher/tistory-playwright.js
- * OAuth 없이 Playwright로 티스토리에 직접 로그인 후 글 발행
- * 토큰 만료 없음
+ * Playwright로 티스토리에 직접 로그인 후 글 발행 (OAuth 없음, 토큰 만료 없음)
  */
 
 const { chromium } = require('playwright');
-
-const KAKAO_LOGIN_URL  = 'https://accounts.kakao.com/login';
-const TISTORY_WRITE    = 'https://www.tistory.com/apis/post/write';
 
 function delay(min, max) {
   return new Promise(r => setTimeout(r, min + Math.random() * (max - min)));
@@ -39,28 +35,53 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
     await page.goto('https://www.tistory.com/auth/login', { waitUntil: 'domcontentloaded', timeout: 30000 });
     await delay(1500, 2500);
 
-    // 카카오 로그인 버튼
-    const kakaoBtn = await page.$('.btn_kakao, a[href*="kakao"], button:has-text("카카오")');
-    if (kakaoBtn) {
-      await kakaoBtn.click();
-      await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
-      await delay(1500, 2500);
+    // 카카오 로그인 버튼 클릭
+    const kakaoBtnSels = ['.btn_kakao', 'a[href*="kakao"]', 'button:has-text("카카오")'];
+    for (const sel of kakaoBtnSels) {
+      const btn = await page.$(sel).catch(() => null);
+      if (btn) {
+        await btn.click();
+        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+        await delay(1500, 2500);
+        break;
+      }
     }
 
-    // 카카오 이메일/ID 입력
-    const emailInput = await page.$('#loginId, input[name="loginId"], input[type="email"]');
-    if (emailInput) {
-      await emailInput.fill(id);
+    // 카카오 이메일 입력
+    const emailSels = ['#loginId', 'input[name="loginId"]', 'input[type="email"]', 'input[name="email"]'];
+    let emailFilled = false;
+    for (const sel of emailSels) {
+      const el = await page.$(sel).catch(() => null);
+      if (el) {
+        await el.fill(id);
+        emailFilled = true;
+        break;
+      }
+    }
+
+    // 카카오 비밀번호 입력
+    const pwSels = ['#loginPw', 'input[name="loginPw"]', 'input[type="password"]', 'input[name="password"]'];
+    let pwFilled = false;
+    for (const sel of pwSels) {
+      const el = await page.$(sel).catch(() => null);
+      if (el) {
+        await el.fill(pw);
+        pwFilled = true;
+        break;
+      }
+    }
+
+    if (emailFilled && pwFilled) {
       await delay(400, 800);
-      const pwInput = await page.$('#loginPw, input[name="loginPw"], input[type="password"]');
-      if (pwInput) {
-        await pwInput.fill(pw);
-        await delay(400, 800);
-        const loginBtn = await page.$('button[type="submit"], .btn_login, #btnLogin');
-        if (loginBtn) {
-          await loginBtn.click();
+      // 로그인 버튼 클릭
+      const loginBtnSels = ['button[type="submit"]', '.btn_login', '#btnLogin', 'button:has-text("로그인")'];
+      for (const sel of loginBtnSels) {
+        const btn = await page.$(sel).catch(() => null);
+        if (btn) {
+          await btn.click();
           await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
-          await delay(2000, 3000);
+          await delay(2000, 3500);
+          break;
         }
       }
     }
@@ -68,71 +89,172 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
     const curUrl = page.url();
     console.log('[Tistory-PW] 로그인 후 URL:', curUrl);
     if (curUrl.includes('login') || curUrl.includes('accounts.kakao')) {
-      throw new Error('로그인 실패 — TISTORY_ID/TISTORY_PW 확인 필요 (카카오 계정 사용 시 이메일/비번 입력)');
+      // 잠깐 더 기다려봄 (리다이렉트 지연)
+      await delay(3000, 5000);
+      if (page.url().includes('login') || page.url().includes('accounts.kakao')) {
+        throw new Error('로그인 실패 — TISTORY_ID(카카오 이메일)/TISTORY_PW(카카오 비번) 확인 필요');
+      }
     }
 
     // ── 2. 글쓰기 페이지로 이동 ───────────────────────────
     const writeUrl = `https://${blogName}.tistory.com/manage/post/write`;
     await page.goto(writeUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-    await delay(2000, 3000);
+    await delay(2500, 4000);
 
     console.log('[Tistory-PW] 글쓰기 페이지:', page.url());
 
+    // 로그인이 풀렸는지 확인
+    if (page.url().includes('login')) {
+      throw new Error('글쓰기 페이지 접근 실패 — 로그인 세션이 유지되지 않음');
+    }
+
     // ── 3. 제목 입력 ──────────────────────────────────────
-    const titleSel = '#post-title-inp, input[name="title"], .title-input input';
-    await page.waitForSelector(titleSel, { timeout: 10000 }).catch(() => {});
-    const titleEl = await page.$(titleSel);
-    if (titleEl) {
-      await titleEl.click();
-      await titleEl.fill(title);
+    const titleSels = [
+      '#post-title-inp',
+      'input[name="title"]',
+      '.title-input input',
+      '[placeholder*="제목"]',
+      'input[placeholder*="Title"]',
+    ];
+    for (const sel of titleSels) {
+      const el = await page.waitForSelector(sel, { timeout: 8000 }).catch(() => null);
+      if (el) {
+        await el.click();
+        await el.fill(title);
+        break;
+      }
     }
     await delay(500, 1000);
 
-    // ── 4. 본문 입력 (HTML 모드 진입) ────────────────────
-    // HTML 직접 입력 버튼 찾기
-    const htmlModeBtn = await page.$('button:has-text("HTML"), a:has-text("HTML"), .btn_html');
-    if (htmlModeBtn) {
-      await htmlModeBtn.click();
-      await delay(800, 1500);
-    }
-
-    // textarea 또는 contenteditable에 HTML 삽입
-    const textarea = await page.$('textarea#editor-content, textarea[name="content"], .CodeMirror textarea');
-    if (textarea) {
-      await textarea.click();
-      await textarea.fill(content);
-    } else {
-      // contenteditable 에디터에 삽입
-      const editor = await page.$('[contenteditable="true"].editor, #editor, .editor-area [contenteditable]');
-      if (editor) {
-        await editor.click();
-        await page.evaluate((el, html) => { el.innerHTML = html; }, editor, content);
+    // ── 4. HTML 모드 전환 ─────────────────────────────────
+    const htmlBtnSels = [
+      'button:has-text("HTML")',
+      'a:has-text("HTML")',
+      '.btn_html',
+      '[title="HTML"]',
+      '[aria-label="HTML"]',
+    ];
+    let htmlMode = false;
+    for (const sel of htmlBtnSels) {
+      const btn = await page.$(sel).catch(() => null);
+      if (btn) {
+        await btn.click();
+        await delay(1000, 2000);
+        htmlMode = true;
+        break;
       }
     }
+
+    // ── 5. 본문 HTML 삽입 ─────────────────────────────────
+    let contentFilled = false;
+
+    // 방법 1: textarea 직접
+    const textareaSels = [
+      'textarea#editor-content',
+      'textarea[name="content"]',
+      '.CodeMirror textarea',
+      'textarea.CodeMirror-scroll',
+    ];
+    for (const sel of textareaSels) {
+      const el = await page.$(sel).catch(() => null);
+      if (el) {
+        await el.click({ clickCount: 3 });
+        await el.fill(content);
+        contentFilled = true;
+        break;
+      }
+    }
+
+    // 방법 2: CodeMirror에 직접 주입
+    if (!contentFilled) {
+      const injected = await page.evaluate((html) => {
+        // CodeMirror 인스턴스 찾기
+        const cm = document.querySelector('.CodeMirror');
+        if (cm && cm.CodeMirror) {
+          cm.CodeMirror.setValue(html);
+          return true;
+        }
+        // 일반 textarea
+        const ta = document.querySelector('textarea');
+        if (ta) {
+          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+          nativeInputValueSetter.call(ta, html);
+          ta.dispatchEvent(new Event('input', { bubbles: true }));
+          return true;
+        }
+        return false;
+      }, content);
+      if (injected) contentFilled = true;
+    }
+
+    // 방법 3: contenteditable
+    if (!contentFilled) {
+      const editorSels = [
+        '[contenteditable="true"].editor',
+        '#editor',
+        '.editor-area [contenteditable]',
+        '[contenteditable="true"]:not([data-field="title"])',
+      ];
+      for (const sel of editorSels) {
+        const el = await page.$(sel).catch(() => null);
+        if (el) {
+          await page.evaluate((node, html) => {
+            node.innerHTML = html;
+            node.dispatchEvent(new Event('input', { bubbles: true }));
+          }, el, content);
+          contentFilled = true;
+          break;
+        }
+      }
+    }
+
+    if (!contentFilled) console.warn('[Tistory-PW] 본문 삽입 실패 — 에디터를 찾지 못함');
     await delay(800, 1500);
 
-    // ── 5. 태그 입력 ──────────────────────────────────────
+    // ── 6. 태그 입력 ──────────────────────────────────────
     if (tags.length > 0) {
-      const tagInput = await page.$('#tag-inp, input[name="tag"], .tag-input input');
-      if (tagInput) {
-        await tagInput.click();
-        await tagInput.fill(tags.slice(0, 10).join(','));
-        await page.keyboard.press('Enter');
-        await delay(500, 800);
+      const tagSels = ['#tag-inp', 'input[name="tag"]', '.tag-input input', '[placeholder*="태그"]'];
+      for (const sel of tagSels) {
+        const el = await page.$(sel).catch(() => null);
+        if (el) {
+          await el.click();
+          await el.fill(tags.slice(0, 10).join(','));
+          await page.keyboard.press('Enter');
+          await delay(500, 800);
+          break;
+        }
       }
     }
 
-    // ── 6. 발행 ───────────────────────────────────────────
-    const publishBtn = await page.$('button:has-text("완료"), button:has-text("발행"), .btn_publish, #publish-layer-btn');
-    if (!publishBtn) throw new Error('발행 버튼을 찾을 수 없습니다');
-    await publishBtn.click();
+    // ── 7. 발행 ───────────────────────────────────────────
+    const pubSels = [
+      'button:has-text("완료")',
+      'button:has-text("발행")',
+      '.btn_publish',
+      '#publish-layer-btn',
+      '[data-btn-publish]',
+    ];
+    let pubClicked = false;
+    for (const sel of pubSels) {
+      const btn = await page.$(sel).catch(() => null);
+      if (btn) {
+        await btn.click();
+        pubClicked = true;
+        break;
+      }
+    }
+    if (!pubClicked) throw new Error('발행 버튼을 찾을 수 없습니다');
     await delay(1500, 2500);
 
-    // 공개 설정 → 완료
-    const confirmPublish = await page.$('button:has-text("발행"), .btn_ok, button:has-text("확인")');
-    if (confirmPublish) {
-      await confirmPublish.click();
-      await delay(2000, 3000);
+    // 공개 설정 확인 팝업
+    const confirmSels = ['button:has-text("발행")', '.btn_ok', 'button:has-text("확인")', 'button:has-text("공개")'];
+    for (const sel of confirmSels) {
+      const btn = await page.$(sel).catch(() => null);
+      if (btn) {
+        await btn.click();
+        await delay(2000, 3500);
+        break;
+      }
     }
 
     const postUrl = page.url();
@@ -140,6 +262,11 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
     return { success: true, url: postUrl, platform: 'tistory' };
 
   } catch (err) {
+    // 스크린샷 저장 (디버깅용)
+    try {
+      await page.screenshot({ path: '/tmp/tistory-error.png' });
+      console.error('[Tistory-PW] 오류 스크린샷 저장: /tmp/tistory-error.png');
+    } catch {}
     console.error('[Tistory-PW] 발행 실패:', err.message);
     return { success: false, error: err.message, platform: 'tistory' };
   } finally {

@@ -870,39 +870,32 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
       </div>
 
       <div class="section" style="margin-bottom:14px">
-        <div class="bp-section-title">🟠 티스토리 OAuth 인증</div>
-        <div class="bp-humanize-tip" id="tistory-oauth-info">
-          토큰이 만료되면 발행이 안 됩니다.
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-          <button class="bp-pub-btn" style="max-width:180px" id="tistory-auto-btn" onclick="autoAuthTistory()">
-            🤖 자동 인증 (권장)
-          </button>
-          <button class="bp-sch-btn" style="max-width:160px" onclick="window.open(BP_SERVER+'/oauth/tistory','_blank')">
-            🔑 수동 재인증
-          </button>
+        <div class="bp-section-title">🟠 티스토리</div>
+        <div class="bp-humanize-tip">
+          <b>Playwright 자동 로그인 방식</b> — 토큰 만료 없음<br>
+          Railway 환경변수에 아래 3개 설정하면 자동 발행됩니다:<br>
+          <code style="background:var(--s3);padding:1px 6px;border-radius:4px;font-size:11px">TISTORY_ID</code> 카카오 이메일<br>
+          <code style="background:var(--s3);padding:1px 6px;border-radius:4px;font-size:11px">TISTORY_PW</code> 카카오 비번<br>
+          <code style="background:var(--s3);padding:1px 6px;border-radius:4px;font-size:11px">TISTORY_BLOG_NAME</code> 블로그 주소 앞부분 (예: myblog.tistory.com → <b>myblog</b>)
         </div>
         <div id="tistory-auth-status" style="font-size:12px;color:var(--t3);margin-top:8px"></div>
       </div>
 
       <div class="section" style="margin-bottom:14px">
         <div class="bp-section-title">🔵 블로그스팟 (Google Blogger)</div>
-        <div class="bp-humanize-tip" id="blogger-oauth-info">
-          Google OAuth 토큰이 만료되면 발행이 안 됩니다.
+        <div class="bp-humanize-tip">
+          <b>Playwright 자동 로그인 방식</b> — 토큰 만료 없음<br>
+          Railway 환경변수에 아래 2개 설정하면 자동 발행됩니다:<br>
+          <code style="background:var(--s3);padding:1px 6px;border-radius:4px;font-size:11px">BLOGGER_EMAIL</code> 구글 이메일<br>
+          <code style="background:var(--s3);padding:1px 6px;border-radius:4px;font-size:11px">BLOGGER_PW</code> 구글 비번<br>
+          <span style="color:var(--err);font-size:11px">⚠️ 구글 계정 2단계 인증 OFF 필요 (또는 앱 비밀번호 사용)</span>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-          <button class="bp-pub-btn" style="max-width:180px" onclick="window.open(BP_SERVER+'/oauth/blogger','_blank')">
-            🔑 블로그스팟 재인증
-          </button>
-        </div>
-        <div style="font-size:12px;color:var(--t3);margin-top:6px">구글 계정 선택 → 허용 클릭 → 창 닫기. 토큰 자동저장됨.</div>
       </div>
 
       <div class="section">
         <div class="bp-section-title">🔗 서버 연결</div>
         <div style="display:flex;gap:10px;margin-bottom:10px">
           <input class="bp-inp" id="bp-server-url" style="margin-bottom:0" placeholder="http://localhost:3000" value=""/>
-          <input class="bp-inp" id="bp-server-pw" style="margin-bottom:0;max-width:160px" type="password" placeholder="대시보드 비밀번호"/>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="bp-pub-btn" style="max-width:160px" onclick="saveBpServer()">저장 & 연결 확인</button>
@@ -2109,34 +2102,14 @@ async function autoAuthTistory() {
 
 function bpLoadServerSettings() {
   var serverEl = document.getElementById('bp-server-url');
-  var pwEl     = document.getElementById('bp-server-pw');
   if (serverEl) serverEl.value = BP_SERVER;
-  if (pwEl) pwEl.value = BP_PASSWORD;
-
-  // OAuth 안내에 실제 Railway URL 주입
-  var actualUrl = BP_SERVER || window.location.origin;
-  function codeTag(txt) {
-    return '<code style="background:var(--s3);padding:1px 6px;border-radius:4px;font-size:11px;word-break:break-all">' + txt + '</code>';
-  }
-  var tiEl = document.getElementById('tistory-oauth-info');
-  if (tiEl) tiEl.innerHTML = '토큰이 만료되면 발행이 안 됩니다. 아래 버튼으로 재인증하세요.<br>'
-    + '① Railway 환경변수에 ' + codeTag('BASE_URL=' + actualUrl) + ' 추가<br>'
-    + '② 티스토리 앱 콜백 URL을 ' + codeTag(actualUrl + '/oauth/tistory/callback') + ' 로 등록<br>'
-    + '③ 아래 버튼 클릭해서 재인증';
-  var blEl = document.getElementById('blogger-oauth-info');
-  if (blEl) blEl.innerHTML = 'Google OAuth 토큰이 만료되면 발행이 안 됩니다. 아래 버튼으로 재인증하세요.<br>'
-    + '① Railway 환경변수에 ' + codeTag('BASE_URL=' + actualUrl) + ' 추가<br>'
-    + '② Google Cloud Console 리다이렉트 URI에 ' + codeTag(actualUrl + '/oauth/blogger/callback') + ' 추가<br>'
-    + '③ 아래 버튼 클릭해서 재인증';
 }
 
 async function saveBpServer() {
   var url = (document.getElementById('bp-server-url').value || '').trim().replace(/\/$/, '');
-  var pw  = document.getElementById('bp-server-pw').value || '';
   if (!url) { bpToast('서버 URL을 입력해주세요', 'err'); return; }
-  BP_SERVER = url; BP_PASSWORD = pw;
+  BP_SERVER = url;
   localStorage.setItem('riri_bp_server', url);
-  localStorage.setItem('riri_bp_password', pw);
   var status = document.getElementById('bp-server-status');
   status.textContent = '연결 확인 중...';
   try {
