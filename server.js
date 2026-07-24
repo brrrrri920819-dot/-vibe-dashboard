@@ -51,16 +51,8 @@ const upload = multer({
   },
 });
 
-// ── 인증 미들웨어 ────────────────────────────────────────
-function auth(req, res, next) {
-  // DASHBOARD_PASSWORD 미설정 시 인증 생략 (Railway에서 설정 안 한 경우 통과)
-  if (!process.env.DASHBOARD_PASSWORD) return next();
-  const pw = req.headers['x-dashboard-password'] || req.query.pw;
-  if (pw !== process.env.DASHBOARD_PASSWORD) {
-    return res.status(401).json({ error: '인증 실패' });
-  }
-  next();
-}
+// ── 인증 미들웨어 (비활성화 — Railway URL 자체가 개인 보안) ──
+function auth(req, res, next) { next(); }
 
 // ── 메인 발행 함수 ────────────────────────────────────────
 async function publishJob(job) {
