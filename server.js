@@ -14,6 +14,8 @@ const tokens   = require('./config/token-store');
 const { publishToNaver }   = require('./publisher/naver');
 const { publishToTistory, getTistoryAuthUrl, exchangeTistoryToken, getTistoryCategories } = require('./publisher/tistory');
 const { publishToBlogger, getBloggerAuthUrl, exchangeBloggerToken, getBloggerBlogId }     = require('./publisher/blogger');
+const { publishToTistoryPlaywright } = require('./publisher/tistory-playwright');
+const { publishToBloggerPlaywright } = require('./publisher/blogger-playwright');
 const { humanizeHtml, humanizeTitle, humanizePostTime, variantForPlatform } = require('./humanizer');
 const { notifyPublished } = require('./telegram');
 const { enqueue, readQueue, readLog, startScheduler } = require('./scheduler/queue');
@@ -101,35 +103,46 @@ async function publishJob(job) {
       });
 
     } else if (platform === 'tistory') {
-      const tistoryToken = tokens.get('TISTORY_ACCESS_TOKEN');
-      if (!tistoryToken) {
-        results.tistory = { success: false, error: '티스토리 토큰 없음 — 설정 탭 > 🔑 티스토리 재인증 버튼 클릭', platform: 'tistory' };
-      } else {
-        results.tistory = await publishToTistory({
-          accessToken: tistoryToken,
-          blogName:    tokens.get('TISTORY_BLOG_NAME'),
-          title:       variantTitle,
-          content:     variantContent,
-          tags,
-          imagePaths,
+      // Playwright 직접 로그인 우선 (토큰 만료 없음)
+      const tistoryId = tokens.get('TISTORY_ID') || tokens.get('NAVER_ID');
+      const tistoryPw = tokens.get('TISTORY_PW') || tokens.get('NAVER_PW');
+      const blogName  = tokens.get('TISTORY_BLOG_NAME');
+      if (tistoryId && tistoryPw && blogName) {
+        results.tistory = await publishToTistoryPlaywright({
+          id: tistoryId, pw: tistoryPw, blogName,
+          title: variantTitle, content: variantContent, tags,
         });
+      } else {
+        // 폴백: OAuth 토큰 방식
+        const tistoryToken = tokens.get('TISTORY_ACCESS_TOKEN');
+        if (!tistoryToken) {
+          results.tistory = { success: false, error: 'TISTORY_ID/TISTORY_PW/TISTORY_BLOG_NAME 또는 TISTORY_ACCESS_TOKEN을 Railway에 설정해주세요', platform: 'tistory' };
+        } else {
+          results.tistory = await publishToTistory({ accessToken: tistoryToken, blogName, title: variantTitle, content: variantContent, tags, imagePaths });
+        }
       }
 
     } else if (platform === 'blogger') {
-      const bloggerRefresh = tokens.get('BLOGGER_REFRESH_TOKEN');
-      if (!bloggerRefresh) {
-        results.blogger = { success: false, error: '블로거 토큰 없음 — 설정 탭 > 🔑 블로그스팟 재인증 버튼 클릭', platform: 'blogger' };
-      } else {
-        results.blogger = await publishToBlogger({
-          clientId:     tokens.get('BLOGGER_CLIENT_ID'),
-          clientSecret: tokens.get('BLOGGER_CLIENT_SECRET'),
-          refreshToken: bloggerRefresh,
-          blogId:       tokens.get('BLOGGER_BLOG_ID'),
-          title:        variantTitle,
-          content:      variantContent,
-          tags,
-          imagePaths,
+      // Playwright 직접 로그인 우선 (토큰 만료 없음)
+      const bloggerEmail = tokens.get('BLOGGER_EMAIL');
+      const bloggerPw    = tokens.get('BLOGGER_PW');
+      const blogId       = tokens.get('BLOGGER_BLOG_ID');
+      if (bloggerEmail && bloggerPw) {
+        results.blogger = await publishToBloggerPlaywright({
+          email: bloggerEmail, pw: bloggerPw, blogId,
+          title: variantTitle, content: variantContent, tags,
         });
+      } else {
+        // 폴백: OAuth 리프레시 토큰 방식
+        const bloggerRefresh = tokens.get('BLOGGER_REFRESH_TOKEN');
+        if (!bloggerRefresh) {
+          results.blogger = { success: false, error: 'BLOGGER_EMAIL/BLOGGER_PW 또는 BLOGGER_REFRESH_TOKEN을 Railway에 설정해주세요', platform: 'blogger' };
+        } else {
+          results.blogger = await publishToBlogger({
+            clientId: tokens.get('BLOGGER_CLIENT_ID'), clientSecret: tokens.get('BLOGGER_CLIENT_SECRET'),
+            refreshToken: bloggerRefresh, blogId, title: variantTitle, content: variantContent, tags, imagePaths,
+          });
+        }
       }
     }
 
