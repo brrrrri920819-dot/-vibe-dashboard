@@ -1972,7 +1972,7 @@ async function draftDelete(id) {
   } catch(e) { bpToast('오류: ' + e.message, 'err'); }
 }
 
-async function draftPublish(id) {
+async function draftPublish(id, _retry) {
   var btn = document.querySelector('#draft-' + id + ' button');
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>발행 중...'; }
   try {
@@ -2016,6 +2016,12 @@ async function draftPublish(id) {
     loadDraftsView();
     loadHeroStats();
   } catch(e) {
+    // 서버 재시작으로 job 소실 → 1회 자동 재시도
+    if (e.message && e.message.includes('재시작') && !_retry) {
+      bpToast('🔄 서버 재시작됨. 자동 재시도...', 'warn');
+      await new Promise(function(r){ setTimeout(r, 2000); });
+      return draftPublish(id, true);
+    }
     bpToast('❌ 발행 실패: ' + e.message, 'err');
     if (btn) { btn.disabled = false; btn.textContent = '🚀 발행'; }
   }

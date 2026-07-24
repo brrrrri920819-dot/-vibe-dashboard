@@ -305,11 +305,28 @@ app.post('/api/publish', auth, upload.array('images', 10), async (req, res) => {
   setTimeout(() => _pubJobs.delete(jobId), 60 * 60 * 1000);
 });
 
-/** 발행 상태 폴링 */
+/** 발행 상태 폴링 — 메모리 없으면 로그 파일에서 폴백 (서버 재시작 대응) */
 app.get('/api/publish-status/:jobId', auth, (req, res) => {
   const job = _pubJobs.get(req.params.jobId);
-  if (!job) return res.status(404).json({ error: 'job not found' });
-  res.json(job);
+  if (job) return res.json(job);
+
+  // 서버 재시작으로 메모리 소실 → 로그 파일에서 결과 조회
+  try {
+    const log = readLog();
+    const entry = log.find(e => e.id === req.params.jobId);
+    if (entry) {
+      return res.json({
+        status:  entry.status === 'done' ? 'done' : 'error',
+        success: entry.status === 'done',
+        results: entry.results || {},
+        error:   entry.error,
+        fromLog: true,
+      });
+    }
+  } catch (_) {}
+
+  // 로그에도 없으면 아직 처리 중이거나 서버 재시작 중 실패
+  return res.status(404).json({ error: 'job not found' });
 });
 
 /** 예약 발행 */
