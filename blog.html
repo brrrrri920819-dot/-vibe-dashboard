@@ -871,10 +871,8 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 
       <div class="section" style="margin-bottom:14px">
         <div class="bp-section-title">🟠 티스토리 OAuth 인증</div>
-        <div class="bp-humanize-tip">
-          토큰이 만료되면 발행이 안 됩니다. 아래 버튼으로 재인증하세요.<br>
-          ※ Railway에 <code style="background:var(--s3);padding:1px 5px;border-radius:4px">BASE_URL=https://your-app.up.railway.app</code> 설정 필수<br>
-          ※ 티스토리 앱 콜백 URL도 <code style="background:var(--s3);padding:1px 5px;border-radius:4px">https://your-app.up.railway.app/oauth/tistory/callback</code>으로 등록
+        <div class="bp-humanize-tip" id="tistory-oauth-info">
+          토큰이 만료되면 발행이 안 됩니다. 아래 버튼으로 재인증하세요.
         </div>
         <button class="bp-pub-btn" style="max-width:200px" onclick="window.open(BP_SERVER+'/oauth/tistory','_blank')">
           🔑 티스토리 재인증
@@ -883,10 +881,8 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 
       <div class="section" style="margin-bottom:14px">
         <div class="bp-section-title">🔵 블로그스팟 (Google Blogger)</div>
-        <div class="bp-humanize-tip">
-          Google OAuth 토큰이 만료되면 발행이 안 됩니다. 아래 버튼으로 재인증하세요.<br>
-          ※ Railway에 <code style="background:var(--s3);padding:1px 5px;border-radius:4px">BASE_URL=https://your-app.up.railway.app</code> 설정 필수<br>
-          ※ Google Cloud Console OAuth 리다이렉트 URI에 <code style="background:var(--s3);padding:1px 5px;border-radius:4px">https://your-app.up.railway.app/oauth/blogger/callback</code> 추가
+        <div class="bp-humanize-tip" id="blogger-oauth-info">
+          Google OAuth 토큰이 만료되면 발행이 안 됩니다. 아래 버튼으로 재인증하세요.
         </div>
         <button class="bp-pub-btn" style="max-width:200px" onclick="window.open(BP_SERVER+'/oauth/blogger','_blank')">
           🔑 블로그스팟 재인증
@@ -2064,6 +2060,22 @@ function bpLoadServerSettings() {
   var pwEl     = document.getElementById('bp-server-pw');
   if (serverEl) serverEl.value = BP_SERVER;
   if (pwEl) pwEl.value = BP_PASSWORD;
+
+  // OAuth 안내에 실제 Railway URL 주입
+  var actualUrl = BP_SERVER || window.location.origin;
+  function codeTag(txt) {
+    return '<code style="background:var(--s3);padding:1px 6px;border-radius:4px;font-size:11px;word-break:break-all">' + txt + '</code>';
+  }
+  var tiEl = document.getElementById('tistory-oauth-info');
+  if (tiEl) tiEl.innerHTML = '토큰이 만료되면 발행이 안 됩니다. 아래 버튼으로 재인증하세요.<br>'
+    + '① Railway 환경변수에 ' + codeTag('BASE_URL=' + actualUrl) + ' 추가<br>'
+    + '② 티스토리 앱 콜백 URL을 ' + codeTag(actualUrl + '/oauth/tistory/callback') + ' 로 등록<br>'
+    + '③ 아래 버튼 클릭해서 재인증';
+  var blEl = document.getElementById('blogger-oauth-info');
+  if (blEl) blEl.innerHTML = 'Google OAuth 토큰이 만료되면 발행이 안 됩니다. 아래 버튼으로 재인증하세요.<br>'
+    + '① Railway 환경변수에 ' + codeTag('BASE_URL=' + actualUrl) + ' 추가<br>'
+    + '② Google Cloud Console 리다이렉트 URI에 ' + codeTag(actualUrl + '/oauth/blogger/callback') + ' 추가<br>'
+    + '③ 아래 버튼 클릭해서 재인증';
 }
 
 async function saveBpServer() {
