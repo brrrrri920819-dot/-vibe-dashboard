@@ -24,7 +24,13 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
 
   return new Promise((resolve, reject) => {
     let settled = false;
-    const done = (fn, val) => { if (!settled) { settled = true; fn(val); } };
+    const done = (fn, val) => { if (!settled) { settled = true; clearTimeout(wallTimer); fn(val); } };
+
+    // 벽시계 타임아웃 (req.setTimeout은 소켓 비활성 타임아웃이라 응답 대기 중엔 작동 안 함)
+    const wallTimer = setTimeout(() => {
+      req.destroy();
+      done(reject, new Error(`Claude API 응답 시간 초과 (${CLAUDE_TIMEOUT_MS / 1000}초)`));
+    }, CLAUDE_TIMEOUT_MS);
 
     const req = https.request(API_URL, {
       method: 'POST',
@@ -55,12 +61,6 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
           done(reject, new Error(`응답 파싱 실패: ${e.message} | 원본: ${data.slice(0, 200)}`));
         }
       });
-    });
-
-    // 타임아웃 — 연결/응답 지연 시 무한 pending 방지
-    req.setTimeout(CLAUDE_TIMEOUT_MS, () => {
-      req.destroy();
-      done(reject, new Error(`Claude API 응답 시간 초과 (${CLAUDE_TIMEOUT_MS / 1000}초)`));
     });
 
     req.on('error', e => done(reject, new Error(`네트워크 오류: ${e.message}`)));
