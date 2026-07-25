@@ -179,6 +179,39 @@ main{max-width:980px;margin:0 auto;padding:0 20px 120px}
 .vlink:hover{border-color:var(--ink);background:#fff;transform:translateY(-1px)}
 .empty-slot{background:#FCFBF8;border:1.5px dashed #D8D2C2;border-radius:18px;padding:18px 20px;font-size:13.5px;color:var(--sub);font-weight:600}
 
+/* 이동 구간 */
+.leg{margin:-6px 0 12px 4px}
+.leg span{display:inline-flex;align-items:center;font-size:12px;font-weight:700;color:#7A7466;background:#F1EDE2;border:1px solid #E3DDCB;border-radius:99px;padding:5px 13px}
+
+/* 인사이트 */
+.ins-card,.lodge-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:22px 24px;margin-top:16px}
+.ins-head{font-size:16.5px;font-weight:900;letter-spacing:-.01em;margin-bottom:14px}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat-tile{background:#FCFBF8;border:1px solid var(--line);border-radius:14px;padding:14px 15px}
+.stat-tile .v{font-size:19px;font-weight:900;letter-spacing:-.02em}
+.stat-tile .l{font-size:11.5px;font-weight:700;color:var(--sub);margin-top:3px;line-height:1.45}
+.stat-tile .l .s{display:block;font-weight:500;font-size:10.5px;color:#9AA0AE}
+.mix-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.mix-item{font-size:12.5px;font-weight:700;color:#3B4256;background:#F4F2EA;border-radius:99px;padding:6px 13px}
+.mix-item b{font-weight:900}
+.ins-tip{font-size:13px;font-weight:600;color:#4B5265;background:#F4F7F3;border:1px solid #DFE8DC;border-radius:12px;padding:11px 14px;margin-top:12px}
+.ins-sub{font-size:12.5px;font-weight:800;color:var(--sub);letter-spacing:.02em}
+.ins-waits{margin-top:14px}
+.wait-chip{display:inline-block;font-size:12px;font-weight:700;color:#8A6A12;background:#FFF8E8;border:1px solid #F5E3AE;border-radius:99px;padding:5px 12px;margin:6px 6px 0 0}
+
+/* 숙소 */
+.lodge-card{margin-top:26px}
+.lodge-meta{font-size:13px;font-weight:600;color:var(--teal)}
+.stay-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:9px}
+.stay-card{background:#FCFBF8;border:1px solid var(--line);border-radius:14px;padding:13px 14px}
+.stay-card .sa{font-size:13.5px;font-weight:800}
+.stay-card .sw{font-size:12px;color:var(--sub);font-weight:500;margin-top:3px;line-height:1.5}
+.site-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:9px}
+.site-btn{display:flex;flex-direction:column;gap:2px;text-decoration:none;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;transition:.15s}
+.site-btn b{font-size:14px;font-weight:800}
+.site-btn span{font-size:11.5px;color:var(--sub);font-weight:600}
+.site-btn:hover{border-color:var(--ink);transform:translateY(-2px);box-shadow:var(--shadow)}
+
 /* modal */
 .modal-bg{position:fixed;inset:0;background:rgba(15,20,35,.55);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center;z-index:100;padding:0}
 .modal-bg.show{display:flex}
@@ -208,6 +241,8 @@ footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color
   #topbar .in{padding:12px 14px;gap:8px}
   .top-btn{padding:7px 11px;font-size:12px;white-space:nowrap}
   .region-grid{grid-template-columns:repeat(2,1fr)}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .stay-grid,.site-grid{grid-template-columns:repeat(2,1fr)}
   .timeline{padding-left:0}
   .timeline::before{display:none}
   .slot .time{position:static;display:inline-block;width:auto;padding:5px 14px;margin-bottom:8px}
@@ -290,8 +325,10 @@ footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color
     <div id="audit-area"></div>
     <div class="wx-src" id="wx-src" style="margin-top:14px"></div>
     <div class="weather-strip" id="weather-strip" style="padding-top:6px"></div>
+    <div id="insights"></div>
     <div class="day-tabs" id="day-tabs"></div>
     <div id="day-body"></div>
+    <div id="lodging"></div>
   </section>
 </main>
 
@@ -467,6 +504,61 @@ const REGIONS = [
 ]}
 ];
 
+/* 장소별 [위도, 경도, 1인 예상비용(원)] — 동선·예산 계산용 근사치 */
+const GEO = {
+  '광장시장 먹자골목':[37.5701,126.9996,10000],'금돼지식당':[37.5573,127.0110,25000],'우래옥':[37.5680,127.0035,18000],
+  '명동교자 본점':[37.5636,126.9853,12000],'하동관 명동본점':[37.5637,126.9847,16000],'이문설농탕':[37.5719,126.9832,13000],
+  '삼청동수제비':[37.5827,126.9818,10000],'런던베이글뮤지엄 안국점':[37.5776,126.9848,15000],'어니언 성수':[37.5444,127.0578,9000],
+  '카페 레이어드 연남':[37.5629,126.9256,12000],'프릳츠 도화점':[37.5411,126.9494,8000],'경복궁':[37.5796,126.9770,3000],
+  '창덕궁':[37.5794,126.9910,3000],'북촌한옥마을':[37.5824,126.9836,0],'익선동 한옥거리':[37.5720,126.9895,0],
+  '성수 연무장길':[37.5424,127.0557,0],'더현대 서울':[37.5259,126.9284,0],'국립중앙박물관':[37.5240,126.9804,0],
+  '서울숲':[37.5444,127.0374,0],'N서울타워':[37.5512,126.9882,16000],'반포한강공원 달빛무지개분수':[37.5109,126.9958,0],
+  '을지로 노가리골목':[37.5663,126.9910,15000],
+  '쌍둥이돼지국밥':[35.1330,129.0910,10000],'해운대암소갈비집':[35.1650,129.1580,60000],'개금밀면':[35.1520,129.0230,9000],
+  '초량밀면':[35.1170,129.0400,9000],'이재모피자':[35.0990,129.0290,15000],'송정3대국밥':[35.1580,129.0600,9000],
+  '금수복국 해운대본점':[35.1620,129.1620,15000],'웨이브온 커피':[35.3200,129.2620,9000],'모모스커피 영도':[35.0870,129.0400,8000],
+  '해리단길':[35.1650,129.1440,8000],'해운대 해수욕장':[35.1587,129.1604,0],'감천문화마을':[35.0975,129.0106,0],
+  '흰여울문화마을':[35.0780,129.0450,0],'해동용궁사':[35.1884,129.2233,0],'블루라인파크 해변열차':[35.1600,129.1750,35000],
+  '부산 X the SKY':[35.1600,129.1630,27000],'태종대':[35.0530,129.0870,4000],'광안리 M 드론라이트쇼':[35.1532,129.1187,0],
+  '광안리 해변 야경':[35.1532,129.1187,0],'더베이101':[35.1568,129.1520,15000],'부평깡통야시장':[35.1010,129.0250,10000],
+  '우진해장국':[33.5100,126.5190,10000],'자매국수':[33.5060,126.5210,10000],'돈사돈 본점':[33.4820,126.4780,25000],
+  '명진전복':[33.5560,126.7590,20000],'오는정김밥':[33.2480,126.5650,6000],'삼대국수회관 본점':[33.5070,126.5220,10000],
+  '숙성도 노형점':[33.4870,126.4800,30000],'카페 델문도':[33.5430,126.6690,9000],'원앤온리':[33.2370,126.3130,10000],
+  '오설록 티뮤지엄':[33.3060,126.2890,8000],'성산일출봉':[33.4580,126.9425,5000],'협재해수욕장':[33.3940,126.2400,0],
+  '사려니숲길':[33.4130,126.6870,0],'카멜리아힐':[33.2900,126.3680,10000],'우도':[33.5040,126.9520,10000],
+  '새별오름':[33.3680,126.3600,0],'함덕해수욕장':[33.5430,126.6690,0],'동문재래시장 야시장':[33.5120,126.5280,12000],
+  '이호테우해변 목마등대':[33.4980,126.4530,0],
+  '초당할머니순두부':[37.7910,128.9170,10000],'동화가든':[37.7930,128.9200,12000],'엄지네포장마차 본점':[37.7690,128.9060,15000],
+  '강릉중앙시장':[37.7550,128.8960,10000],'강릉 감자옹심이':[37.7560,128.8990,9000],'교동반점 본점':[37.7650,128.8990,9000],
+  '테라로사 커피공장 본점':[37.6970,128.8570,7000],'카페 툇마루':[37.7900,128.9150,8000],'안목해변 커피거리':[37.7720,128.9470,6000],
+  '순두부젤라또 1호점':[37.7910,128.9160,5000],'경포해변':[37.8050,128.9080,0],'오죽헌':[37.7790,128.8780,3000],
+  '주문진 BTS 버스정류장':[37.8970,128.8290,0],'정동진 해변':[37.6900,129.0330,0],'하슬라아트월드':[37.7080,129.0070,12000],
+  '강문해변':[37.7970,128.9180,0],'경포호 야간 산책':[37.7950,128.8990,0],'월화거리':[37.7530,128.8930,0],
+  '황남빵 본점':[35.8330,129.2110,10000],'교리김밥 본점':[35.8310,129.2200,8000],'별채반 교동쌈밥':[35.8340,129.2100,13000],
+  '경주 십원빵':[35.8360,129.2090,4000],'명동쫄면':[35.8420,129.2140,8000],'팔우정 해장국거리':[35.8450,129.2170,9000],
+  '어니스트밀크 황리단길점':[35.8360,129.2080,5000],'스타벅스 경주보문호수R점':[35.8410,129.2820,7000],
+  '황리단길 카페골목':[35.8370,129.2090,7000],'대릉원 · 천마총':[35.8380,129.2120,3000],'첨성대':[35.8347,129.2190,0],
+  '불국사':[35.7900,129.3320,6000],'석굴암':[35.7950,129.3490,6000],'국립경주박물관':[35.8290,129.2280,0],
+  '황리단길':[35.8370,129.2090,0],'보문호수 둘레길':[35.8440,129.2850,0],'동궁과 월지':[35.8347,129.2265,3000],
+  '월정교 야경':[35.8290,129.2190,0],
+  '현대옥 남부시장점':[35.8150,127.1480,8000],'조점례남문피순대':[35.8140,127.1480,9000],'베테랑칼국수':[35.8150,127.1530,8000],
+  '하숙영가마솥비빔밥':[35.8160,127.1520,12000],'풍년제과 본점':[35.8160,127.1480,6000],'왱이집':[35.8180,127.1450,8000],
+  '가족회관':[35.8190,127.1420,15000],'카페 전망':[35.8140,127.1540,8000],'외할머니솜씨':[35.8130,127.1560,10000],
+  '전주한옥마을':[35.8150,127.1530,0],'경기전':[35.8160,127.1495,3000],'전동성당':[35.8135,127.1490,0],
+  '오목대':[35.8140,127.1560,0],'자만벽화마을':[35.8160,127.1580,0],'남부시장 청년몰':[35.8135,127.1460,5000],
+  '남부시장 야시장':[35.8135,127.1460,10000],'한옥마을 야경 산책':[35.8150,127.1530,0],'전주향교':[35.8110,127.1580,0]
+};
+
+/* 지역별 추천 숙박 거점 */
+const STAY = {
+  seoul:     [{a:'명동·을지로', why:'지하철 허브 + 궁궐·시장 도보권, 코스 동선의 중심'},{a:'홍대·연남', why:'밤문화와 공항철도 직결, 카페 밀집'},{a:'강남·잠실', why:'쇼핑·미식 인프라, 신축 호텔 많음'}],
+  busan:     [{a:'해운대', why:'해변뷰 + 관광 인프라 최다, 블루라인·X the SKY 도보권'},{a:'광안리', why:'광안대교 야경뷰 가성비, 드론쇼 명당'},{a:'서면', why:'교통 중심 + 맛집 밀집, 어디든 이동 편리'}],
+  jeju:      [{a:'제주시(공항권)', why:'공항 근접 + 동문시장·맛집, 첫날·마지막날 최적'},{a:'애월·협재', why:'서부 일몰 뷰 감성 숙소 밀집'},{a:'성산·표선', why:'동부 일출 + 성산일출봉·우도 접근성'}],
+  gangneung: [{a:'경포·강문', why:'해변 도보 숙소, 초당 순두부 골목 근접'},{a:'강릉 시내', why:'중앙시장·월화거리 도보, 가성비 좋음'}],
+  gyeongju:  [{a:'황리단길·시내', why:'대릉원·첨성대 도보 관광, 한옥스테이 감성'},{a:'보문관광단지', why:'호수뷰 리조트·호텔, 벚꽃 시즌 성지'}],
+  jeonju:    [{a:'한옥마을', why:'한옥스테이 감성 그 자체, 야경 산책 도보권'},{a:'전주 시내', why:'가성비 호텔, 남부시장 접근 편리'}]
+};
+
 /* 월별 평년 기후 (기상청 평년값 기반 근사치) — [최고, 최저, 강수메모] */
 const CLIMATE = {
   seoul:     [[2,-6,'건조·한파'],[5,-4,'꽃샘추위'],[11,1,'일교차 큼'],[18,7,'맑고 쾌적'],[24,13,'나들이 최적'],[28,18,'더위 시작'],[30,22,'장마·무더위'],[31,23,'폭염·소나기'],[27,17,'가을 시작'],[20,10,'단풍·쾌청'],[12,3,'쌀쌀'],[4,-3,'초겨울']],
@@ -600,6 +692,30 @@ function liveStatus(p){
 }
 
 /* =====================================================================
+   동선 · 비용
+   ===================================================================== */
+function geoOf(p){ const g=GEO[p.n]; return g?{lat:g[0],lng:g[1]}:null; }
+function wonOf(p){ const g=GEO[p.n]; return g?g[2]:0; }
+function fmtWon(n){ return n.toLocaleString('ko-KR')+'원'; }
+function distKm(a,b){
+  const R=6371, rad=Math.PI/180;
+  const dLa=(b.lat-a.lat)*rad, dLo=(b.lng-a.lng)*rad;
+  const x=Math.sin(dLa/2)**2 + Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+function fmtKm(km){ return km<1 ? Math.round(km*1000)+'m' : (km<10?km.toFixed(1):Math.round(km))+'km'; }
+/* 두 장소 사이 이동 안내 (직선거리 기반 추정) */
+function legInfo(p1,p2){
+  const g1=geoOf(p1), g2=geoOf(p2);
+  if(!g1||!g2) return null;
+  const km=distKm(g1,g2);
+  if(km<0.06) return {km, min:1, txt:'🚶 바로 옆이에요'};
+  if(km<=1.3){ const m=Math.max(2,Math.round(km*15)); return {km, min:m, txt:'🚶 도보 약 '+m+'분 · '+fmtKm(km)}; }
+  const m=Math.max(5,Math.round(km*2.2));
+  return {km, min:m, txt:'🚗 차량 약 '+m+'분 · '+fmtKm(km)};
+}
+
+/* =====================================================================
    코스 생성 엔진
    ===================================================================== */
 function themeBonus(p){
@@ -607,12 +723,17 @@ function themeBonus(p){
   for(const th of (p.th||[])) if(form.interests.has(th)) b+=6;
   return b;
 }
-function scoreOf(p, type, anchorArea){
+function scoreOf(p, type, anchorArea, prevGeo){
   let s = p.p + themeBonus(p) + Math.random()*4;
   if(anchorArea && p.a===anchorArea) s += (type==='food'?12:10);
+  // 직전 장소와 가까울수록 가산 — 동선 효율
+  if(prevGeo){
+    const g=geoOf(p);
+    if(g) s += Math.max(0, 12 - distKm(prevGeo,g)*1.5);
+  }
   return s;
 }
-function candidatesFor(region, slot, date, slotMin, usedIds, usedToday, anchorArea){
+function candidatesFor(region, slot, date, slotMin, usedIds, usedToday, anchorArea, prevGeo){
   const warns=[];
   const typeOk = p => {
     if(slot.type==='sight') return p.c==='sight';
@@ -624,7 +745,7 @@ function candidatesFor(region, slot, date, slotMin, usedIds, usedToday, anchorAr
   // 같은 날 중복은 어떤 경우에도 금지
   const pool = region.places.filter(p=>typeOk(p) && !usedToday.has(placeId(region,p)));
   const rank = list => list
-    .map(p=>({p, s:scoreOf(p, slot.type, anchorArea)}))
+    .map(p=>({p, s:scoreOf(p, slot.type, anchorArea, prevGeo)}))
     .sort((a,b)=>b.s-a.s).map(x=>x.p);
 
   // 1단계: 미방문 + 휴무 아님 + 영업시간 내 + (식사면) 브레이크 안 겹침
@@ -677,6 +798,7 @@ function buildPlan(){
     const anchorArea = areas[di % areas.length];
     const slots=[];
     const usedToday = new Set();
+    let prevGeo = null;
     for(const tpl of template){
       if(tpl.type==='cafe' && !form.interests.has('cafe')){
         // 카페 대신 볼거리
@@ -687,9 +809,12 @@ function buildPlan(){
         var slotDef = tpl;
       }
       const slotMin = parseHM(slotDef.t);
-      const {list, warns} = candidatesFor(region, slotDef, date, slotMin, usedIds, usedToday, anchorArea);
+      const {list, warns} = candidatesFor(region, slotDef, date, slotMin, usedIds, usedToday, anchorArea, prevGeo);
       const place = list[0]||null;
-      if(place){ usedIds.add(placeId(region,place)); usedToday.add(placeId(region,place)); }
+      if(place){
+        usedIds.add(placeId(region,place)); usedToday.add(placeId(region,place));
+        prevGeo = geoOf(place)||prevGeo;
+      }
       // 선택된 곳 자체 경고
       const pw = [...warns];
       if(place){
@@ -883,9 +1008,104 @@ function renderResult(){
   }
 
   renderWeatherStrip();
+  renderInsights();
   renderDayTabs();
   renderDay();
+  renderLodging();
   updateNowWeather();
+}
+
+/* 여행 인사이트 — 예산·이동·구성 통계 */
+function tripStats(){
+  let spend=0, freeCnt=0, totalCnt=0, km=0, moveMin=0;
+  const catCnt={food:0,cafe:0,sight:0,night:0};
+  const waits=[];
+  for(const day of plan.days){
+    let prev=null;
+    for(const s of day.slots){
+      if(!s.placeId) continue;
+      const p=findPlace(s.placeId);
+      totalCnt++;
+      catCnt[p.c]++;
+      const w=wonOf(p);
+      spend+=w; if(w===0) freeCnt++;
+      if(p.tip && /웨이팅|예약|오픈런|줄서기/.test(p.tip) && !waits.some(x=>x.n===p.n)) waits.push(p);
+      if(prev){ const l=legInfo(prev,p); if(l){ km+=l.km; moveMin+=l.min; } }
+      prev=p;
+    }
+  }
+  return {spend, freeCnt, totalCnt, km, moveMin, catCnt, waits};
+}
+function clothingTip(hi){
+  if(hi>=28) return '🥵 한여름 더위 — 통기성 좋은 옷, 양산·선크림, 수분 보충 필수';
+  if(hi>=20) return '😊 쾌적한 날씨 — 가벼운 옷차림에 얇은 겉옷 하나면 충분';
+  if(hi>=10) return '🍂 쌀쌀함 — 겉옷·가디건 챙기고 저녁엔 따뜻하게';
+  if(hi>=0)  return '🧣 추위 — 코트·니트, 목도리 추천';
+  return '🥶 한파 — 패딩·장갑·핫팩 완전 무장';
+}
+function renderInsights(){
+  const st = tripStats();
+  // 대표 기온: 예보 있으면 예보 평균, 없으면 평년
+  let hiSum=0, hiN=0;
+  for(const d of plan.days){
+    const w = wxData && wxData[d.date];
+    hiSum += w ? w.hi : climateFor(plan.regionKey,d.date).hi;
+    hiN++;
+  }
+  const avgHi = Math.round(hiSum/Math.max(1,hiN));
+  const moveTxt = st.km>0 ? fmtKm(st.km)+' · 약 '+(st.moveMin>=60? Math.floor(st.moveMin/60)+'시간 '+(st.moveMin%60)+'분' : st.moveMin+'분') : '—';
+  const mix = Object.keys(st.catCnt).filter(k=>st.catCnt[k]>0)
+    .map(k=>'<span class="mix-item">'+CAT[k].icon+' '+CAT[k].label+' <b>'+st.catCnt[k]+'</b></span>').join('');
+  const waitsHtml = st.waits.length
+    ? '<div class="ins-waits"><div class="ins-sub">⏳ 웨이팅·예약 대비가 필요한 곳</div>'
+      + st.waits.slice(0,6).map(p=>'<span class="wait-chip">'+CAT[p.c].icon+' '+esc(p.n)+'</span>').join('')+'</div>'
+    : '';
+  $('#insights').innerHTML =
+    '<div class="ins-card">'
+    +'<div class="ins-head">📊 여행 인사이트</div>'
+    +'<div class="stat-grid">'
+      +'<div class="stat-tile"><div class="v">'+fmtWon(st.spend)+'</div><div class="l">1인 예상 경비 <span class="s">먹거리+입장료 · 숙박/교통 제외</span></div></div>'
+      +'<div class="stat-tile"><div class="v">'+moveTxt+'</div><div class="l">총 이동 거리 <span class="s">직선거리 기반 추정</span></div></div>'
+      +'<div class="stat-tile"><div class="v">'+st.totalCnt+'곳</div><div class="l">방문 스팟 <span class="s">무료 '+st.freeCnt+'곳 포함</span></div></div>'
+      +'<div class="stat-tile"><div class="v">'+avgHi+'°</div><div class="l">여행 기간 평균 최고기온</div></div>'
+    +'</div>'
+    +'<div class="mix-row">'+mix+'</div>'
+    +'<div class="ins-tip">'+clothingTip(avgHi)+'</div>'
+    +waitsHtml
+    +'</div>';
+}
+
+/* 숙소 — 최저가 비교 링크 (체크인·아웃 날짜 자동 주입) */
+function renderLodging(){
+  const el = $('#lodging');
+  const region = byKey(plan.regionKey);
+  const s = plan.days[0].date, e = plan.days[plan.days.length-1].date;
+  const nights = plan.days.length-1;
+  if(nights<1){ el.innerHTML=''; return; }
+  const enc = encodeURIComponent;
+  const sites = [
+    {n:'부킹닷컴', d:'최저가순 정렬로 열림', u:'https://www.booking.com/searchresults.ko.html?ss='+enc(region.name)+'&checkin='+s+'&checkout='+e+'&group_adults=2&order=price'},
+    {n:'아고다', d:'최저가순 정렬로 열림', u:'https://www.agoda.com/ko-kr/search?textToSearch='+enc(region.name)+'&checkIn='+s+'&los='+nights+'&rooms=1&adults=2&sort=priceLowToHigh'},
+    {n:'야놀자', d:'국내 모텔·펜션 강세', u:'https://www.yanolja.com/search/'+enc(region.name)},
+    {n:'여기어때', d:'국내 숙소 쿠폰 많음', u:'https://www.goodchoice.kr/product/search/2?keyword='+enc(region.name)},
+    {n:'네이버', d:'가격 비교 한눈에', u:'https://search.naver.com/search.naver?query='+enc(region.name+' 호텔 최저가')},
+    {n:'구글 호텔', d:'해외 사이트까지 비교', u:'https://www.google.com/travel/search?q='+enc(region.name+' 호텔')}
+  ];
+  const stays = (STAY[plan.regionKey]||[]).map(x=>
+    '<div class="stay-card"><div class="sa">📍 '+esc(x.a)+'</div><div class="sw">'+esc(x.why)+'</div></div>'
+  ).join('');
+  el.innerHTML =
+    '<div class="lodge-card">'
+    +'<div class="ins-head">🏨 숙소 — 최저가로 잡는 법</div>'
+    +'<div class="lodge-meta">'+fmtK(s)+' 체크인 → '+fmtK(e)+' 체크아웃 · '+nights+'박 기준으로 날짜를 미리 넣어뒀어요</div>'
+    +'<div class="ins-sub" style="margin-top:14px">어디에 묵을까?</div>'
+    +'<div class="stay-grid">'+stays+'</div>'
+    +'<div class="ins-sub" style="margin-top:16px">가격 비교 — 같은 방도 사이트마다 달라요</div>'
+    +'<div class="site-grid">'+sites.map(x=>
+      '<a class="site-btn" target="_blank" rel="noopener" href="'+x.u+'"><b>'+x.n+'</b><span>'+x.d+'</span></a>'
+    ).join('')+'</div>'
+    +'<div class="ins-tip" style="margin-top:14px">💡 부킹닷컴·아고다는 <b>낮은 가격순으로 정렬된 상태</b>로 열려요. 마음에 드는 숙소를 찾으면 2~3개 사이트에서 같은 호텔을 검색해 비교하세요 — 보통 5~15% 차이가 납니다.</div>'
+    +'</div>';
 }
 
 function renderWeatherStrip(){
@@ -936,6 +1156,7 @@ function renderDay(){
     head += '<div class="rain-tip">☔ 이 날은 비 소식이 있어요 — 실내 위주(박물관·카페·시장)로 순서를 바꾸거나 우산을 꼭 챙기세요.</div>';
   }
 
+  let prevPlace = null;
   const body = day.slots.map((slot, si)=>{
     if(!slot.placeId){
       return '<div class="slot"><div class="time">'+slot.t+'</div><div class="empty-slot">이 시간대에 맞는 추천이 없어요. 자유 시간 또는 이동 시간으로 활용하세요 🙂</div></div>';
@@ -943,9 +1164,16 @@ function renderDay(){
     const p = findPlace(slot.placeId);
     const cat = CAT[p.c];
     const st = day.date===todayISO ? liveStatus(p) : null;
+    const leg = prevPlace ? legInfo(prevPlace, p) : null;
+    prevPlace = p;
+    const legHtml = leg ? '<div class="leg"><span>'+esc(leg.txt)+'</span></div>' : '';
+    const won = wonOf(p);
+    const wonHtml = won>0
+      ? '<span>💰 1인 약 <b>'+fmtWon(won)+'</b></span>'
+      : '<span>🆓 <b>무료</b></span>';
     const warnsHtml = slot.warns && slot.warns.length
       ? '<div class="pc-warns">'+slot.warns.map(w=>'<div class="pc-warn '+w.lv+'">'+esc(w.msg)+'</div>').join('')+'</div>' : '';
-    return '<div class="slot"><div class="time">'+slot.t+'</div>'
+    return legHtml+'<div class="slot"><div class="time">'+slot.t+'</div>'
       +'<div class="place-card">'
       +'<div class="pc-top"><div style="flex:1;min-width:0">'
         +'<div class="pc-label">'+esc(slot.label)+'</div>'
@@ -960,6 +1188,7 @@ function renderDay(){
         +'<span>🕒 <b>'+esc(p.h)+'</b></span>'
         +(p.b?'<span>😴 브레이크 <b>'+esc(p.b)+'</b></span>':'')
         +(p.cd&&p.cd.length?'<span>🚫 휴무 <b>'+esc(p.cd.join(', '))+'</b></span>':'<span>📅 연중무휴로 등록됨</span>')
+        +wonHtml
         +(st?'<span class="status-chip '+st.cls+'">● '+st.txt+'</span>':'')
       +'</div>'
       +warnsHtml
@@ -997,7 +1226,7 @@ function shuffleSlot(si){
         if(!isOpenAt(p,slotMin)) slot.warns.push({lv:'amber', msg:'⏰ 예정 시간과 영업시간이 어긋날 수 있어요 — 시간대 조정 필요'});
         else if(slot.type==='food' && inBreakAt(p,slotMin)) slot.warns.push({lv:'amber', msg:'⏰ 예정 시각이 브레이크타임과 겹쳐요'});
       }
-      renderDay(); savePlan();
+      renderDay(); renderInsights(); savePlan();
       toast('↻ "'+p.n+'"(으)로 교체했어요');
       return;
     }
@@ -1069,6 +1298,8 @@ function copyPlan(){
     });
     txt+='\n';
   });
+  const st = tripStats();
+  txt += '💰 1인 예상 경비(먹거리+입장료): '+fmtWon(st.spend)+' · 총 이동 약 '+fmtKm(st.km)+'\n';
   txt += '※ 방문 전 네이버 지도에서 폐업·임시휴무를 꼭 확인하세요!';
   (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject())
     .then(()=>toast('📋 일정이 클립보드에 복사됐어요'))
