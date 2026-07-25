@@ -69,19 +69,39 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
   });
 }
 
-// 키워드 관련 실제 이미지 URL (loremflickr: Flickr CC 이미지, 무료/키 불필요)
-function getImageUrl(keyword) {
-  const encoded = encodeURIComponent(keyword.toLowerCase().replace(/\s+/g, ','));
-  return `https://loremflickr.com/1200/630/${encoded}`;
+// Pixabay에서 키워드 관련 사진 URL 가져오기 (무료 API — PIXABAY_API_KEY 필요)
+async function fetchImageUrl(keyword, index) {
+  const apiKey = process.env.PIXABAY_API_KEY;
+
+  if (apiKey) {
+    try {
+      const q   = encodeURIComponent(keyword.toLowerCase().replace(/\s+/g, '+'));
+      const url = `https://pixabay.com/api/?key=${apiKey}&q=${q}&image_type=photo&orientation=horizontal&per_page=10&safesearch=true&min_width=800&order=popular`;
+      const json = await new Promise((resolve, reject) => {
+        https.get(url, (res) => {
+          let d = '';
+          res.on('data', c => { d += c; });
+          res.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { reject(e); } });
+        }).on('error', reject);
+      });
+      const hits = json.hits || [];
+      if (hits.length > 0) {
+        const pick = hits[index % hits.length];
+        return pick.largeImageURL || pick.webformatURL;
+      }
+    } catch (e) {
+      console.warn(`[Image] Pixabay 실패 (${keyword}):`, e.message);
+    }
+  }
+
+  // 폴백: picsum (keyword 기반 seed → 중복 없이 일관된 고품질 사진)
+  const seed = keyword.split('').reduce((a, c) => a + c.charCodeAt(0), 0) + index * 97;
+  return `https://picsum.photos/seed/${seed % 9999}/1200/630`;
 }
 
-// 이미지 HTML 태그 생성
-function imageTag(keyword, alt) {
-  const url = getImageUrl(keyword);
-  // picsum을 폴백으로 (loremflickr 실패 시)
-  const seed = keyword.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 1000;
-  const fallback = `https://picsum.photos/seed/${seed}/1200/630`;
-  return `<figure style="text-align:center;margin:28px 0"><img src="${url}" alt="${alt}" onerror="this.onerror=null;this.src='${fallback}'" loading="lazy" style="max-width:100%;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.12)"><figcaption style="color:#888;font-size:13px;margin-top:8px">${alt}</figcaption></figure>`;
+// 이미지 HTML 태그 생성 (URL 직접 받음)
+function imageTag(url, alt) {
+  return `<figure style="text-align:center;margin:28px 0"><img src="${url}" alt="${alt}" loading="lazy" style="max-width:100%;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.12)"><figcaption style="color:#888;font-size:13px;margin-top:8px">${alt}</figcaption></figure>`;
 }
 
 const SYSTEM_PROMPT = `당신은 대한민국 MZ세대가 즐겨 보는 정보성 블로그를 운영하는 20-30대 여성입니다.
@@ -146,25 +166,37 @@ JSON 형식으로만 응답:
     console.warn('[Generator] JSON 불완전, 재시도 중...');
   }
 
-  // 이미지 플레이스홀더를 실제 이미지 태그로 교체
+  // 이미지 플레이스홀더 수집
   let content = json.content;
   const imgKeywords = json.imageKeywords || [keyword, topic];
-  let imgIndex = 0;
-  content = content.replace(/\[IMAGE:([^\]]+)\]/g, (match, imgKw) => {
-    const kw = imgKw || imgKeywords[imgIndex] || keyword;
-    imgIndex++;
-    return imageTag(kw, kw);
+  const placeholders = [];
+  content.replace(/\[IMAGE:([^\]]+)\]/g, (_, kw) => { placeholders.push(kw || keyword); });
+
+  // 플레이스홀더가 없으면 imageKeywords 사용
+  if (placeholders.length === 0 && imgKeywords.length > 0) {
+    placeholders.push(...imgKeywords.slice(0, 3));
+  }
+
+  // 이미지 URL 병렬 가져오기 (Pixabay → picsum 폴백)
+  const imageUrls = await Promise.all(placeholders.map((kw, i) => fetchImageUrl(kw, i)));
+  console.log(`[Generator] 이미지 ${imageUrls.length}개 준비 완료`);
+
+  // 플레이스홀더 교체
+  let urlIdx = 0;
+  content = content.replace(/\[IMAGE:([^\]]+)\]/g, (_, kw) => {
+    const url = imageUrls[urlIdx++] || imageUrls[0];
+    return imageTag(url, kw);
   });
 
-  // 남은 이미지 키워드가 있으면 본문 중간에 삽입
-  if (imgIndex === 0 && imgKeywords.length > 0) {
+  // 플레이스홀더가 없었으면 본문 중간에 삽입
+  if (urlIdx === 0 && imageUrls.length > 0) {
     const mid = content.indexOf('</p>', Math.floor(content.length * 0.4));
     if (mid !== -1) {
-      content = content.slice(0, mid + 4) + imageTag(imgKeywords[0], imgKeywords[0]) + content.slice(mid + 4);
+      content = content.slice(0, mid + 4) + imageTag(imageUrls[0], imgKeywords[0] || keyword) + content.slice(mid + 4);
     }
   }
 
-  console.log(`[Generator] 생성 완료: "${json.title}" (이미지 ${imgIndex}개)`);
+  console.log(`[Generator] 생성 완료: "${json.title}" (이미지 ${urlIdx}개)`);
   return { title: json.title, content, tags: json.tags || [keyword] };
 }
 
