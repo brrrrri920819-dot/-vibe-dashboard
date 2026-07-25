@@ -59,6 +59,22 @@ main{max-width:980px;margin:0 auto;padding:0 20px 120px}
 .step-head h2{font-size:17.5px;font-weight:800;letter-spacing:-.01em}
 .step-head .hint{font-size:12.5px;color:var(--sub);font-weight:500;margin-left:auto}
 
+.region-search-wrap{position:relative;margin-bottom:14px}
+.region-search{
+  width:100%;padding:13px 44px 13px 44px;border:1.5px solid var(--line);border-radius:14px;
+  font-size:14.5px;font-weight:600;background:#FCFBF8;color:var(--ink);outline:none;transition:.15s;
+}
+.region-search:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(255,107,87,.14)}
+.region-search::placeholder{color:#A8AEBB;font-weight:500}
+.rs-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none}
+.rs-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:99px;background:#EEEAE0;color:#6B7280;font-size:12px;font-weight:800}
+.rs-clear:hover{background:#E3DDCB}
+.no-region{
+  grid-column:1/-1;background:#FCFBF8;border:1.5px dashed #D8D2C2;border-radius:16px;padding:22px;text-align:center;
+}
+.no-region .t{font-size:15px;font-weight:800}
+.no-region .s{font-size:12.5px;color:var(--sub);font-weight:500;margin-top:5px;line-height:1.6}
+.no-region .links{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:13px}
 .region-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .region-card{
   position:relative;border-radius:16px;padding:18px 16px 16px;text-align:left;border:2px solid transparent;
@@ -281,6 +297,11 @@ footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color
 
     <div class="step">
       <div class="step-head"><div class="step-num">1</div><h2>어디로 떠나요?</h2><span class="hint">지역 하나를 선택</span></div>
+      <div class="region-search-wrap">
+        <span class="rs-icon">🔍</span>
+        <input type="text" id="region-search" class="region-search" placeholder="도시·동네·장소로 검색 (예: 여수, 해운대, 애월, 황리단길)" autocomplete="off">
+        <button class="rs-clear" id="rs-clear" hidden aria-label="검색 지우기">✕</button>
+      </div>
       <div class="region-grid" id="region-grid"></div>
     </div>
 
@@ -501,6 +522,39 @@ const REGIONS = [
   {n:'남부시장 청년몰', c:'sight', a:'남부시장', h:'11:00-20:00', b:null, cd:['월'], th:['시장','쇼핑'], p:87, tag:'남부시장청년몰', d:'전통시장 2층에 청년 상인들의 개성 가게가 모인 공간.', tip:'월요일 휴무 가게 많음 — 화~일 방문 추천'},
   {n:'남부시장 야시장', c:'night', a:'남부시장', h:'18:00-24:00', b:null, cd:['일','월','화','수','목'], th:['시장'], p:93, tag:'남부시장야시장', d:'금·토 밤에만 열리는 먹거리 야시장. 문어꼬치·야끼만두가 스테디셀러.', tip:'금·토요일만 개장 — 일정을 주말에 맞추면 최고'},
   {n:'한옥마을 야경 산책', c:'night', a:'한옥마을', h:'00:00-24:00', b:null, cd:[], th:['역사','야경'], p:89, tag:'전주한옥마을야경', d:'은은한 조명이 켜진 한옥 골목의 밤. 낮과는 전혀 다른 고즈넉함.', tip:'전동성당 야간 조명과 함께 보면 완벽'}
+]},
+{ key:'yeosu', name:'여수', emoji:'🌉', lat:34.7604, lng:127.6622, grad:'linear-gradient(135deg,#1A2980,#26D0CE)',
+  tagline:'밤바다와 낭만포차', places:[
+  {n:'두꺼비게장', c:'food', a:'구도심·봉산동', h:'07:30-21:00', b:null, cd:[], th:[], p:92, tag:'두꺼비게장', d:'간장게장 백반의 성지. 밥도둑 게장에 갓김치까지 무한 리필되는 여수의 맛.', tip:'아침부터 영업 — 오픈 직후가 웨이팅 최소'},
+  {n:'구백식당', c:'food', a:'구도심·봉산동', h:'09:00-21:00', b:null, cd:[], th:[], p:90, tag:'구백식당', d:'서대회무침 원조격 노포. 새콤한 막걸리식초 양념에 밥 비벼 먹는 게 국룰.', tip:'서대회+금풍생이구이 조합 추천'},
+  {n:'여수당', c:'food', a:'구도심·봉산동', h:'10:00-20:00', b:null, cd:[], th:['쇼핑'], p:88, tag:'여수당', d:'바게트버거로 유명해진 여수 명물 간식. 낭만포차 가기 전 애피타이저로 딱.', tip:'주말엔 줄이 기니 콜드바게트 미리 포장'},
+  {n:'교동시장', c:'food', a:'구도심·봉산동', h:'06:00-21:00', b:null, cd:[], th:['시장'], p:87, tag:'여수교동시장', d:'새벽 수산시장의 활기. 갓김치·건어물·회까지 여수 먹거리의 본진.', tip:'아침 시장 구경 + 회 포장해서 숙소로'},
+  {n:'카페 라피끄', c:'cafe', a:'돌산', h:'10:00-22:00', b:null, cd:[], th:['자연'], p:93, tag:'라피끄', d:'돌산 언덕에서 바다를 통유리로 마주하는 여수 대표 오션뷰 카페.', tip:'노을 시간대 루프탑 자리 경쟁 치열'},
+  {n:'모이핀 여수본점', c:'cafe', a:'돌산', h:'09:00-22:00', b:null, cd:[], th:['자연'], p:91, tag:'모이핀', d:'베이커리 라인업이 탄탄한 대형 오션뷰 카페. 층마다 다른 바다 풍경.', tip:'소금빵 품절 전 오전 방문 추천'},
+  {n:'오동도', c:'sight', a:'수정동·해양공원', h:'09:00-18:00', b:null, cd:[], th:['자연'], p:92, tag:'오동도', d:'동백꽃 섬. 방파제 산책로 끝 등대 전망대에서 여수 바다가 한눈에.', tip:'동백 시즌(1~3월)이 절정 · 동백열차도 운행'},
+  {n:'여수해상케이블카', c:'sight', a:'돌산', h:'09:30-21:30', b:null, cd:[], th:['자연','야경'], p:94, tag:'여수해상케이블카', d:'바다 위를 건너 돌산과 자산공원을 잇는 케이블카. 크리스탈 캐빈이 인기.', tip:'해질녘 탑승하면 노을+밤바다 둘 다'},
+  {n:'향일암', c:'sight', a:'돌산 끝·임포', h:'05:00-20:00', b:null, cd:[], th:['역사','자연'], p:91, tag:'향일암', d:'해를 향한 암자. 바위굴을 지나 만나는 남해 일출 명소의 절정.', tip:'일출 명소 — 새벽 방문이면 인생 일출'},
+  {n:'이순신광장 · 거북선', c:'sight', a:'구도심·봉산동', h:'24시간', b:null, cd:[], th:['역사'], p:87, tag:'이순신광장', d:'실물 크기 거북선과 전라좌수영 거리. 구도심 여행의 중심축.', tip:'주변 골목 벽화와 함께 산책 코스로'},
+  {n:'하멜등대 · 해양공원', c:'sight', a:'수정동·해양공원', h:'24시간', b:null, cd:[], th:['자연'], p:86, tag:'하멜등대', d:'빨간 등대와 방파제 바다 산책. 낭만포차거리와 이어지는 저녁 산책로.', tip:'노을~저녁 시간대가 가장 예뻐요'},
+  {n:'낭만포차거리', c:'night', a:'수정동·해양공원', h:'18:00-24:00', b:null, cd:['월'], th:['시장','야경'], p:95, tag:'여수낭만포차', d:'여수 밤바다를 눈앞에 두고 해물삼합·딱새우에 한잔. 여수 여행의 하이라이트.', tip:'월요일 휴무 포차 많음 · 해 지기 전 자리 선점'},
+  {n:'돌산대교 야경', c:'night', a:'돌산', h:'00:00-24:00', b:null, cd:[], th:['야경'], p:90, tag:'돌산대교야경', d:'조명이 바뀌는 돌산대교와 장군도가 만드는 여수 밤바다의 대표 그림.', tip:'돌산공원 전망대에서 보는 각도가 최고'}
+]},
+{ key:'sokcho', name:'속초·양양', emoji:'🏄', lat:38.2070, lng:128.5918, grad:'linear-gradient(135deg,#134E5E,#71B280)',
+  tagline:'설악과 서핑의 바다', places:[
+  {n:'봉포머구리집', c:'food', a:'속초 북부·영랑', h:'09:00-21:30', b:null, cd:[], th:[], p:93, tag:'봉포머구리집', d:'모둠물회의 정석. 전복·해삼·멍게가 가득한 그릇에 속초 바다가 담김.', tip:'식사 시간대 대기 김 — 태블릿 등록 후 해변 산책'},
+  {n:'만석닭강정', c:'food', a:'속초 중앙·시장', h:'09:00-20:00', b:null, cd:[], th:['시장'], p:91, tag:'만석닭강정', d:'속초 닭강정 열풍의 원조. 식어도 맛있어 포장 선물로도 국룰.', tip:'중앙시장 본점은 갓 튀긴 걸로'},
+  {n:'88생선구이', c:'food', a:'속초 중앙·시장', h:'08:00-21:00', b:null, cd:[], th:[], p:90, tag:'88생선구이', d:'모둠 생선구이 한 상의 감동. 연탄향 입은 생선이 계속 리필되는 집.', tip:'웨이팅 필수 — 오픈런 추천'},
+  {n:'속초관광수산시장', c:'food', a:'속초 중앙·시장', h:'08:00-22:00', b:null, cd:[], th:['시장'], p:92, tag:'속초중앙시장', d:'닭강정·오징어순대·술빵까지, 손에 들고 도는 먹거리 시장의 끝판왕.', tip:'저녁엔 횟집 골목에서 회 포장 추천'},
+  {n:'카페 바다정원', c:'cafe', a:'고성·북부해안', h:'09:00-21:00', b:null, cd:[], th:['자연'], p:92, tag:'바다정원', d:'솔숲 너머 바다가 펼쳐지는 초대형 오션뷰 카페. 자리마다 다른 풍경.', tip:'창가 명당은 오전에 — 베이커리도 수준급'},
+  {n:'코랄라니', c:'cafe', a:'양양·서핑해변', h:'10:00-20:00', b:null, cd:[], th:['자연'], p:89, tag:'코랄라니', d:'하와이 감성 서핑 카페. 인구해변 서퍼들을 보며 마시는 코코넛 커피.', tip:'서핑 강습과 묶어 반나절 코스로'},
+  {n:'설악산 권금성 케이블카', c:'sight', a:'설악산', h:'08:30-18:00', b:null, cd:[], th:['자연'], p:94, tag:'설악산케이블카', d:'케이블카로 5분 만에 오르는 권금성 암봉. 설악의 화강암 능선이 파노라마로.', tip:'기상 악화 시 운행 중단 — 당일 운행 여부 확인'},
+  {n:'속초해수욕장', c:'sight', a:'속초 중앙·시장', h:'24시간', b:null, cd:[], th:['자연'], p:90, tag:'속초해수욕장', d:'속초아이 대관람차가 있는 도심 속 해변. 아침 산책과 일출 명소.', tip:'속초아이 대관람차는 노을 시간대 추천'},
+  {n:'영금정', c:'sight', a:'속초 북부·영랑', h:'24시간', b:null, cd:[], th:['자연'], p:87, tag:'영금정', d:'파도가 바위에 부딪히는 소리가 거문고 같다는 동명항 끝 정자. 일출 명당.', tip:'등대전망대까지 계단 오르면 속초 전경'},
+  {n:'아바이마을 · 갯배', c:'sight', a:'속초 중앙·시장', h:'08:00-20:00', b:null, cd:[], th:['역사','시장'], p:88, tag:'아바이마을', d:'줄을 당겨 건너는 갯배와 실향민 마을. 아바이순대·오징어순대의 본고장.', tip:'갯배는 직접 줄 당겨보는 게 재미'},
+  {n:'낙산사', c:'sight', a:'양양·낙산', h:'08:00-18:00', b:null, cd:[], th:['역사','자연'], p:91, tag:'낙산사', d:'바다를 내려다보는 해수관음상과 홍련암. 동해안 대표 천년 사찰.', tip:'의상대에서 보는 동해 뷰가 백미'},
+  {n:'서피비치', c:'sight', a:'양양·서핑해변', h:'24시간', b:null, cd:[], th:['자연'], p:93, tag:'서피비치', d:'하조대 옆 서핑 전용 해변. 파라솔·빈백·비치바가 만드는 이국적 풍경.', tip:'여름 시즌 입장 인원 제한 — 오전 도착 추천'},
+  {n:'청초호 호수공원 야경', c:'night', a:'속초 중앙·시장', h:'00:00-24:00', b:null, cd:[], th:['야경'], p:87, tag:'청초호', d:'엑스포타워와 설악 능선이 호수에 비치는 속초의 밤. 조용한 산책 코스.', tip:'속초아이 야간 탑승과 묶으면 완벽'},
+  {n:'서피비치 선셋 비치바', c:'night', a:'양양·서핑해변', h:'18:00-24:00', b:null, cd:[], th:['야경','자연'], p:90, tag:'서피비치선셋', d:'모래 위 빈백에서 노을과 라이브 음악. 양양 밤의 하이라이트.', tip:'여름 성수기 위주 운영 — 시즌 확인 필수'}
 ]}
 ];
 
@@ -546,7 +600,17 @@ const GEO = {
   '가족회관':[35.8190,127.1420,15000],'카페 전망':[35.8140,127.1540,8000],'외할머니솜씨':[35.8130,127.1560,10000],
   '전주한옥마을':[35.8150,127.1530,0],'경기전':[35.8160,127.1495,3000],'전동성당':[35.8135,127.1490,0],
   '오목대':[35.8140,127.1560,0],'자만벽화마을':[35.8160,127.1580,0],'남부시장 청년몰':[35.8135,127.1460,5000],
-  '남부시장 야시장':[35.8135,127.1460,10000],'한옥마을 야경 산책':[35.8150,127.1530,0],'전주향교':[35.8110,127.1580,0]
+  '남부시장 야시장':[35.8135,127.1460,10000],'한옥마을 야경 산책':[35.8150,127.1530,0],'전주향교':[35.8110,127.1580,0],
+  '두꺼비게장':[34.7290,127.7190,15000],'구백식당':[34.7400,127.7360,13000],'여수당':[34.7380,127.7330,7000],
+  '교동시장':[34.7390,127.7340,10000],'카페 라피끄':[34.6970,127.7530,9000],'모이핀 여수본점':[34.6800,127.7500,10000],
+  '오동도':[34.7440,127.7660,0],'여수해상케이블카':[34.7330,127.7480,17000],'향일암':[34.5940,127.7990,2500],
+  '이순신광장 · 거북선':[34.7370,127.7370,0],'하멜등대 · 해양공원':[34.7350,127.7440,0],'낭만포차거리':[34.7420,127.7470,15000],
+  '돌산대교 야경':[34.7300,127.7350,0],
+  '봉포머구리집':[38.2260,128.5850,15000],'만석닭강정':[38.2030,128.5900,10000],'88생선구이':[38.2060,128.5910,15000],
+  '속초관광수산시장':[38.2040,128.5890,10000],'카페 바다정원':[38.2700,128.5560,9000],'코랄라니':[38.0870,128.6230,8000],
+  '설악산 권금성 케이블카':[38.1730,128.4900,15000],'속초해수욕장':[38.1900,128.6010,0],'영금정':[38.2110,128.6020,0],
+  '아바이마을 · 갯배':[38.2080,128.5930,1000],'낙산사':[38.1250,128.6280,4000],'서피비치':[38.0210,128.7210,0],
+  '청초호 호수공원 야경':[38.2070,128.5880,0],'서피비치 선셋 비치바':[38.0250,128.7230,10000]
 };
 
 /* 지역별 추천 숙박 거점 */
@@ -556,7 +620,9 @@ const STAY = {
   jeju:      [{a:'제주시(공항권)', why:'공항 근접 + 동문시장·맛집, 첫날·마지막날 최적'},{a:'애월·협재', why:'서부 일몰 뷰 감성 숙소 밀집'},{a:'성산·표선', why:'동부 일출 + 성산일출봉·우도 접근성'}],
   gangneung: [{a:'경포·강문', why:'해변 도보 숙소, 초당 순두부 골목 근접'},{a:'강릉 시내', why:'중앙시장·월화거리 도보, 가성비 좋음'}],
   gyeongju:  [{a:'황리단길·시내', why:'대릉원·첨성대 도보 관광, 한옥스테이 감성'},{a:'보문관광단지', why:'호수뷰 리조트·호텔, 벚꽃 시즌 성지'}],
-  jeonju:    [{a:'한옥마을', why:'한옥스테이 감성 그 자체, 야경 산책 도보권'},{a:'전주 시내', why:'가성비 호텔, 남부시장 접근 편리'}]
+  jeonju:    [{a:'한옥마을', why:'한옥스테이 감성 그 자체, 야경 산책 도보권'},{a:'전주 시내', why:'가성비 호텔, 남부시장 접근 편리'}],
+  yeosu:     [{a:'웅천·소호', why:'신축 호텔·바다뷰, 이순신마리나 야경'},{a:'돌산', why:'오션뷰 리조트, 케이블카·카페 근접'},{a:'구도심', why:'낭만포차·이순신광장 도보권, 가성비'}],
+  sokcho:    [{a:'속초해변·동명항', why:'바다뷰 + 중앙시장 도보권, 일출 명당'},{a:'양양 해변', why:'서핑·감성 스테이, 서피비치 근접'}]
 };
 
 /* 월별 평년 기후 (기상청 평년값 기반 근사치) — [최고, 최저, 강수메모] */
@@ -566,7 +632,9 @@ const CLIMATE = {
   jeju:      [[9,3,'바람 강함'],[10,4,'유채꽃 시작'],[13,6,'봄꽃'],[18,10,'여행 최적'],[22,15,'신록'],[25,19,'수국 시즌'],[29,23,'장마·습함'],[30,24,'무더위·태풍'],[26,20,'태풍 유의'],[21,15,'억새 시즌'],[16,9,'감귤 시즌'],[11,5,'바람·동백']],
   gangneung: [[5,-4,'눈 많음'],[7,-2,'꽃샘추위'],[11,2,'일교차 큼'],[17,8,'쾌청'],[22,13,'나들이 최적'],[24,17,'시원한 초여름'],[28,21,'장마'],[29,22,'피서 절정'],[25,17,'가을 바다'],[20,11,'단풍'],[13,4,'쌀쌀'],[7,-2,'눈꽃']],
   gyeongju:  [[6,-4,'건조'],[9,-2,'꽃샘추위'],[14,2,'벚꽃 준비'],[20,8,'벚꽃 절정'],[25,13,'신록'],[28,18,'더위 시작'],[31,22,'무더위'],[32,23,'폭염'],[27,17,'가을 시작'],[21,10,'단풍·쾌청'],[14,3,'쌀쌀'],[8,-2,'겨울']],
-  jeonju:    [[4,-5,'한파'],[7,-3,'꽃샘추위'],[13,2,'봄 시작'],[19,8,'벚꽃'],[25,13,'나들이 최적'],[28,18,'더위 시작'],[31,22,'장마·무더위'],[32,23,'폭염'],[28,17,'가을 시작'],[21,9,'단풍·쾌청'],[13,3,'쌀쌀'],[6,-2,'겨울']]
+  jeonju:    [[4,-5,'한파'],[7,-3,'꽃샘추위'],[13,2,'봄 시작'],[19,8,'벚꽃'],[25,13,'나들이 최적'],[28,18,'더위 시작'],[31,22,'장마·무더위'],[32,23,'폭염'],[28,17,'가을 시작'],[21,9,'단풍·쾌청'],[13,3,'쌀쌀'],[6,-2,'겨울']],
+  yeosu:     [[7,-1,'온화·동백'],[9,1,'봄기운'],[13,5,'봄꽃'],[18,9,'여행 최적'],[23,14,'초여름 바다'],[26,18,'쾌적'],[29,22,'장마·습함'],[30,23,'무더위'],[26,19,'태풍 유의'],[21,13,'쾌청'],[15,7,'선선'],[9,1,'온화한 겨울']],
+  sokcho:    [[3,-5,'설악 설경'],[5,-3,'꽃샘추위'],[10,1,'일교차 큼'],[16,7,'쾌청'],[21,12,'신록'],[24,16,'시원한 초여름'],[27,20,'장마'],[28,21,'서핑 시즌'],[24,16,'가을 바다'],[19,10,'설악 단풍'],[12,3,'쌀쌀'],[5,-3,'눈꽃']]
 };
 const WMO = [
   [0,'☀️','맑음'],[1,'🌤️','대체로 맑음'],[2,'⛅','구름 조금'],[3,'☁️','흐림'],
@@ -908,13 +976,54 @@ function climateFor(regionKey, dateISO){
 /* =====================================================================
    렌더링 — 설정 화면
    ===================================================================== */
-function renderSetup(){
-  // 지역
-  $('#region-grid').innerHTML = REGIONS.map(r=>
+/* 도시 검색 — 별칭·동네·장소명까지 매칭 */
+const REGION_ALIAS = {
+  seoul:['서울','수도','종로','을지로','명동','남산','성수','성수동','홍대','연남','연남동','강남','여의도','용산','북촌','익선동','신당','삼청동','한강','경복궁'],
+  busan:['부산','해운대','광안리','서면','남포','남포동','영도','기장','송정','초량','감천','청사포','마린시티','부산역'],
+  jeju:['제주','제주도','서귀포','애월','협재','함덕','성산','구좌','우도','중문','한림','조천','안덕','노형'],
+  gangneung:['강릉','경포','안목','초당','주문진','정동진','강문','옥계','사천'],
+  gyeongju:['경주','황리단길','보문','불국사','석굴암','첨성대','대릉원','교동','토함산'],
+  jeonju:['전주','한옥마을','남부시장','전동성당','객리단길','완산'],
+  yeosu:['여수','돌산','오동도','향일암','낭만포차','여수밤바다','웅천','소호'],
+  sokcho:['속초','양양','설악','설악산','낙산','서피비치','고성','영랑','동명항','아바이','서핑','하조대']
+};
+let regionQuery = '';
+function matchRegions(q){
+  q = q.trim().toLowerCase();
+  if(!q) return REGIONS;
+  return REGIONS.filter(r=>{
+    if(r.name.toLowerCase().includes(q) || r.key.includes(q) || r.tagline.includes(q)) return true;
+    if((REGION_ALIAS[r.key]||[]).some(a=>a.includes(q)||q.includes(a))) return true;
+    return r.places.some(p=>p.n.toLowerCase().includes(q) || p.a.includes(q));
+  });
+}
+function renderRegionGrid(){
+  const list = matchRegions(regionQuery);
+  // 검색 결과가 정확히 1곳이면 자동 선택
+  if(regionQuery.trim() && list.length===1 && form.region!==list[0].key) form.region = list[0].key;
+  if(!list.length){
+    const q = regionQuery.trim();
+    const enc = encodeURIComponent;
+    $('#region-grid').innerHTML =
+      '<div class="no-region">'
+      +'<div class="t">🧭 "'+esc(q)+'" 코스 데이터는 아직 준비 중이에요</div>'
+      +'<div class="s">현재 지원: 서울 · 부산 · 제주 · 강릉 · 경주 · 전주 · 여수 · 속초양양<br>그래도 아래 링크로 그 지역 핫플을 바로 찾아볼 수 있어요!</div>'
+      +'<div class="links">'
+      +'<a class="vlink" target="_blank" rel="noopener" href="https://map.naver.com/p/search/'+enc(q+' 맛집')+'">🟢 네이버 맛집</a>'
+      +'<a class="vlink" target="_blank" rel="noopener" href="https://map.naver.com/p/search/'+enc(q+' 가볼만한곳')+'">🗺️ 가볼 만한 곳</a>'
+      +'<a class="vlink" target="_blank" rel="noopener" href="https://www.instagram.com/explore/tags/'+enc(q+'여행')+'/">📸 인스타</a>'
+      +'<a class="vlink" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query='+enc(q+' 여행 브이로그')+'">▶️ 유튜브</a>'
+      +'</div></div>';
+    return;
+  }
+  $('#region-grid').innerHTML = list.map(r=>
     '<button class="region-card'+(form.region===r.key?' on':'')+'" style="background:'+r.grad+'" data-action="region" data-key="'+r.key+'">'
     +'<span class="emo">'+r.emoji+'</span>'
     +'<span class="nm">'+r.name+'</span><span class="tg">'+r.tagline+'</span></button>'
   ).join('');
+}
+function renderSetup(){
+  renderRegionGrid();
   // 동행
   $('#companion-row').innerHTML = COMPANIONS.map(c=>
     '<button class="chip'+(form.companion===c?' on warm':'')+'" data-action="companion" data-val="'+esc(c)+'">'+c+'</button>'
@@ -1381,6 +1490,19 @@ function init(){
   $('#date-start').addEventListener('change',updateTripLen);
   $('#date-end').addEventListener('change',updateTripLen);
   document.querySelectorAll('[data-quick]').forEach(b=>b.addEventListener('click',()=>setQuickDate(b.dataset.quick)));
+
+  // 도시 검색
+  const rs = $('#region-search');
+  rs.addEventListener('input', ()=>{
+    regionQuery = rs.value;
+    $('#rs-clear').hidden = !regionQuery.trim();
+    renderRegionGrid();
+  });
+  $('#rs-clear').addEventListener('click', ()=>{
+    rs.value=''; regionQuery='';
+    $('#rs-clear').hidden = true;
+    renderRegionGrid(); rs.focus();
+  });
 
   const saved=loadSaved();
   if(saved){
