@@ -258,8 +258,8 @@ footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color
   <div class="in">
     <div class="logo"><span class="mark">여로</span><span>YEORO</span><span class="sub">나만의 한국 여행 코스</span></div>
     <div class="sp"></div>
-    <button class="top-btn" id="btn-checklist" hidden onclick="openChecklist()">✅ 실시간 체크리스트</button>
-    <button class="top-btn primary" id="btn-new" hidden onclick="goSetup()">＋ 새 여행</button>
+    <button class="top-btn" id="btn-checklist" hidden data-action="checklist">✅ 실시간 체크리스트</button>
+    <button class="top-btn primary" id="btn-new" hidden data-action="new-trip">＋ 새 여행</button>
   </div>
 </header>
 
@@ -314,7 +314,7 @@ footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color
     </div>
 
     <div class="go-wrap">
-      <button class="go-btn" onclick="generate()">🧭 내 맞춤 코스 만들기</button>
+      <button class="go-btn" data-action="generate">🧭 내 맞춤 코스 만들기</button>
       <div class="go-note">생성 즉시 휴무일·영업시간·날씨를 자동 점검해요</div>
     </div>
   </section>
@@ -337,9 +337,9 @@ footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color
   날씨: Open-Meteo 실시간 API · 예보 범위(16일) 밖 날짜는 월별 평년 기후로 안내합니다. — 여로 YEORO
 </footer>
 
-<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeChecklist()">
+<div class="modal-bg" id="modal-bg">
   <div class="modal">
-    <button class="close" onclick="closeChecklist()">✕</button>
+    <button class="close" data-action="close-modal">✕</button>
     <h3>✅ 출발 전 실시간 체크리스트</h3>
     <div class="note">
       휴무 요일·영업시간·브레이크타임은 여로가 이미 자동 대조했어요.<br>
@@ -911,21 +911,21 @@ function climateFor(regionKey, dateISO){
 function renderSetup(){
   // 지역
   $('#region-grid').innerHTML = REGIONS.map(r=>
-    '<button class="region-card'+(form.region===r.key?' on':'')+'" style="background:'+r.grad+'" onclick="pickRegion(\''+r.key+'\')">'
+    '<button class="region-card'+(form.region===r.key?' on':'')+'" style="background:'+r.grad+'" data-action="region" data-key="'+r.key+'">'
     +'<span class="emo">'+r.emoji+'</span>'
     +'<span class="nm">'+r.name+'</span><span class="tg">'+r.tagline+'</span></button>'
   ).join('');
   // 동행
   $('#companion-row').innerHTML = COMPANIONS.map(c=>
-    '<button class="chip'+(form.companion===c?' on warm':'')+'" onclick="form.companion=\''+c+'\';renderSetup()">'+c+'</button>'
+    '<button class="chip'+(form.companion===c?' on warm':'')+'" data-action="companion" data-val="'+esc(c)+'">'+c+'</button>'
   ).join('');
   // 페이스
   $('#pace-row').innerHTML = PACES.map(p=>
-    '<button class="chip'+(form.pace===p.key?' on warm':'')+'" onclick="form.pace=\''+p.key+'\';renderSetup()">'+p.label+' <span style="opacity:.65;font-weight:600;font-size:12px">'+p.desc+'</span></button>'
+    '<button class="chip'+(form.pace===p.key?' on warm':'')+'" data-action="pace" data-val="'+p.key+'">'+p.label+' <span style="opacity:.65;font-weight:600;font-size:12px">'+p.desc+'</span></button>'
   ).join('');
   // 취향
   $('#interest-row').innerHTML = INTERESTS.map(i=>
-    '<button class="chip'+(form.interests.has(i.key)?' on':'')+'" onclick="toggleInterest(\''+i.key+'\')">'+i.label+'</button>'
+    '<button class="chip'+(form.interests.has(i.key)?' on':'')+'" data-action="interest" data-val="'+i.key+'">'+i.label+'</button>'
   ).join('');
   updateTripLen();
 }
@@ -990,10 +990,10 @@ function renderResult(){
     +' · '+esc(form.companion)+' · '+esc(paceTxt)+'<br>취향: '+esc(interestsTxt||'기본')+'</div>'
     +'<div class="now-weather" id="now-weather" hidden></div>'
     +'<div class="sum-actions">'
-    +'<button class="sum-btn hot" onclick="recheck()">🔄 실시간 재점검</button>'
-    +'<button class="sum-btn" onclick="openChecklist()">✅ 체크리스트</button>'
-    +'<button class="sum-btn" onclick="copyPlan()">📋 일정 복사</button>'
-    +'<button class="sum-btn" onclick="goSetup()">✏️ 조건 바꾸기</button>'
+    +'<button class="sum-btn hot" data-action="recheck">🔄 실시간 재점검</button>'
+    +'<button class="sum-btn" data-action="checklist">✅ 체크리스트</button>'
+    +'<button class="sum-btn" data-action="copy">📋 일정 복사</button>'
+    +'<button class="sum-btn" data-action="new-trip">✏️ 조건 바꾸기</button>'
     +'</div>';
 
   // 점검 결과
@@ -1135,7 +1135,7 @@ function updateNowWeather(){
 
 function renderDayTabs(){
   $('#day-tabs').innerHTML = plan.days.map((d,i)=>
-    '<button class="day-tab'+(plan.activeDay===i?' on':'')+'" onclick="plan.activeDay='+i+';renderDayTabs();renderDay();savePlan()">'
+    '<button class="day-tab'+(plan.activeDay===i?' on':'')+'" data-action="day" data-idx="'+i+'">'
     +'DAY '+(i+1)+'<span class="sm">'+fmtK(d.date)+'</span></button>'
   ).join('');
 }
@@ -1180,7 +1180,7 @@ function renderDay(){
         +'<div class="pc-name">'+cat.icon+' '+esc(p.n)+'<span class="area-tag">'+esc(p.a)+'</span></div>'
       +'</div>'
       +'<span class="cat-badge" style="background:'+cat.color+'">'+cat.label+'</span>'
-      +'<button class="shuffle-btn" title="다른 곳 추천" onclick="shuffleSlot('+si+')">↻</button>'
+      +'<button class="shuffle-btn" title="다른 곳 추천" data-action="shuffle" data-idx="'+si+'">↻</button>'
       +'</div>'
       +'<div class="pc-desc">'+esc(p.d)+'</div>'
       +(p.tip?'<div class="pc-tip">💡 '+esc(p.tip)+'</div>':'')
@@ -1385,8 +1385,30 @@ function init(){
   const saved=loadSaved();
   if(saved){
     const r=byKey(saved.plan.regionKey);
-    $('#resume-wrap').innerHTML='<button class="chip on warm" style="font-size:14px;padding:11px 20px" onclick="resumeSaved()">🧳 지난 '+r.name+' 일정 이어보기 →</button>';
+    $('#resume-wrap').innerHTML='<button class="chip on warm" style="font-size:14px;padding:11px 20px" data-action="resume">🧳 지난 '+r.name+' 일정 이어보기 →</button>';
   }
+
+  // 클릭 이벤트 위임 — 인라인 핸들러 없이 동작 (CSP 안전)
+  document.addEventListener('click', e=>{
+    const el = e.target.closest('[data-action]');
+    if(!el) return;
+    const a = el.dataset.action;
+    if(a==='region') pickRegion(el.dataset.key);
+    else if(a==='companion'){ form.companion=el.dataset.val; renderSetup(); }
+    else if(a==='pace'){ form.pace=el.dataset.val; renderSetup(); }
+    else if(a==='interest') toggleInterest(el.dataset.val);
+    else if(a==='generate') generate();
+    else if(a==='recheck') recheck();
+    else if(a==='checklist') openChecklist();
+    else if(a==='copy') copyPlan();
+    else if(a==='new-trip') goSetup();
+    else if(a==='resume') resumeSaved();
+    else if(a==='day'){ plan.activeDay=+el.dataset.idx; renderDayTabs(); renderDay(); savePlan(); }
+    else if(a==='shuffle') shuffleSlot(+el.dataset.idx);
+    else if(a==='close-modal') closeChecklist();
+  });
+  $('#modal-bg').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeChecklist(); });
+
   renderSetup();
 }
 init();
