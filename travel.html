@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>여로 YEORO — 나만의 한국 여행 코스 플래너</title>
+<style>
+:root{
+  --bg:#F7F4EE; --card:#FFFFFF; --ink:#16213A; --sub:#6B7280; --line:#E9E4D8;
+  --accent:#FF6B57; --accent-deep:#E8543F; --teal:#2F8F6B; --brown:#8C6239; --indigo:#5B5FE9;
+  --r:20px; --shadow:0 10px 30px rgba(22,33,58,.07), 0 2px 8px rgba(22,33,58,.05);
+  --shadow-lg:0 24px 60px rgba(22,33,58,.13);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",Roboto,sans-serif;
+  background:var(--bg); color:var(--ink); line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit}
+a{color:inherit}
+
+/* ---------- top bar ---------- */
+#topbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(247,244,238,.82); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+#topbar .in{max-width:980px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:12px}
+.logo{display:flex;align-items:baseline;gap:8px;font-weight:800;font-size:20px;letter-spacing:-.02em}
+.logo .mark{background:linear-gradient(120deg,#FF6B57,#FF9D45);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.logo .sub{font-size:12px;font-weight:600;color:var(--sub);letter-spacing:.02em}
+#topbar .sp{flex:1}
+.top-btn{font-size:13px;font-weight:700;padding:8px 14px;border-radius:99px;border:1px solid var(--line);background:#fff;transition:.15s}
+.top-btn:hover{border-color:var(--accent);color:var(--accent)}
+.top-btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.top-btn.primary:hover{background:#000;color:#fff}
+
+main{max-width:980px;margin:0 auto;padding:0 20px 120px}
+
+/* ---------- hero ---------- */
+.hero{padding:56px 0 8px;text-align:center}
+.hero .eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--accent-deep);background:#FFF0ED;border:1px solid #FFD9D2;padding:6px 14px;border-radius:99px}
+.hero h1{font-size:clamp(30px,5.4vw,46px);font-weight:900;letter-spacing:-.03em;line-height:1.22;margin:18px 0 12px}
+.hero h1 .grad{background:linear-gradient(120deg,#FF6B57,#FF9D45 55%,#F5B94B);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{color:var(--sub);font-size:15.5px;max-width:560px;margin:0 auto}
+.live-badges{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:22px 0 6px}
+.live-badge{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;background:#fff;border:1px solid var(--line);border-radius:99px;padding:7px 13px;color:#3B4256;box-shadow:0 2px 6px rgba(22,33,58,.04)}
+.pulse{width:7px;height:7px;border-radius:99px;background:#22C55E;position:relative;flex:none}
+.pulse::after{content:'';position:absolute;inset:-4px;border-radius:99px;background:rgba(34,197,94,.35);animation:pul 1.8s ease-out infinite}
+@keyframes pul{0%{transform:scale(.5);opacity:1}100%{transform:scale(1.6);opacity:0}}
+
+/* ---------- setup form ---------- */
+.step{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:26px 26px 24px;margin-top:22px}
+.step-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.step-num{width:30px;height:30px;flex:none;border-radius:10px;background:linear-gradient(135deg,#FF6B57,#FF9D45);color:#fff;font-weight:800;font-size:14px;display:grid;place-items:center;box-shadow:0 4px 10px rgba(255,107,87,.35)}
+.step-head h2{font-size:17.5px;font-weight:800;letter-spacing:-.01em}
+.step-head .hint{font-size:12.5px;color:var(--sub);font-weight:500;margin-left:auto}
+
+.region-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.region-card{
+  position:relative;border-radius:16px;padding:18px 16px 16px;text-align:left;border:2px solid transparent;
+  color:#fff;overflow:hidden;transition:transform .18s, box-shadow .18s; min-height:118px;
+  display:flex;flex-direction:column;justify-content:flex-end;
+}
+.region-card::before{content:'';position:absolute;inset:0;background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(0,0,0,.18));pointer-events:none}
+.region-card .emo{font-size:30px;position:absolute;top:14px;right:14px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.2))}
+.region-card .nm{font-size:19px;font-weight:800;letter-spacing:-.01em;text-shadow:0 1px 4px rgba(0,0,0,.25)}
+.region-card .tg{font-size:12px;opacity:.92;font-weight:500;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+.region-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.region-card.on{border-color:var(--ink);box-shadow:0 0 0 3px rgba(22,33,58,.14), var(--shadow-lg);transform:translateY(-3px)}
+.region-card.on::after{content:'✓';position:absolute;top:10px;left:12px;width:24px;height:24px;background:#fff;color:var(--ink);border-radius:99px;display:grid;place-items:center;font-weight:900;font-size:13px}
+
+.date-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.date-field{flex:1;min-width:150px}
+.date-field label{display:block;font-size:12px;font-weight:700;color:var(--sub);margin-bottom:6px}
+.date-field input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;font-size:15px;background:#FCFBF8;color:var(--ink);outline:none;transition:.15s}
+.date-field input:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(255,107,87,.14)}
+.quick-dates{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.chip{
+  padding:9px 15px;border-radius:99px;border:1.5px solid var(--line);background:#FCFBF8;
+  font-size:13.5px;font-weight:700;color:#3B4256;transition:.14s;
+}
+.chip:hover{border-color:#C9C2B2}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.on.warm{background:linear-gradient(120deg,#FF6B57,#FF8A50);border-color:transparent}
+.chip-row{display:flex;gap:8px;flex-wrap:wrap}
+.trip-len{margin-top:12px;font-size:13px;font-weight:700;color:var(--teal)}
+
+.go-wrap{margin-top:26px;text-align:center}
+.go-btn{
+  width:100%;max-width:420px;padding:18px 28px;border-radius:18px;font-size:17px;font-weight:800;color:#fff;letter-spacing:-.01em;
+  background:linear-gradient(120deg,#FF6B57,#FF8A50 60%,#FF9D45);
+  box-shadow:0 12px 28px rgba(255,107,87,.4);transition:.18s;
+}
+.go-btn:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(255,107,87,.5)}
+.go-btn:active{transform:translateY(0)}
+.go-note{font-size:12px;color:var(--sub);margin-top:10px}
+
+/* ---------- result ---------- */
+.summary{
+  background:linear-gradient(135deg,#1B2540 0%,#16213A 55%,#232F52 100%);color:#fff;
+  border-radius:var(--r);padding:26px;box-shadow:var(--shadow-lg);margin-top:26px;position:relative;overflow:hidden;
+}
+.summary::before{content:'';position:absolute;width:280px;height:280px;border-radius:99px;background:radial-gradient(circle,rgba(255,138,80,.28),transparent 70%);top:-120px;right:-60px}
+.summary .kicker{font-size:12.5px;font-weight:700;color:#FFB199;letter-spacing:.04em}
+.summary h2{font-size:clamp(22px,4vw,30px);font-weight:900;letter-spacing:-.02em;margin:6px 0 4px}
+.summary .meta{font-size:13.5px;color:#C7CCDC;font-weight:500}
+.summary .now-weather{margin-top:10px;font-size:13px;font-weight:700;color:#FFE9CF;display:inline-flex;gap:6px;align-items:center;background:rgba(255,255,255,.09);padding:6px 12px;border-radius:99px}
+.summary .now-weather[hidden]{display:none}
+.sum-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;position:relative}
+.sum-btn{font-size:13px;font-weight:700;padding:9px 15px;border-radius:99px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;transition:.15s}
+.sum-btn:hover{background:rgba(255,255,255,.22)}
+.sum-btn.hot{background:linear-gradient(120deg,#FF6B57,#FF9D45);border-color:transparent}
+
+.audit-bar{margin-top:14px;border-radius:14px;padding:13px 16px;font-size:13.5px;font-weight:700;display:flex;gap:10px;align-items:flex-start;border:1px solid}
+.audit-bar.ok{background:#EDFAF2;border-color:#BBEBD0;color:#157A48}
+.audit-bar.warn{background:#FFF8E8;border-color:#F5E3AE;color:#8A6A12}
+.audit-bar .det{font-weight:500;font-size:12.5px;margin-top:2px;color:inherit;opacity:.85}
+
+.weather-strip{display:flex;gap:10px;overflow-x:auto;padding:16px 2px 6px;scrollbar-width:thin}
+.wx-chip{flex:none;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 16px;min-width:118px;text-align:center;box-shadow:var(--shadow)}
+.wx-chip .d{font-size:12px;font-weight:700;color:var(--sub)}
+.wx-chip .e{font-size:26px;margin:4px 0 2px}
+.wx-chip .t{font-size:14px;font-weight:800}
+.wx-chip .t .lo{color:#7C90C9;font-weight:600}
+.wx-chip .r{font-size:11px;color:var(--sub);font-weight:600;margin-top:2px}
+.wx-chip.today{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,107,87,.12), var(--shadow)}
+.wx-src{font-size:11.5px;color:var(--sub);padding:0 2px 4px}
+
+.day-tabs{display:flex;gap:8px;overflow-x:auto;position:sticky;top:61px;z-index:40;background:var(--bg);padding:12px 2px;margin:4px -2px 0}
+.day-tab{flex:none;padding:10px 18px;border-radius:99px;font-size:14px;font-weight:800;border:1.5px solid var(--line);background:#fff;color:#3B4256;transition:.15s}
+.day-tab .sm{display:block;font-size:10.5px;font-weight:600;color:var(--sub);letter-spacing:.02em}
+.day-tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.day-tab.on .sm{color:#B9C1D9}
+
+.day-head{display:flex;align-items:baseline;gap:10px;margin:18px 2px 4px;flex-wrap:wrap}
+.day-head h3{font-size:21px;font-weight:900;letter-spacing:-.02em}
+.day-head .area{font-size:13px;font-weight:700;color:var(--accent-deep);background:#FFF0ED;border-radius:99px;padding:4px 12px}
+.day-head .wx{font-size:13px;color:var(--sub);font-weight:600}
+.rain-tip{margin:8px 2px 0;font-size:13px;font-weight:600;color:#4467C4;background:#EEF3FF;border:1px solid #D6E1FA;border-radius:12px;padding:10px 14px}
+
+/* timeline */
+.timeline{position:relative;margin-top:18px;padding-left:76px}
+.timeline::before{content:'';position:absolute;left:30px;top:8px;bottom:8px;border-left:2px dashed #D8D2C2}
+.slot{position:relative;margin-bottom:18px}
+.slot .time{
+  position:absolute;left:-76px;top:14px;width:60px;text-align:center;
+  font-size:12.5px;font-weight:800;background:var(--ink);color:#fff;border-radius:99px;padding:5px 0;box-shadow:0 3px 8px rgba(22,33,58,.25)
+}
+.slot .time::after{content:'';position:absolute;right:-18px;top:50%;width:12px;border-top:2px dashed #D8D2C2}
+.place-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow);transition:box-shadow .18s}
+.place-card:hover{box-shadow:var(--shadow-lg)}
+.pc-top{display:flex;align-items:flex-start;gap:10px}
+.pc-label{font-size:11.5px;font-weight:800;letter-spacing:.03em;color:var(--sub);text-transform:uppercase}
+.pc-name{font-size:18px;font-weight:800;letter-spacing:-.01em;margin-top:1px}
+.pc-name .area-tag{font-size:12px;font-weight:700;color:var(--sub);margin-left:6px}
+.cat-badge{margin-left:auto;flex:none;font-size:11.5px;font-weight:800;color:#fff;border-radius:99px;padding:4px 11px}
+.shuffle-btn{flex:none;width:34px;height:34px;border-radius:12px;border:1.5px solid var(--line);background:#FCFBF8;font-size:15px;display:grid;place-items:center;transition:.15s;margin-left:8px}
+.shuffle-btn:hover{border-color:var(--accent);color:var(--accent);transform:rotate(180deg)}
+.pc-desc{font-size:13.5px;color:#4B5265;margin-top:8px}
+.pc-tip{font-size:12.5px;font-weight:600;color:#8A6A12;background:#FFF8E8;border-radius:10px;padding:7px 11px;margin-top:9px;display:inline-block}
+.pc-info{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:11px;font-size:12.5px;color:var(--sub);font-weight:600}
+.pc-info b{color:#3B4256;font-weight:700}
+.status-chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;border-radius:99px;padding:4px 11px}
+.st-open{background:#EDFAF2;color:#157A48}
+.st-break{background:#FFF3E0;color:#B45E12}
+.st-closed{background:#F3F4F6;color:#6B7280}
+.st-dayoff{background:#FDEBEC;color:#C0313E}
+.pc-warns{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.pc-warn{font-size:12.5px;font-weight:700;border-radius:10px;padding:8px 12px}
+.pc-warn.red{background:#FDEBEC;color:#C0313E}
+.pc-warn.amber{background:#FFF8E8;color:#8A6A12}
+.pc-links{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px;padding-top:13px;border-top:1px dashed var(--line);align-items:center}
+.pc-links .lbl{font-size:11.5px;font-weight:800;color:var(--sub)}
+.vlink{font-size:12px;font-weight:700;text-decoration:none;border-radius:99px;padding:6px 12px;border:1.5px solid var(--line);background:#FCFBF8;transition:.14s;display:inline-flex;gap:5px;align-items:center}
+.vlink:hover{border-color:var(--ink);background:#fff;transform:translateY(-1px)}
+.empty-slot{background:#FCFBF8;border:1.5px dashed #D8D2C2;border-radius:18px;padding:18px 20px;font-size:13.5px;color:var(--sub);font-weight:600}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(15,20,35,.55);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center;z-index:100;padding:0}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:640px;max-height:86vh;overflow-y:auto;padding:26px 24px 34px;animation:up .25s ease}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.modal h3{font-size:20px;font-weight:900;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.modal .close{position:sticky;float:right;font-size:22px;color:var(--sub);padding:2px 8px;border-radius:10px}
+.modal .close:hover{background:#F3F4F6}
+.modal .note{font-size:13px;color:#4B5265;background:#F4F7F3;border:1px solid #DFE8DC;border-radius:12px;padding:12px 15px;margin:14px 0}
+.ck-day{font-size:13px;font-weight:800;color:var(--accent-deep);margin:18px 0 8px}
+.ck-item{display:flex;align-items:center;gap:11px;padding:11px 6px;border-bottom:1px dashed var(--line)}
+.ck-item input{width:18px;height:18px;accent-color:var(--accent);flex:none}
+.ck-item .nm{font-size:14px;font-weight:700;flex:1}
+.ck-item .nm .s{display:block;font-size:11.5px;color:var(--sub);font-weight:600}
+.ck-item .go{font-size:11.5px;font-weight:800;color:#fff;background:#03C75A;border-radius:99px;padding:6px 11px;text-decoration:none;flex:none}
+.ck-item .go.ig{background:linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)}
+
+/* toast */
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-size:13.5px;font-weight:700;padding:12px 22px;border-radius:99px;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color:var(--sub);text-align:center;line-height:1.7}
+
+@media (max-width:640px){
+  .logo{white-space:nowrap}
+  .logo .sub{display:none}
+  #topbar .in{padding:12px 14px;gap:8px}
+  .top-btn{padding:7px 11px;font-size:12px;white-space:nowrap}
+  .region-grid{grid-template-columns:repeat(2,1fr)}
+  .timeline{padding-left:0}
+  .timeline::before{display:none}
+  .slot .time{position:static;display:inline-block;width:auto;padding:5px 14px;margin-bottom:8px}
+  .slot .time::after{display:none}
+  .step{padding:20px 18px}
+  .modal{border-radius:20px 20px 0 0}
+}
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <div class="in">
+    <div class="logo"><span class="mark">여로</span><span>YEORO</span><span class="sub">나만의 한국 여행 코스</span></div>
+    <div class="sp"></div>
+    <button class="top-btn" id="btn-checklist" hidden onclick="openChecklist()">✅ 실시간 체크리스트</button>
+    <button class="top-btn primary" id="btn-new" hidden onclick="goSetup()">＋ 새 여행</button>
+  </div>
+</header>
+
+<main>
+  <!-- ============ SETUP ============ -->
+  <section id="setup-view">
+    <div class="hero">
+      <span class="eyebrow">✈️ 대한민국 맞춤 여행 플래너</span>
+      <h1>여행지만 고르면,<br><span class="grad">완벽한 코스</span>는 여로가 짜드려요</h1>
+      <p>날짜·계절·날씨·영업시간·휴무일·브레이크타임까지 전부 대조해서, 시간표 그대로 따라가면 되는 하루 코스를 만들어 드립니다.</p>
+      <div class="live-badges">
+        <span class="live-badge"><span class="pulse"></span>실시간 날씨 연동</span>
+        <span class="live-badge">📅 휴무 요일 자동 대조</span>
+        <span class="live-badge">⏰ 브레이크타임 검사</span>
+        <span class="live-badge">🔗 폐업·임시휴무 원클릭 확인</span>
+      </div>
+      <div style="margin-top:14px" id="resume-wrap"></div>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><div class="step-num">1</div><h2>어디로 떠나요?</h2><span class="hint">지역 하나를 선택</span></div>
+      <div class="region-grid" id="region-grid"></div>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><div class="step-num">2</div><h2>언제 가나요?</h2><span class="hint">최대 7일</span></div>
+      <div class="date-row">
+        <div class="date-field"><label>가는 날</label><input type="date" id="date-start"></div>
+        <div class="date-field"><label>오는 날</label><input type="date" id="date-end"></div>
+      </div>
+      <div class="quick-dates">
+        <button class="chip" data-quick="thisWeekend">이번 주말</button>
+        <button class="chip" data-quick="nextWeekend">다음 주말</button>
+        <button class="chip" data-quick="threeDays">다음주 2박 3일</button>
+      </div>
+      <div class="trip-len" id="trip-len"></div>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><div class="step-num">3</div><h2>누구랑 가요?</h2></div>
+      <div class="chip-row" id="companion-row"></div>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><div class="step-num">4</div><h2>여행 페이스</h2></div>
+      <div class="chip-row" id="pace-row"></div>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><div class="step-num">5</div><h2>취향을 골라주세요</h2><span class="hint">여러 개 선택 가능</span></div>
+      <div class="chip-row" id="interest-row"></div>
+    </div>
+
+    <div class="go-wrap">
+      <button class="go-btn" onclick="generate()">🧭 내 맞춤 코스 만들기</button>
+      <div class="go-note">생성 즉시 휴무일·영업시간·날씨를 자동 점검해요</div>
+    </div>
+  </section>
+
+  <!-- ============ RESULT ============ -->
+  <section id="result-view" hidden>
+    <div class="summary" id="summary"></div>
+    <div id="audit-area"></div>
+    <div class="wx-src" id="wx-src" style="margin-top:14px"></div>
+    <div class="weather-strip" id="weather-strip" style="padding-top:6px"></div>
+    <div class="day-tabs" id="day-tabs"></div>
+    <div id="day-body"></div>
+  </section>
+</main>
+
+<footer>
+  장소 정보(영업시간·휴무)는 큐레이션 시점 기준 참고용입니다. 폐업·임시휴무·시간 변경은 각 카드의 <b>네이버 지도</b> 링크에서 방문 직전에 꼭 확인하세요.<br>
+  날씨: Open-Meteo 실시간 API · 예보 범위(16일) 밖 날짜는 월별 평년 기후로 안내합니다. — 여로 YEORO
+</footer>
+
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeChecklist()">
+  <div class="modal">
+    <button class="close" onclick="closeChecklist()">✕</button>
+    <h3>✅ 출발 전 실시간 체크리스트</h3>
+    <div class="note">
+      휴무 요일·영업시간·브레이크타임은 여로가 이미 자동 대조했어요.<br>
+      앱이 직접 확인할 수 없는 <b>폐업 · 임시휴무 · 당일 웨이팅 · 예약 필요 여부</b>만
+      아래 링크에서 장소당 10초씩 최종 확인하면 완벽합니다.
+    </div>
+    <div id="checklist-body"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   여로 YEORO — 데이터
+   ===================================================================== */
+const CAT = {
+  food : {label:'맛집',   icon:'🍜', color:'#E8543F'},
+  cafe : {label:'카페',   icon:'☕', color:'#8C6239'},
+  sight: {label:'볼거리', icon:'🏞️', color:'#2F8F6B'},
+  night: {label:'밤·야경',icon:'🌙', color:'#5B5FE9'}
+};
+const WEEK = ['일','월','화','수','목','금','토'];
+const NTH  = ['첫째','둘째','셋째','넷째','다섯째'];
+
+/* p:인기도, h:영업시간, b:브레이크, cd:정기휴무, th:테마, tip:꿀팁, tag:인스타 해시태그 */
+const REGIONS = [
+{ key:'seoul', name:'서울', emoji:'🏙️', lat:37.5665, lng:126.9780, grad:'linear-gradient(135deg,#4568DC,#B06AB3)',
+  tagline:'궁궐부터 성수 핫플까지', places:[
+  {n:'광장시장 먹자골목', c:'food', a:'종로·을지로', h:'09:00-23:00', b:null, cd:[], th:['시장'], p:95, tag:'광장시장', d:'빈대떡·마약김밥·육회의 성지. 백년 노포의 활기를 그대로 느낄 수 있는 서울 대표 시장.', tip:'현금 챙기면 편해요. 유명 집은 줄이 빨리 빠져요'},
+  {n:'금돼지식당', c:'food', a:'신당·동대문', h:'11:30-23:00', b:null, cd:[], th:[], p:96, tag:'금돼지식당', d:'미쉐린 빕구르망 단골 돼지구이. 본삼겹·등목살 조합이 국룰.', tip:'캐치테이블 예약 or 오픈 전 웨이팅 등록 필수'},
+  {n:'우래옥', c:'food', a:'종로·을지로', h:'11:30-21:00', b:null, cd:['월'], th:[], p:93, tag:'우래옥', d:'1946년부터 이어온 평양냉면 성지. 불고기와 냉면 반반 조합 추천.', tip:'주말 오픈런 추천 · 월요일 휴무'},
+  {n:'명동교자 본점', c:'food', a:'명동·남산', h:'10:30-21:00', b:null, cd:[], th:[], p:90, tag:'명동교자', d:'진한 닭육수 칼국수와 왕만두. 자리 회전이 빨라 웨이팅 대비 진행이 빠름.', tip:'마늘김치가 강렬하니 후식 커피 필수'},
+  {n:'하동관 명동본점', c:'food', a:'명동·남산', h:'07:00-16:00', b:null, cd:['일'], th:[], p:89, tag:'하동관', d:'서울식 곰탕 원탑. 아침 곰탕 한 그릇으로 하루를 여는 어른의 맛.', tip:'재료 소진 시 조기 마감 — 아침~점심에 가세요'},
+  {n:'이문설농탕', c:'food', a:'종로·을지로', h:'08:00-21:00', b:null, cd:[], th:[], p:87, tag:'이문설농탕', d:'1904년 개업, 서울에서 가장 오래된 식당. 뽀얀 설렁탕 국물의 정석.', tip:'아침 식사로도 든든 — 도가니 추가 추천'},
+  {n:'삼청동수제비', c:'food', a:'종로·을지로', h:'11:00-20:30', b:null, cd:[], th:[], p:88, tag:'삼청동수제비', d:'삼청동 산책의 이유가 되는 수제비. 멸치육수에 쫀득한 반죽.', tip:'감자전+수제비 조합 · 식사 시간대 웨이팅'},
+  {n:'런던베이글뮤지엄 안국점', c:'cafe', a:'종로·을지로', h:'08:00-18:00', b:null, cd:[], th:['쇼핑'], p:98, tag:'런던베이글뮤지엄', d:'서울 베이글 열풍의 진원지. 쪽파 베이글과 클로티드 크림이 시그니처.', tip:'원격 줄서기(웨이팅 앱) 오픈 직후 등록 필수'},
+  {n:'어니언 성수', c:'cafe', a:'성수', h:'08:00-22:00', b:null, cd:[], th:['쇼핑'], p:94, tag:'어니언성수', d:'공장을 개조한 인더스트리얼 카페의 원조. 팡도르 위 눈처럼 쌓인 슈가파우더.', tip:'평일 오전이 한산 — 빵은 오전에 가장 다양'},
+  {n:'카페 레이어드 연남', c:'cafe', a:'연남·홍대', h:'10:00-22:00', b:null, cd:[], th:[], p:90, tag:'카페레이어드', d:'영국 감성 스콘 맛집. 진열장 가득한 스콘과 케이크가 사진 맛집.', tip:'연남동 산책과 묶어서 코스로'},
+  {n:'프릳츠 도화점', c:'cafe', a:'연남·홍대', h:'08:00-22:00', b:null, cd:[], th:[], p:88, tag:'프릳츠', d:'물개 로고로 유명한 스페셜티 커피. 한옥 감성 건물에서 마시는 완성도 높은 커피.', tip:'원두·굿즈는 선물용으로도 인기'},
+  {n:'경복궁', c:'sight', a:'종로·을지로', h:'09:00-18:00', b:null, cd:['화'], th:['역사'], p:97, tag:'경복궁', d:'조선의 법궁. 근정전과 경회루, 수문장 교대식(10시·14시)까지 볼거리가 가득.', tip:'한복 입으면 무료입장 · 화요일 휴궁'},
+  {n:'북촌한옥마을', c:'sight', a:'종로·을지로', h:'10:00-17:00', b:null, cd:[], th:['역사'], p:92, tag:'북촌한옥마을', d:'기와지붕 너머 서울 도심이 겹쳐 보이는 골목. 북촌 8경 포토스팟 순례 코스.', tip:'주민 거주지역 — 관람 에티켓 시간(10~17시) 지켜주세요'},
+  {n:'익선동 한옥거리', c:'sight', a:'종로·을지로', h:'11:00-22:00', b:null, cd:[], th:['역사','쇼핑'], p:91, tag:'익선동', d:'좁은 한옥 골목에 감성 카페·소품샵·사진관이 빼곡. 낮과 밤 분위기가 완전히 다름.', tip:'저녁엔 웨이팅 많은 가게가 많아요'},
+  {n:'성수 연무장길', c:'sight', a:'성수', h:'11:00-21:00', b:null, cd:[], th:['쇼핑'], p:95, tag:'성수동', d:'지금 서울에서 가장 핫한 거리. 브랜드 팝업스토어와 편집숍이 매주 바뀜.', tip:'방문 주의 팝업 라인업을 인스타에서 미리 확인'},
+  {n:'더현대 서울', c:'sight', a:'여의도', h:'10:30-20:30', b:null, cd:[], th:['쇼핑'], p:93, tag:'더현대서울', d:'실내 정원 사운즈포레스트로 유명한 백화점 그 이상의 공간. 지하 팝업이 핵심.', tip:'금~일은 20:30까지 · 팝업은 오픈런 많음'},
+  {n:'국립중앙박물관', c:'sight', a:'용산', h:'10:00-18:00', b:null, cd:[], th:['역사'], p:90, tag:'국립중앙박물관', d:'\'사유의 방\' 반가사유상 하나만으로도 갈 이유가 충분. 무료 관람.', tip:'수·토요일은 야간(21시) 개장'},
+  {n:'창덕궁', c:'sight', a:'종로·을지로', h:'09:00-18:00', b:null, cd:['월'], th:['역사'], p:91, tag:'창덕궁', d:'유네스코 세계문화유산. 자연과 어우러진 후원이 백미.', tip:'후원은 회차별 인원 제한 — 예매 추천 · 월요일 휴궁'},
+  {n:'서울숲', c:'sight', a:'성수', h:'24시간', b:null, cd:[], th:['자연','힐링'], p:89, tag:'서울숲', d:'은행나무길과 사슴 방사장이 있는 도심 속 숲. 성수 카페 투어와 완벽한 짝.', tip:'가을 은행나무길, 봄 튤립 시즌이 절정'},
+  {n:'N서울타워', c:'night', a:'명동·남산', h:'10:00-23:00', b:null, cd:[], th:['야경'], p:92, tag:'남산타워', d:'서울 야경의 클래식. 케이블카 또는 남산 산책로로 올라가는 재미까지.', tip:'해지기 30분 전 도착하면 노을+야경 둘 다'},
+  {n:'반포한강공원 달빛무지개분수', c:'night', a:'반포·강남', h:'00:00-24:00', b:null, cd:[], th:['야경','자연'], p:89, tag:'반포한강공원', d:'반포대교에서 쏟아지는 분수 쇼와 한강 치맥. 서울의 여름밤 국룰.', tip:'분수는 4~10월 저녁 가동 — 회차 시간 네이버 확인'},
+  {n:'을지로 노가리골목', c:'night', a:'종로·을지로', h:'17:00-24:00', b:null, cd:[], th:[], p:88, tag:'을지로노가리골목', d:'길거리 파라솔에서 즐기는 노가리+생맥주. 레트로 서울 밤의 정수.', tip:'여름 성수기엔 초저녁부터 만석'}
+]},
+{ key:'busan', name:'부산', emoji:'🌊', lat:35.1796, lng:129.0756, grad:'linear-gradient(135deg,#2E8DE1,#1FC8DB)',
+  tagline:'바다·야경·돼지국밥', places:[
+  {n:'쌍둥이돼지국밥', c:'food', a:'남구·대연', h:'09:00-21:00', b:'15:00-16:30', cd:[], th:[], p:93, tag:'쌍둥이돼지국밥', d:'부산 돼지국밥 최상위권. 잡내 없이 진한 국물과 수육백반이 유명.', tip:'수육백반 시키면 국밥+수육 한 번에'},
+  {n:'해운대암소갈비집', c:'food', a:'해운대', h:'11:30-22:00', b:'15:00-17:00', cd:[], th:[], p:95, tag:'해운대암소갈비집', d:'60년 전통 숯불 암소갈비. 부산 여행 플렉스 한 끼로 이만한 곳이 없음.', tip:'예약 추천 · 양념갈비에 물냉면 마무리'},
+  {n:'개금밀면', c:'food', a:'서면·부산진', h:'10:00-21:00', b:null, cd:[], th:[], p:89, tag:'개금밀면', d:'부산 3대 밀면. 육수가 슴슴하면서 중독적이라 여름이면 줄이 길어짐.', tip:'물밀면+찐만두 조합 국룰'},
+  {n:'초량밀면', c:'food', a:'부산역·초량', h:'09:30-21:30', b:null, cd:[], th:[], p:88, tag:'초량밀면', d:'부산역 도보 5분. 기차 타기 전 마지막 한 그릇으로 완벽한 밀면.', tip:'KTX 출발 1시간 전 방문 추천'},
+  {n:'이재모피자', c:'food', a:'남포·중구', h:'11:00-22:00', b:null, cd:[], th:[], p:90, tag:'이재모피자', d:'치즈가 폭포처럼 흐르는 부산 명물 피자. 남포동 쇼핑과 묶기 좋음.', tip:'포장해서 광안리 밤바다 앞에서 먹는 것도 추천'},
+  {n:'송정3대국밥', c:'food', a:'서면·부산진', h:'24시간', b:null, cd:[], th:[], p:88, tag:'송정3대국밥', d:'서면 밤을 책임지는 돼지국밥. 새벽에도 든든한 한 그릇.', tip:'늦은 밤·이른 아침 일정에 최적'},
+  {n:'금수복국 해운대본점', c:'food', a:'해운대', h:'07:00-21:30', b:null, cd:[], th:[], p:87, tag:'금수복국', d:'해운대 아침 해장의 정석, 복국 명가. 맑은 국물이 속을 풀어줌.', tip:'아침 일찍 가면 웨이팅 없이 여유롭게'},
+  {n:'웨이브온 커피', c:'cafe', a:'기장', h:'10:00-22:00', b:null, cd:[], th:['자연'], p:97, tag:'웨이브온', d:'통유리 너머 바다가 쏟아지는 기장 대표 오션뷰 카페. 노을 시간대가 절정.', tip:'일몰 1시간 전 도착해야 창가 명당 확보'},
+  {n:'모모스커피 영도', c:'cafe', a:'영도', h:'09:00-18:00', b:null, cd:[], th:[], p:92, tag:'모모스커피', d:'월드 바리스타 챔피언의 로스터리. 항구를 바라보며 마시는 스페셜티.', tip:'커핑룸 체험도 가능 — 원두 선물 추천'},
+  {n:'해리단길', c:'cafe', a:'해운대', h:'11:00-21:00', b:null, cd:[], th:['쇼핑'], p:88, tag:'해리단길', d:'옛 해운대역 뒷골목이 변신한 카페 거리. 골목마다 개성 있는 집들이 숨어있음.', tip:'웨이팅 길면 옆집도 수준급 — 골목 탐험 추천'},
+  {n:'해운대 해수욕장', c:'sight', a:'해운대', h:'24시간', b:null, cd:[], th:['자연'], p:94, tag:'해운대', d:'설명이 필요 없는 대한민국 대표 해변. 계절마다 축제와 이벤트가 이어짐.', tip:'아침 산책 코스로도, 밤바다로도 완벽'},
+  {n:'감천문화마을', c:'sight', a:'감천·서구', h:'09:00-18:00', b:null, cd:[], th:['역사'], p:93, tag:'감천문화마을', d:'파스텔 집들이 계단식으로 쌓인 한국의 마추픽추. 어린왕자 포토존이 상징.', tip:'주민 거주지 — 조용히, 오전 방문이 한산'},
+  {n:'흰여울문화마을', c:'sight', a:'영도', h:'10:00-18:00', b:null, cd:[], th:['자연'], p:92, tag:'흰여울문화마을', d:'절벽 위 바다 골목. 흰여울 해안터널과 파란 바다가 만드는 영화 같은 풍경.', tip:'변호인 촬영지 — 계단 많으니 편한 신발'},
+  {n:'해동용궁사', c:'sight', a:'기장', h:'05:00-19:00', b:null, cd:[], th:['역사','자연'], p:91, tag:'해동용궁사', d:'바다와 맞닿은 사찰. 파도 소리를 들으며 걷는 해안 절벽 길이 압권.', tip:'아침 일찍 가면 고요한 바다 사찰을 독차지'},
+  {n:'블루라인파크 해변열차', c:'sight', a:'해운대', h:'09:30-19:30', b:null, cd:[], th:['자연'], p:93, tag:'블루라인파크', d:'미포~청사포 해안선을 달리는 해변열차와 스카이캡슐. 부산 바다를 가장 예쁘게 보는 법.', tip:'스카이캡슐은 사전 예약 강력 추천'},
+  {n:'부산 X the SKY', c:'sight', a:'해운대', h:'10:00-21:00', b:null, cd:[], th:['야경'], p:89, tag:'부산엑스더스카이', d:'해운대 100층에서 내려다보는 바다와 도시. 국내 최고 높이 전망대급 뷰.', tip:'노을 타임 입장하면 낮+밤 뷰 모두'},
+  {n:'태종대', c:'sight', a:'영도', h:'09:00-18:00', b:null, cd:[], th:['자연'], p:88, tag:'태종대', d:'절벽 위에서 마주하는 탁 트인 남해. 다누비열차 타고 도는 해안 절경.', tip:'등대 전망대까지 꼭 — 맑은 날엔 대마도도 보여요'},
+  {n:'광안리 M 드론라이트쇼', c:'night', a:'광안리', h:'19:00-24:00', b:null, cd:['일','월','화','수','목','금'], th:['야경'], p:96, tag:'광안리드론쇼', d:'매주 토요일 밤 광안리 하늘을 수놓는 드론 쇼. 광안대교 야경과 함께 절정.', tip:'토요일만 진행 · 우천 취소 — 당일 공지 확인 필수'},
+  {n:'광안리 해변 야경', c:'night', a:'광안리', h:'00:00-24:00', b:null, cd:[], th:['야경','자연'], p:94, tag:'광안리', d:'광안대교 불빛이 바다에 번지는 밤. 해변 앞 술집·카페 어디든 뷰 맛집.', tip:'모래사장에 앉아 회+야경 조합 추천'},
+  {n:'더베이101', c:'night', a:'해운대', h:'10:00-24:00', b:null, cd:[], th:['야경'], p:90, tag:'더베이101', d:'마린시티 마천루가 물 위에 반사되는 부산 대표 야경 스팟.', tip:'피쉬앤칩스+맥주 들고 야경 감상이 국룰'},
+  {n:'부평깡통야시장', c:'night', a:'남포·중구', h:'19:30-24:00', b:null, cd:[], th:['시장'], p:88, tag:'부평깡통야시장', d:'전국 최초 상설 야시장. 유부주머니·씨앗호떡 등 길거리 미식 천국.', tip:'남포동 저녁 코스 마무리로 완벽'}
+]},
+{ key:'jeju', name:'제주', emoji:'🍊', lat:33.4996, lng:126.5312, grad:'linear-gradient(135deg,#F2994A,#F2C94C)',
+  tagline:'섬 전체가 힐링', places:[
+  {n:'우진해장국', c:'food', a:'제주시', h:'06:00-22:00', b:null, cd:[], th:[], p:96, tag:'우진해장국', d:'고사리육개장 하나로 전국구가 된 집. 걸쭉한 국물에 몸이 풀리는 맛.', tip:'아침에도 웨이팅 — 오픈 직후가 가장 빠름'},
+  {n:'자매국수', c:'food', a:'제주시', h:'09:00-20:30', b:'14:50-16:00', cd:[], th:[], p:92, tag:'자매국수', d:'고기국수 양대산맥. 두툼한 돔베고기가 올라간 진한 사골 국물.', tip:'태블릿 웨이팅 등록 후 근처 산책 추천'},
+  {n:'돈사돈 본점', c:'food', a:'제주시', h:'11:40-22:00', b:null, cd:[], th:[], p:93, tag:'돈사돈', d:'근고기 스타일 흑돼지 구이의 정석. 멜젓에 찍어 먹는 순간 이해되는 맛.', tip:'2인 이상 방문 추천 — 근고기는 양이 넉넉'},
+  {n:'명진전복', c:'food', a:'구좌·동부', h:'09:30-21:30', b:null, cd:['화'], th:[], p:91, tag:'명진전복', d:'전복돌솥밥+전복구이 조합의 원조격. 창밖으로 구좌 바다가 펼쳐짐.', tip:'화요일 휴무 · 누룽지까지 싹싹 긁어 드세요'},
+  {n:'오는정김밥', c:'food', a:'서귀포', h:'09:00-19:00', b:null, cd:['일'], th:[], p:90, tag:'오는정김밥', d:'전화 예약 없이는 못 사는 전설의 김밥. 튀긴 유부의 고소함이 킥.', tip:'반드시 전화 예약 후 픽업 — 당일 마감 빠름'},
+  {n:'삼대국수회관 본점', c:'food', a:'제주시', h:'09:00-21:00', b:null, cd:[], th:[], p:88, tag:'삼대국수회관', d:'국수문화거리의 터줏대감. 진한 고기국수와 비빔국수 반반이 국룰.', tip:'자매국수 웨이팅 길면 이곳이 훌륭한 대안'},
+  {n:'숙성도 노형점', c:'food', a:'제주시', h:'11:30-22:00', b:'15:00-17:00', cd:[], th:[], p:92, tag:'숙성도', d:'숙성 흑돼지의 새 기준. 720시간 숙성 뼈등심이 시그니처.', tip:'테이블링 앱 웨이팅 등록 필수 · 브레이크타임 주의'},
+  {n:'카페 델문도', c:'cafe', a:'함덕·조천', h:'07:00-24:00', b:null, cd:[], th:['자연'], p:93, tag:'카페델문도', d:'함덕 에메랄드 바다를 정면으로 바라보는 카페. 아침 7시부터 밤까지 열려 일정 짜기 최고.', tip:'테라스 자리는 오전이 한산'},
+  {n:'원앤온리', c:'cafe', a:'안덕·서부', h:'09:00-19:00', b:null, cd:[], th:['자연'], p:95, tag:'원앤온리', d:'산방산을 등지고 황우치해변을 마주한 제주 대표 뷰 카페.', tip:'야외 좌석 인생샷 명소 — 바람 강한 날 주의'},
+  {n:'오설록 티뮤지엄', c:'cafe', a:'안덕·서부', h:'09:00-18:00', b:null, cd:[], th:['자연'], p:92, tag:'오설록', d:'초록 차밭 한가운데의 티 뮤지엄. 그린티 소프트콘은 무조건.', tip:'옆 이니스프리 하우스까지 같이 둘러보세요'},
+  {n:'성산일출봉', c:'sight', a:'성산·동부', h:'07:00-20:00', b:null, cd:['첫째 월'], th:['자연'], p:97, tag:'성산일출봉', d:'유네스코 세계자연유산. 정상에서 내려다보는 분화구와 바다의 파노라마.', tip:'왕복 1시간 · 매월 첫째 월요일 휴식일'},
+  {n:'협재해수욕장', c:'sight', a:'한림·서부', h:'24시간', b:null, cd:[], th:['자연'], p:94, tag:'협재해수욕장', d:'비양도가 떠 있는 에메랄드 바다. 제주 서쪽 일몰의 성지.', tip:'물빛은 한낮, 하늘빛은 일몰 — 두 번 가도 좋아요'},
+  {n:'사려니숲길', c:'sight', a:'조천·중산간', h:'09:00-17:00', b:null, cd:[], th:['자연','힐링'], p:92, tag:'사려니숲길', d:'삼나무가 하늘을 덮는 명상 같은 숲길. 비 오는 날 안개 낀 풍경도 명품.', tip:'운동화 필수 — 입구 주차장 만차 시 대체 입구 확인'},
+  {n:'카멜리아힐', c:'sight', a:'안덕·서부', h:'08:30-18:00', b:null, cd:[], th:['자연'], p:90, tag:'카멜리아힐', d:'동백(11~3월)과 수국(6~7월)으로 계절마다 옷을 갈아입는 수목원.', tip:'시즌 개화 상황을 인스타 최신 태그로 확인'},
+  {n:'우도', c:'sight', a:'성산·동부', h:'08:00-17:00', b:null, cd:[], th:['자연'], p:93, tag:'우도', d:'배 타고 15분, 섬 속의 섬. 전기바이크로 도는 해안도로가 하이라이트.', tip:'마지막 배 시간 필수 확인 · 땅콩아이스크림 국룰'},
+  {n:'새별오름', c:'sight', a:'애월·서부', h:'24시간', b:null, cd:[], th:['자연'], p:91, tag:'새별오름', d:'왕복 40분으로 제주 서부 전망을 통째로 얻는 가성비 오름. 억새 시즌은 예술.', tip:'10~11월 억새 절정 · 일몰 타임 강추'},
+  {n:'함덕해수욕장', c:'sight', a:'함덕·조천', h:'24시간', b:null, cd:[], th:['자연'], p:92, tag:'함덕해수욕장', d:'서우봉 능선과 맞닿은 에메랄드빛 해변. 물빛만큼은 제주 원탑 후보.', tip:'서우봉 둘레길까지 걸으면 뷰가 두 배'},
+  {n:'동문재래시장 야시장', c:'night', a:'제주시', h:'18:00-24:00', b:null, cd:[], th:['시장'], p:92, tag:'동문시장야시장', d:'딱새우회·흑돼지꼬치·전복김밥까지, 제주 밤의 미식 놀이터.', tip:'저녁 8시 전후가 가장 활기차요'},
+  {n:'이호테우해변 목마등대', c:'night', a:'제주시', h:'24시간', b:null, cd:[], th:['야경','자연'], p:89, tag:'이호테우해변', d:'조랑말 모양 쌍둥이 등대와 일몰. 공항에서 가까워 첫날·마지막 날 코스로 최적.', tip:'일몰 30분 전 도착 추천'}
+]},
+{ key:'gangneung', name:'강릉', emoji:'☕', lat:37.7519, lng:128.8761, grad:'linear-gradient(135deg,#00B09B,#96C93D)',
+  tagline:'커피와 동해 바다', places:[
+  {n:'초당할머니순두부', c:'food', a:'초당', h:'07:00-19:30', b:null, cd:[], th:[], p:92, tag:'초당순두부', d:'바닷물로 간을 한 초당 순두부의 원조급 노포. 아침 순두부백반이 별미.', tip:'아침 일찍 가면 웨이팅 없이 갓 만든 순두부'},
+  {n:'동화가든', c:'food', a:'초당', h:'07:00-19:20', b:null, cd:[], th:[], p:94, tag:'동화가든', d:'짬뽕순두부(짬순)의 원조. 얼큰한 국물에 몽글한 순두부의 조화.', tip:'대기 등록 후 초당 솔숲 산책하고 오면 딱'},
+  {n:'엄지네포장마차 본점', c:'food', a:'포남·시내', h:'11:30-24:00', b:null, cd:[], th:[], p:95, tag:'엄지네포장마차', d:'꼬막무침비빔밥 신드롬의 시작점. 육사시미와 함께 먹는 조합이 유명.', tip:'식사 시간대 웨이팅 필수 — 애매한 시간 공략'},
+  {n:'강릉중앙시장', c:'food', a:'시내', h:'09:00-21:00', b:null, cd:[], th:['시장'], p:91, tag:'강릉중앙시장', d:'닭강정·오징어순대·수제어묵고로케까지, 손에 하나씩 들고 도는 먹방 시장.', tip:'유명 닭강정은 마감 전 품절 주의'},
+  {n:'강릉 감자옹심이', c:'food', a:'시내', h:'10:00-19:30', b:null, cd:[], th:[], p:87, tag:'감자옹심이', d:'쫀득한 감자 옹심이의 원조급 노포. 구수한 국물이 강원도 그 자체.', tip:'옹심이+감자전 조합 추천'},
+  {n:'교동반점 본점', c:'food', a:'시내', h:'10:30-20:30', b:null, cd:[], th:[], p:88, tag:'교동반점', d:'강릉 짬뽕의 자존심. 불맛 가득한 얼큰한 국물로 전국구가 된 중식 노포.', tip:'피크 시간 웨이팅 — 오픈 직후 공략'},
+  {n:'테라로사 커피공장 본점', c:'cafe', a:'구정', h:'09:00-21:00', b:null, cd:[], th:[], p:94, tag:'테라로사', d:'강릉을 커피 도시로 만든 로스터리 본점. 공장형 공간 자체가 볼거리.', tip:'베이커리도 수준급 — 브런치 겸 방문 추천'},
+  {n:'카페 툇마루', c:'cafe', a:'초당', h:'11:00-18:00', b:null, cd:['수'], th:[], p:93, tag:'카페툇마루', d:'흑임자 크림 올린 툇마루 커피로 유명한 초당동 한옥 카페.', tip:'수요일 휴무 · 시그니처 메뉴 조기 품절 잦음'},
+  {n:'안목해변 커피거리', c:'cafe', a:'안목', h:'09:00-22:00', b:null, cd:[], th:['자연'], p:90, tag:'안목해변', d:'파도 소리를 배경음악 삼는 해변 카페 거리. 2층 창가가 명당.', tip:'커피 자판기(원조 감성)도 한 번 경험해보세요'},
+  {n:'순두부젤라또 1호점', c:'cafe', a:'초당', h:'10:00-19:00', b:null, cd:[], th:[], p:89, tag:'순두부젤라또', d:'초당 순두부로 만든 젤라또의 원조. 고소함이 신세계.', tip:'인절미 토핑 추가가 국룰'},
+  {n:'경포해변', c:'sight', a:'경포', h:'24시간', b:null, cd:[], th:['자연'], p:92, tag:'경포해변', d:'강릉의 대표 해변. 소나무길 산책과 해변 그네 포토존까지.', tip:'자전거 빌려 경포호 한 바퀴 코스 추천'},
+  {n:'오죽헌', c:'sight', a:'경포', h:'09:00-18:00', b:null, cd:[], th:['역사'], p:88, tag:'오죽헌', d:'신사임당과 율곡 이이가 나고 자란 집. 검은 대나무 숲이 인상적.', tip:'5만원권·5천원권 배경으로 인증샷'},
+  {n:'주문진 BTS 버스정류장', c:'sight', a:'주문진', h:'24시간', b:null, cd:[], th:['자연'], p:90, tag:'주문진버스정류장', d:'BTS 앨범 재킷 촬영지. 바다를 등진 버스정류장 하나로 성지가 된 곳.', tip:'사진 줄 서는 곳 — 오전이 한산'},
+  {n:'정동진 해변', c:'sight', a:'정동진', h:'24시간', b:null, cd:[], th:['자연'], p:89, tag:'정동진', d:'기차역이 바다와 가장 가까운 곳. 모래시계공원과 일출 명소.', tip:'일출 보려면 첫날 밤 숙소를 근처로'},
+  {n:'하슬라아트월드', c:'sight', a:'정동진', h:'09:00-18:00', b:null, cd:[], th:['자연'], p:87, tag:'하슬라아트월드', d:'바다 절벽 위 미술관. 야외 조각공원에서 동해를 배경으로 한 설치미술.', tip:'뮤지엄호텔 카페 오션뷰도 함께'},
+  {n:'강문해변', c:'sight', a:'경포', h:'24시간', b:null, cd:[], th:['자연'], p:88, tag:'강문해변', d:'솟대다리와 포토존으로 유명한 아기자기한 해변. 경포에서 도보로 연결.', tip:'커피 들고 해변 산책 코스로 최적'},
+  {n:'경포호 야간 산책', c:'night', a:'경포', h:'00:00-24:00', b:null, cd:[], th:['자연','야경'], p:87, tag:'경포호', d:'호수 둘레를 따라 조명이 은은한 밤 산책 코스. 벚꽃 시즌 야벚꽃이 절정.', tip:'봄엔 벚꽃, 여름엔 바람 — 사계절 다 좋아요'},
+  {n:'월화거리', c:'night', a:'시내', h:'18:00-24:00', b:null, cd:[], th:['시장'], p:86, tag:'강릉월화거리', d:'옛 철길을 걷는 거리로 바꾼 강릉 밤 산책로. 주말엔 버스킹과 야시장.', tip:'시즌제 야시장 운영 여부는 방문 전 확인'}
+]},
+{ key:'gyeongju', name:'경주', emoji:'🏯', lat:35.8562, lng:129.2247, grad:'linear-gradient(135deg,#C33764,#8E5BAF)',
+  tagline:'지붕 없는 박물관', places:[
+  {n:'황남빵 본점', c:'food', a:'황남·황리단길', h:'08:00-22:00', b:null, cd:[], th:[], p:91, tag:'황남빵', d:'1939년부터 이어온 경주 대표 간식. 얇은 피에 팥이 꽉 찬 갓 구운 빵.', tip:'갓 나온 빵 타이밍이 최고 — 선물 박스 인기'},
+  {n:'교리김밥 본점', c:'food', a:'교동', h:'08:30-17:30', b:null, cd:['화'], th:[], p:90, tag:'교리김밥', d:'계란지단을 산처럼 쌓은 김밥. 단순한데 계속 생각나는 맛.', tip:'화요일 휴무 · 재료 소진 시 조기 마감'},
+  {n:'별채반 교동쌈밥', c:'food', a:'황남·황리단길', h:'11:00-20:30', b:'15:30-17:00', cd:[], th:[], p:89, tag:'별채반', d:'곤달비비빔밥과 쌈밥 한 상. 경주 나물 요리의 정갈한 정석.', tip:'브레이크타임(15:30~17:00) 피해서 방문'},
+  {n:'경주 십원빵', c:'food', a:'황남·황리단길', h:'10:00-21:00', b:null, cd:[], th:['쇼핑'], p:87, tag:'십원빵', d:'십원 동전 모양 안에 모짜렐라가 쭉 늘어나는 황리단길 대표 길거리 간식.', tip:'갓 구운 걸로 — 늘어나는 치즈 영상 각'},
+  {n:'명동쫄면', c:'food', a:'경주시내', h:'10:30-19:30', b:null, cd:[], th:[], p:86, tag:'경주명동쫄면', d:'경주 시내 40년 노포. 매콤새콤 쫄면과 수제 왕만두 조합.', tip:'현지인 추천 맛집 — 김밥까지 세트로'},
+  {n:'팔우정 해장국거리', c:'food', a:'경주시내', h:'06:00-22:00', b:null, cd:[], th:['시장'], p:85, tag:'팔우정해장국', d:'묵과 콩나물이 들어간 경주식 해장국 골목. 이른 아침 든든한 한 그릇.', tip:'아침 일정 시작 전 방문 추천'},
+  {n:'어니스트밀크 황리단길점', c:'cafe', a:'황남·황리단길', h:'10:00-21:00', b:null, cd:[], th:[], p:88, tag:'어니스트밀크', d:'경주 목장 우유로 만든 소프트아이스크림. 진한 우유 맛의 정직한 디저트.', tip:'우유 식빵도 같이 — 품절 주의'},
+  {n:'스타벅스 경주보문호수R점', c:'cafe', a:'보문', h:'08:00-22:00', b:null, cd:[], th:['자연'], p:89, tag:'스타벅스경주보문호수', d:'보문호수가 통유리로 펼쳐지는 리저브 매장. 벚꽃 시즌엔 전국구 성지.', tip:'호수 산책 후 창가 자리에서 휴식'},
+  {n:'황리단길 카페골목', c:'cafe', a:'황남·황리단길', h:'10:00-22:00', b:null, cd:[], th:['쇼핑'], p:90, tag:'황리단길카페', d:'한옥 개조 카페들이 이어지는 골목. 루프탑에서 대릉원 고분 뷰를 즐길 수 있음.', tip:'고분 뷰 루프탑 카페는 해질녘이 절정'},
+  {n:'대릉원 · 천마총', c:'sight', a:'황남·황리단길', h:'09:00-22:00', b:null, cd:[], th:['역사'], p:95, tag:'대릉원', d:'거대한 고분 사이를 걷는 신라의 정원. 목련 포토스팟(3~4월)으로도 유명.', tip:'밤 산책도 운치 — 야간에도 개방'},
+  {n:'첨성대', c:'sight', a:'황남·황리단길', h:'09:00-22:00', b:null, cd:[], th:['역사'], p:93, tag:'첨성대', d:'동양에서 가장 오래된 천문대. 주변 꽃밭이 계절마다 바뀌어 사진 명소.', tip:'밤 조명 켜진 첨성대가 진짜 매력'},
+  {n:'불국사', c:'sight', a:'불국사·토함산', h:'09:00-18:00', b:null, cd:[], th:['역사'], p:94, tag:'불국사', d:'유네스코 세계문화유산. 다보탑·석가탑과 청운교의 균형미.', tip:'석굴암과 묶어 반나절 코스로'},
+  {n:'석굴암', c:'sight', a:'불국사·토함산', h:'09:00-18:00', b:null, cd:[], th:['역사'], p:90, tag:'석굴암', d:'토함산 중턱 석굴 속 본존불. 동해를 바라보는 신라 예술의 정점.', tip:'불국사에서 차량 15분 — 아침 공기가 최고'},
+  {n:'국립경주박물관', c:'sight', a:'교동', h:'10:00-18:00', b:null, cd:[], th:['역사'], p:89, tag:'국립경주박물관', d:'성덕대왕신종(에밀레종)과 금관을 실물로. 무료 관람의 품격.', tip:'대릉원·첨성대와 도보 동선으로 묶기 좋음'},
+  {n:'황리단길', c:'sight', a:'황남·황리단길', h:'10:00-22:00', b:null, cd:[], th:['쇼핑'], p:94, tag:'황리단길', d:'한옥 거리에 소품샵·사진관·디저트집이 가득. 경주 여행의 베이스캠프.', tip:'한복 대여하고 대릉원까지 걸어보세요'},
+  {n:'보문호수 둘레길', c:'sight', a:'보문', h:'24시간', b:null, cd:[], th:['자연','힐링'], p:88, tag:'보문호수', d:'호수를 따라 걷는 산책로. 봄 벚꽃 터널로는 전국 최상위권.', tip:'자전거 대여해서 한 바퀴 코스도 인기'},
+  {n:'동궁과 월지', c:'night', a:'교동', h:'09:00-22:00', b:null, cd:[], th:['역사','야경'], p:97, tag:'동궁과월지', d:'연못에 비친 야경이 국내 원탑급. 해 진 직후 입장이 골든타임.', tip:'입장 마감 21:30 — 야경은 일몰 30분 후부터'},
+  {n:'월정교 야경', c:'night', a:'교동', h:'00:00-24:00', b:null, cd:[], th:['역사','야경'], p:91, tag:'월정교', d:'조명이 켜진 다리가 물 위에 데칼코마니처럼 반영되는 야경 명소.', tip:'조명은 보통 22시 전후 소등 — 동궁과 월지와 연계'}
+]},
+{ key:'jeonju', name:'전주', emoji:'🍲', lat:35.8242, lng:127.1480, grad:'linear-gradient(135deg,#DA4453,#89216B)',
+  tagline:'한옥과 미식의 도시', places:[
+  {n:'현대옥 남부시장점', c:'food', a:'남부시장', h:'06:00-15:00', b:null, cd:[], th:['시장'], p:92, tag:'현대옥', d:'새벽부터 여는 콩나물국밥 성지. 수란에 국물 부어 먹는 게 국룰.', tip:'아침 해장 코스 원탑 — 오징어 사리 추가 추천'},
+  {n:'조점례남문피순대', c:'food', a:'남부시장', h:'09:00-21:00', b:null, cd:[], th:['시장'], p:91, tag:'조점례남문피순대', d:'피순대 하면 전국구로 불리는 집. 순대국밥 국물이 진하고 얼큰함.', tip:'피순대 반 접시+국밥 조합 추천'},
+  {n:'베테랑칼국수', c:'food', a:'한옥마을', h:'09:00-21:00', b:null, cd:[], th:[], p:90, tag:'베테랑칼국수', d:'들깨와 계란이 풀린 걸쭉한 칼국수. 한옥마을 산책 중 든든한 한 끼.', tip:'쫄면·만두도 같이 시키는 게 정석'},
+  {n:'하숙영가마솥비빔밥', c:'food', a:'한옥마을', h:'10:00-20:00', b:null, cd:[], th:[], p:89, tag:'하숙영가마솥비빔밥', d:'가마솥에 지은 밥으로 비비는 전주 육회비빔밥의 정석.', tip:'모주 한 잔 곁들이면 전주 감성 완성'},
+  {n:'풍년제과 본점', c:'food', a:'한옥마을', h:'08:00-22:00', b:null, cd:[], th:['쇼핑'], p:90, tag:'풍년제과', d:'수제 초코파이의 원조 PNB. 전주 여행 선물 1순위.', tip:'낱개로 맛보고 마음에 들면 박스로'},
+  {n:'왱이집', c:'food', a:'남부시장', h:'06:00-22:00', b:null, cd:[], th:[], p:89, tag:'왱이집', d:'콩나물국밥 양대산맥. 새벽부터 문 여는 전주 해장의 성지.', tip:'모주 한 잔과 함께가 전주 스타일'},
+  {n:'가족회관', c:'food', a:'전주시내', h:'11:00-20:00', b:null, cd:[], th:[], p:88, tag:'가족회관', d:'전주비빔밥 명인의 집. 유기그릇에 담긴 정갈한 한 상.', tip:'점심 시간대 예약 추천'},
+  {n:'카페 전망', c:'cafe', a:'한옥마을', h:'11:00-21:00', b:null, cd:[], th:[], p:90, tag:'카페전망', d:'한옥마을 기와지붕이 파도처럼 펼쳐지는 루프탑 카페.', tip:'노을 시간대 루프탑 자리 경쟁 치열'},
+  {n:'외할머니솜씨', c:'cafe', a:'한옥마을', h:'11:00-20:00', b:null, cd:[], th:[], p:88, tag:'외할머니솜씨', d:'흑임자 인절미 빙수로 유명한 한옥 디저트 카페. 마당 좌석 감성이 좋음.', tip:'빙수는 2인 1개면 충분'},
+  {n:'전주한옥마을', c:'sight', a:'한옥마을', h:'24시간', b:null, cd:[], th:['역사'], p:95, tag:'전주한옥마을', d:'700여 채 한옥이 모인 국내 최대 한옥 군락. 한복 입고 걷는 골목이 곧 포토존.', tip:'한복 대여 후 경기전·전동성당 동선이 국룰'},
+  {n:'경기전', c:'sight', a:'한옥마을', h:'09:00-19:00', b:null, cd:[], th:['역사'], p:92, tag:'경기전', d:'태조 이성계의 어진을 모신 곳. 대나무숲 길이 사진 명소.', tip:'동절기(11~2월)는 18시 마감'},
+  {n:'전동성당', c:'sight', a:'한옥마을', h:'09:00-18:00', b:null, cd:[], th:['역사'], p:91, tag:'전동성당', d:'로마네스크 양식의 아름다운 성당. 한옥마을과 맞닿은 이국적 풍경.', tip:'미사·공사로 내부 관람 제한될 수 있음 — 외관만으로도 충분'},
+  {n:'오목대', c:'sight', a:'한옥마을', h:'24시간', b:null, cd:[], th:['역사','자연'], p:88, tag:'오목대', d:'한옥마을 전경을 한눈에 담는 언덕 뷰포인트. 노을 명당.', tip:'올라가는 길 5분 — 해질녘 강추'},
+  {n:'자만벽화마을', c:'sight', a:'한옥마을', h:'24시간', b:null, cd:[], th:[], p:86, tag:'자만벽화마을', d:'오목대 건너편 언덕의 알록달록 벽화 골목.', tip:'오목대와 육교로 연결 — 같이 묶어 30분 코스'},
+  {n:'전주향교', c:'sight', a:'한옥마을', h:'09:00-18:00', b:null, cd:[], th:['역사'], p:85, tag:'전주향교', d:'수백 년 은행나무가 지키는 고즈넉한 향교. 사극 단골 촬영지.', tip:'가을 은행잎 시즌엔 인생샷 보장'},
+  {n:'남부시장 청년몰', c:'sight', a:'남부시장', h:'11:00-20:00', b:null, cd:['월'], th:['시장','쇼핑'], p:87, tag:'남부시장청년몰', d:'전통시장 2층에 청년 상인들의 개성 가게가 모인 공간.', tip:'월요일 휴무 가게 많음 — 화~일 방문 추천'},
+  {n:'남부시장 야시장', c:'night', a:'남부시장', h:'18:00-24:00', b:null, cd:['일','월','화','수','목'], th:['시장'], p:93, tag:'남부시장야시장', d:'금·토 밤에만 열리는 먹거리 야시장. 문어꼬치·야끼만두가 스테디셀러.', tip:'금·토요일만 개장 — 일정을 주말에 맞추면 최고'},
+  {n:'한옥마을 야경 산책', c:'night', a:'한옥마을', h:'00:00-24:00', b:null, cd:[], th:['역사','야경'], p:89, tag:'전주한옥마을야경', d:'은은한 조명이 켜진 한옥 골목의 밤. 낮과는 전혀 다른 고즈넉함.', tip:'전동성당 야간 조명과 함께 보면 완벽'}
+]}
+];
+
+/* 월별 평년 기후 (기상청 평년값 기반 근사치) — [최고, 최저, 강수메모] */
+const CLIMATE = {
+  seoul:     [[2,-6,'건조·한파'],[5,-4,'꽃샘추위'],[11,1,'일교차 큼'],[18,7,'맑고 쾌적'],[24,13,'나들이 최적'],[28,18,'더위 시작'],[30,22,'장마·무더위'],[31,23,'폭염·소나기'],[27,17,'가을 시작'],[20,10,'단풍·쾌청'],[12,3,'쌀쌀'],[4,-3,'초겨울']],
+  busan:     [[8,-1,'맑고 건조'],[10,1,'봄기운'],[14,5,'벚꽃 시즌'],[18,10,'온화'],[22,14,'바다 나들이'],[25,18,'초여름'],[28,22,'장마·습함'],[30,24,'무더위'],[26,20,'태풍 유의'],[22,14,'쾌청'],[16,8,'선선'],[10,2,'온화한 겨울']],
+  jeju:      [[9,3,'바람 강함'],[10,4,'유채꽃 시작'],[13,6,'봄꽃'],[18,10,'여행 최적'],[22,15,'신록'],[25,19,'수국 시즌'],[29,23,'장마·습함'],[30,24,'무더위·태풍'],[26,20,'태풍 유의'],[21,15,'억새 시즌'],[16,9,'감귤 시즌'],[11,5,'바람·동백']],
+  gangneung: [[5,-4,'눈 많음'],[7,-2,'꽃샘추위'],[11,2,'일교차 큼'],[17,8,'쾌청'],[22,13,'나들이 최적'],[24,17,'시원한 초여름'],[28,21,'장마'],[29,22,'피서 절정'],[25,17,'가을 바다'],[20,11,'단풍'],[13,4,'쌀쌀'],[7,-2,'눈꽃']],
+  gyeongju:  [[6,-4,'건조'],[9,-2,'꽃샘추위'],[14,2,'벚꽃 준비'],[20,8,'벚꽃 절정'],[25,13,'신록'],[28,18,'더위 시작'],[31,22,'무더위'],[32,23,'폭염'],[27,17,'가을 시작'],[21,10,'단풍·쾌청'],[14,3,'쌀쌀'],[8,-2,'겨울']],
+  jeonju:    [[4,-5,'한파'],[7,-3,'꽃샘추위'],[13,2,'봄 시작'],[19,8,'벚꽃'],[25,13,'나들이 최적'],[28,18,'더위 시작'],[31,22,'장마·무더위'],[32,23,'폭염'],[28,17,'가을 시작'],[21,9,'단풍·쾌청'],[13,3,'쌀쌀'],[6,-2,'겨울']]
+};
+const WMO = [
+  [0,'☀️','맑음'],[1,'🌤️','대체로 맑음'],[2,'⛅','구름 조금'],[3,'☁️','흐림'],
+  [45,'🌫️','안개'],[48,'🌫️','안개'],[51,'🌦️','이슬비'],[53,'🌦️','이슬비'],[55,'🌧️','이슬비'],
+  [61,'🌧️','비'],[63,'🌧️','비'],[65,'🌧️','강한 비'],[66,'🌧️','얼음비'],[67,'🌧️','얼음비'],
+  [71,'🌨️','눈'],[73,'🌨️','눈'],[75,'❄️','강한 눈'],[77,'❄️','싸락눈'],
+  [80,'🌦️','소나기'],[81,'🌧️','소나기'],[82,'⛈️','강한 소나기'],[85,'🌨️','소낙눈'],[86,'🌨️','소낙눈'],
+  [95,'⛈️','뇌우'],[96,'⛈️','뇌우'],[99,'⛈️','뇌우']
+];
+function wmoInfo(code){ let hit=[3,'☁️','흐림']; for(const w of WMO){ if(code>=w[0]) hit=w; } for(const w of WMO){ if(code===w[0]) return {e:w[1],t:w[2]}; } return {e:hit[1],t:hit[2]}; }
+
+const PACES = [
+  {key:'relaxed', label:'🌿 여유롭게', desc:'하루 5곳'},
+  {key:'normal',  label:'⚖️ 알차게',   desc:'하루 7곳'},
+  {key:'packed',  label:'🔥 빡빡하게', desc:'하루 8곳'}
+];
+const SLOT_TEMPLATES = {
+  relaxed: [
+    {t:'10:30', type:'food', label:'브런치 · 늦은 아침', allowCafe:true},
+    {t:'13:00', type:'sight', label:'오후 나들이'},
+    {t:'15:30', type:'cafe', label:'카페 타임'},
+    {t:'18:30', type:'food', label:'저녁 식사'},
+    {t:'20:30', type:'night', label:'밤 마무리'}
+  ],
+  normal: [
+    {t:'09:30', type:'food', label:'아침 식사', allowCafe:true},
+    {t:'11:00', type:'sight', label:'오전 나들이'},
+    {t:'13:00', type:'food', label:'점심 식사'},
+    {t:'14:30', type:'sight', label:'오후 나들이'},
+    {t:'16:30', type:'cafe', label:'카페 타임'},
+    {t:'18:30', type:'food', label:'저녁 식사'},
+    {t:'20:30', type:'night', label:'밤 마무리'}
+  ],
+  packed: [
+    {t:'08:30', type:'food', label:'아침 식사', allowCafe:true},
+    {t:'10:00', type:'sight', label:'오전 나들이 ①'},
+    {t:'12:00', type:'food', label:'점심 식사'},
+    {t:'13:30', type:'sight', label:'오후 나들이 ①'},
+    {t:'15:30', type:'cafe', label:'카페 타임'},
+    {t:'17:00', type:'sight', label:'오후 나들이 ②'},
+    {t:'19:00', type:'food', label:'저녁 식사'},
+    {t:'21:00', type:'night', label:'밤 마무리'}
+  ]
+};
+const COMPANIONS = ['🧍 혼자','💕 연인과','👯 친구와','👨‍👩‍👧 가족과'];
+const INTERESTS = [
+  {key:'cafe',   label:'☕ 카페 투어'},
+  {key:'night',  label:'🌙 야경·밤'},
+  {key:'자연',   label:'🌊 자연·바다'},
+  {key:'역사',   label:'🏛️ 역사·문화'},
+  {key:'쇼핑',   label:'🛍️ 쇼핑·핫플'},
+  {key:'시장',   label:'🧺 시장·야시장'}
+];
+
+/* =====================================================================
+   상태
+   ===================================================================== */
+let form = {
+  region:null, start:null, end:null,
+  companion:'💕 연인과', pace:'normal',
+  interests:new Set(['cafe','night','자연','역사','쇼핑','시장'])
+};
+let plan = null;          // {regionKey, days:[{date(ISO), area, slots:[{t,label,type,place,alts,altIdx,warns}]}]}
+let wxData = null;        // {'YYYY-MM-DD':{code,hi,lo,pop}}
+let wxLive = null;        // {temp, code}
+
+const $ = s=>document.querySelector(s);
+const byKey = k=>REGIONS.find(r=>r.key===k);
+function placeId(r,p){ return r.key+'::'+p.n; }
+function findPlace(id){ const [k,n]=id.split('::'); const r=byKey(k); return r?r.places.find(p=>p.n===n):null; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove('show'),2600); }
+function pad(n){ return String(n).padStart(2,'0'); }
+function iso(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function fromISO(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function fmtK(s){ const d=fromISO(s); return (d.getMonth()+1)+'월 '+d.getDate()+'일 ('+WEEK[d.getDay()]+')'; }
+
+/* =====================================================================
+   영업시간 · 휴무 로직
+   ===================================================================== */
+function parseHM(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
+function hoursOf(p){
+  if(p.h==='24시간') return {o:0,c:1440,all:true};
+  const m=p.h.match(/(\d{2}:\d{2})-(\d{2}:\d{2})/);
+  if(!m) return {o:0,c:1440,all:true};
+  return {o:parseHM(m[1]), c:m[2]==='24:00'?1440:parseHM(m[2]), all:false};
+}
+function breakOf(p){
+  if(!p.b) return null;
+  const m=p.b.match(/(\d{2}:\d{2})-(\d{2}:\d{2})/);
+  return m?{o:parseHM(m[1]),c:parseHM(m[2])}:null;
+}
+/* date에 정기휴무인가? cd 항목: '월' 또는 '첫째 월' */
+function isClosedOn(p, date){
+  if(!p.cd || !p.cd.length) return false;
+  const w = WEEK[date.getDay()];
+  const nth = Math.floor((date.getDate()-1)/7); // 0=첫째
+  return p.cd.some(entry=>{
+    const parts = entry.split(' ');
+    if(parts.length===2) return NTH.indexOf(parts[0])===nth && parts[1]===w;
+    return entry===w;
+  });
+}
+function isOpenAt(p, minutes){
+  const h=hoursOf(p); if(h.all) return true;
+  return minutes>=h.o && minutes<h.c;
+}
+function inBreakAt(p, minutes){
+  const b=breakOf(p); if(!b) return false;
+  return minutes>=b.o && minutes<b.c;
+}
+/* 지금 이 순간의 영업 상태 (오늘 기준) */
+function liveStatus(p){
+  const now = new Date();
+  const min = now.getHours()*60+now.getMinutes();
+  if(isClosedOn(p, now)) return {cls:'st-dayoff', txt:'오늘 정기휴무'};
+  const h = hoursOf(p);
+  if(h.all) return {cls:'st-open', txt:'지금 개방 중'};
+  if(min<h.o) return {cls:'st-closed', txt:'영업 전 · '+p.h.split('-')[0]+' 오픈'};
+  if(min>=h.c) return {cls:'st-closed', txt:'오늘 영업 종료'};
+  if(inBreakAt(p,min)) return {cls:'st-break', txt:'지금 브레이크타임'};
+  return {cls:'st-open', txt:'지금 영업 중'};
+}
+
+/* =====================================================================
+   코스 생성 엔진
+   ===================================================================== */
+function themeBonus(p){
+  let b=0;
+  for(const th of (p.th||[])) if(form.interests.has(th)) b+=6;
+  return b;
+}
+function scoreOf(p, type, anchorArea){
+  let s = p.p + themeBonus(p) + Math.random()*4;
+  if(anchorArea && p.a===anchorArea) s += (type==='food'?12:10);
+  return s;
+}
+function candidatesFor(region, slot, date, slotMin, usedIds, usedToday, anchorArea){
+  const warns=[];
+  const typeOk = p => {
+    if(slot.type==='sight') return p.c==='sight';
+    if(slot.type==='night') return p.c==='night';
+    if(slot.type==='cafe')  return p.c==='cafe';
+    if(slot.type==='food')  return p.c==='food' || (slot.allowCafe && p.c==='cafe');
+    return false;
+  };
+  // 같은 날 중복은 어떤 경우에도 금지
+  const pool = region.places.filter(p=>typeOk(p) && !usedToday.has(placeId(region,p)));
+  const rank = list => list
+    .map(p=>({p, s:scoreOf(p, slot.type, anchorArea)}))
+    .sort((a,b)=>b.s-a.s).map(x=>x.p);
+
+  // 1단계: 미방문 + 휴무 아님 + 영업시간 내 + (식사면) 브레이크 안 겹침
+  let c = rank(pool.filter(p=>
+    !usedIds.has(placeId(region,p)) && !isClosedOn(p,date) &&
+    isOpenAt(p,slotMin) && !(slot.type==='food' && inBreakAt(p,slotMin))
+  ));
+  if(c.length) return {list:c, warns};
+
+  // 2단계: 브레이크타임 겹침 허용
+  c = rank(pool.filter(p=>
+    !usedIds.has(placeId(region,p)) && !isClosedOn(p,date) && isOpenAt(p,slotMin)
+  ));
+  if(c.length){ warns.push({lv:'amber', msg:'⏰ 이 시간대는 브레이크타임과 겹칠 수 있어요 — 시간 확인 추천'}); return {list:c, warns}; }
+
+  // 3단계: 영업시간 밖 허용
+  c = rank(pool.filter(p=>!usedIds.has(placeId(region,p)) && !isClosedOn(p,date)));
+  if(c.length){ warns.push({lv:'amber', msg:'⏰ 예정 시간과 영업시간이 어긋날 수 있어요 — 시간대 조정 필요'}); return {list:c, warns}; }
+
+  // 4단계: 다른 날 방문지 재방문 허용 (당일 중복은 여전히 금지)
+  c = rank(pool.filter(p=>!isClosedOn(p,date) && isOpenAt(p,slotMin)));
+  if(c.length){ warns.push({lv:'amber', msg:'🔁 후보가 소진되어 다른 날 코스와 겹칠 수 있어요'}); return {list:c, warns}; }
+  c = rank(pool.filter(p=>!isClosedOn(p,date)));
+  if(c.length){ warns.push({lv:'amber', msg:'🔁 후보가 소진되어 다른 날 코스와 겹치거나 시간이 어긋날 수 있어요'}); return {list:c, warns}; }
+
+  // 5단계: 휴무 무시 (최후 — 반드시 경고)
+  c = rank(pool);
+  if(c.length){ warns.push({lv:'red', msg:'❗ 이 날은 정기휴무일 가능성이 높아요 — 반드시 확인하거나 교체하세요'}); return {list:c, warns}; }
+  return {list:[], warns};
+}
+
+function buildPlan(){
+  const region = byKey(form.region);
+  const start = fromISO(form.start), end = fromISO(form.end);
+  const days=[];
+  const usedIds = new Set();
+
+  // 날짜 나열
+  const dates=[];
+  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)) dates.push(new Date(d));
+
+  // 하루 앵커 지역: 총 인기 합 기준 정렬 후 순환 배정
+  const areaScore={};
+  for(const p of region.places){ areaScore[p.a]=(areaScore[p.a]||0)+p.p; }
+  const areas = Object.keys(areaScore).sort((a,b)=>areaScore[b]-areaScore[a]);
+
+  let template = SLOT_TEMPLATES[form.pace];
+
+  dates.forEach((date, di)=>{
+    const anchorArea = areas[di % areas.length];
+    const slots=[];
+    const usedToday = new Set();
+    for(const tpl of template){
+      if(tpl.type==='cafe' && !form.interests.has('cafe')){
+        // 카페 대신 볼거리
+        var slotDef = Object.assign({}, tpl, {type:'sight', label:'추가 나들이'});
+      } else if(tpl.type==='night' && !form.interests.has('night')){
+        continue; // 야경 제외
+      } else {
+        var slotDef = tpl;
+      }
+      const slotMin = parseHM(slotDef.t);
+      const {list, warns} = candidatesFor(region, slotDef, date, slotMin, usedIds, usedToday, anchorArea);
+      const place = list[0]||null;
+      if(place){ usedIds.add(placeId(region,place)); usedToday.add(placeId(region,place)); }
+      // 선택된 곳 자체 경고
+      const pw = [...warns];
+      if(place){
+        if(isClosedOn(place,date)) pw.push({lv:'red', msg:'❗ '+WEEK[date.getDay()]+'요일 정기휴무 — 다른 곳으로 교체하세요'});
+        else if(slotDef.type==='food' && inBreakAt(place,slotMin)) pw.push({lv:'amber', msg:'⏰ 예정 시각이 브레이크타임과 겹쳐요'});
+      }
+      slots.push({
+        t:slotDef.t, label:slotDef.label, type:slotDef.type,
+        placeId: place?placeId(region,place):null,
+        alts: list.slice(0,8).map(p=>placeId(region,p)),
+        altIdx: 0,
+        warns: pw
+      });
+    }
+    days.push({date: iso(date), area: anchorArea, slots});
+  });
+
+  return {regionKey: region.key, createdAt: Date.now(), days, activeDay:0};
+}
+
+/* 자동 점검: 생성된 플랜 무결성 검사 (테스트에서도 사용) */
+function auditPlan(pl){
+  const issues=[];
+  if(!pl || !pl.days.length){ issues.push({lv:'red', msg:'플랜이 비어 있습니다'}); return issues; }
+  const region = byKey(pl.regionKey);
+  pl.days.forEach((day, di)=>{
+    const date = fromISO(day.date);
+    const seen = new Set();
+    day.slots.forEach(slot=>{
+      if(!slot.placeId){ issues.push({lv:'amber', msg:(di+1)+'일차 '+slot.t+' 슬롯에 추천 후보가 없어요'}); return; }
+      const p = findPlace(slot.placeId);
+      if(!p){ issues.push({lv:'red', msg:'장소 데이터 오류: '+slot.placeId}); return; }
+      if(seen.has(slot.placeId)) issues.push({lv:'red', msg:(di+1)+'일차에 "'+p.n+'"이(가) 중복되었어요'});
+      seen.add(slot.placeId);
+      if(isClosedOn(p,date)) issues.push({lv:'red', msg:(di+1)+'일차 '+fmtK(day.date)+' — "'+p.n+'" 정기휴무일과 겹침'});
+      const slotMin=parseHM(slot.t);
+      if(!isOpenAt(p,slotMin)) issues.push({lv:'amber', msg:(di+1)+'일차 '+slot.t+' "'+p.n+'" 영업시간('+p.h+') 밖 — 시간 조정 추천'});
+      else if(slot.type==='food' && inBreakAt(p,slotMin)) issues.push({lv:'amber', msg:(di+1)+'일차 '+slot.t+' "'+p.n+'" 브레이크타임('+p.b+')과 겹침'});
+    });
+  });
+  return issues;
+}
+
+/* =====================================================================
+   날씨
+   ===================================================================== */
+async function fetchWeather(region, startISO, endISO){
+  wxData=null; wxLive=null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const maxDate = new Date(today); maxDate.setDate(maxDate.getDate()+15);
+  const s = fromISO(startISO), e = fromISO(endISO);
+  const qs = s<=maxDate; // 예보 범위와 겹치는가
+  const clampS = s<today ? today : s;
+  const clampE = e>maxDate ? maxDate : e;
+  try{
+    const ctrl = new AbortController();
+    const tm = setTimeout(()=>ctrl.abort(), 6000);
+    let url = 'https://api.open-meteo.com/v1/forecast?latitude='+region.lat+'&longitude='+region.lng
+      +'&current_weather=true&timezone=Asia%2FSeoul';
+    if(qs && clampS<=clampE){
+      url += '&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+          +'&start_date='+iso(clampS)+'&end_date='+iso(clampE);
+    }
+    const res = await fetch(url, {signal:ctrl.signal});
+    clearTimeout(tm);
+    if(!res.ok) throw new Error('weather http '+res.status);
+    const j = await res.json();
+    if(j.current_weather) wxLive = {temp:Math.round(j.current_weather.temperature), code:j.current_weather.weathercode};
+    if(j.daily && j.daily.time){
+      wxData={};
+      j.daily.time.forEach((d,i)=>{
+        wxData[d]={
+          code:j.daily.weathercode[i],
+          hi:Math.round(j.daily.temperature_2m_max[i]),
+          lo:Math.round(j.daily.temperature_2m_min[i]),
+          pop:j.daily.precipitation_probability_max ? j.daily.precipitation_probability_max[i] : null
+        };
+      });
+    }
+    return true;
+  }catch(err){
+    return false;
+  }
+}
+function climateFor(regionKey, dateISO){
+  const m = fromISO(dateISO).getMonth();
+  const c = CLIMATE[regionKey][m];
+  return {hi:c[0], lo:c[1], memo:c[2]};
+}
+
+/* =====================================================================
+   렌더링 — 설정 화면
+   ===================================================================== */
+function renderSetup(){
+  // 지역
+  $('#region-grid').innerHTML = REGIONS.map(r=>
+    '<button class="region-card'+(form.region===r.key?' on':'')+'" style="background:'+r.grad+'" onclick="pickRegion(\''+r.key+'\')">'
+    +'<span class="emo">'+r.emoji+'</span>'
+    +'<span class="nm">'+r.name+'</span><span class="tg">'+r.tagline+'</span></button>'
+  ).join('');
+  // 동행
+  $('#companion-row').innerHTML = COMPANIONS.map(c=>
+    '<button class="chip'+(form.companion===c?' on warm':'')+'" onclick="form.companion=\''+c+'\';renderSetup()">'+c+'</button>'
+  ).join('');
+  // 페이스
+  $('#pace-row').innerHTML = PACES.map(p=>
+    '<button class="chip'+(form.pace===p.key?' on warm':'')+'" onclick="form.pace=\''+p.key+'\';renderSetup()">'+p.label+' <span style="opacity:.65;font-weight:600;font-size:12px">'+p.desc+'</span></button>'
+  ).join('');
+  // 취향
+  $('#interest-row').innerHTML = INTERESTS.map(i=>
+    '<button class="chip'+(form.interests.has(i.key)?' on':'')+'" onclick="toggleInterest(\''+i.key+'\')">'+i.label+'</button>'
+  ).join('');
+  updateTripLen();
+}
+function pickRegion(k){ form.region=k; renderSetup(); }
+function toggleInterest(k){
+  if(form.interests.has(k)) form.interests.delete(k); else form.interests.add(k);
+  renderSetup();
+}
+function updateTripLen(){
+  const s=$('#date-start').value, e=$('#date-end').value;
+  const el=$('#trip-len');
+  if(!s||!e){ el.textContent=''; return; }
+  const days = Math.round((fromISO(e)-fromISO(s))/86400000)+1;
+  if(days<1){ el.textContent='⚠️ 오는 날이 가는 날보다 빠를 수 없어요'; el.style.color='#C0313E'; return; }
+  el.style.color='';
+  el.textContent = days===1 ? '🚌 당일치기 일정이에요' : '🧳 '+(days-1)+'박 '+days+'일 일정이에요'+(days>7?' — 최대 7일까지 코스를 만들어 드려요':'');
+}
+function setQuickDate(kind){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const day=today.getDay();
+  let s,e;
+  if(kind==='thisWeekend'){
+    const sat=new Date(today); sat.setDate(sat.getDate()+((6-day+7)%7||7)); // 다가오는 토요일(오늘이 토요일이면 다음주 아님 → 오늘)
+    if(day===6) sat.setDate(today.getDate());
+    if(day===0){ sat.setDate(today.getDate()-1); } // 일요일이면 어제 토요일~오늘
+    s=sat; e=new Date(sat); e.setDate(e.getDate()+1);
+    if(e<today){ e=new Date(today); }
+    if(s<today){ s=new Date(today); }
+  } else if(kind==='nextWeekend'){
+    const sat=new Date(today); sat.setDate(sat.getDate()+((6-day+7)%7)+7);
+    s=sat; e=new Date(sat); e.setDate(e.getDate()+1);
+  } else { // threeDays: 다음주 금~일
+    const fri=new Date(today); fri.setDate(fri.getDate()+((5-day+7)%7)+7);
+    s=fri; e=new Date(fri); e.setDate(e.getDate()+2);
+  }
+  $('#date-start').value=iso(s); $('#date-end').value=iso(e);
+  updateTripLen();
+}
+
+/* =====================================================================
+   렌더링 — 결과 화면
+   ===================================================================== */
+function linkNaver(region,p){ return 'https://map.naver.com/p/search/'+encodeURIComponent(region.name+' '+p.n); }
+function linkInsta(p){ return 'https://www.instagram.com/explore/tags/'+encodeURIComponent(p.tag)+'/'; }
+function linkYoutube(region,p){ return 'https://www.youtube.com/results?search_query='+encodeURIComponent(region.name+' '+p.n); }
+function linkGoogle(region,p){ return 'https://www.google.com/maps/search/'+encodeURIComponent(region.name+' '+p.n); }
+
+function renderResult(){
+  const region = byKey(plan.regionKey);
+  const days = plan.days;
+  const nights = days.length-1;
+  const issues = auditPlan(plan);
+  window.__lastAudit = issues;
+
+  // 요약
+  const interestsTxt = [...form.interests].map(k=>{const i=INTERESTS.find(x=>x.key===k);return i?i.label.replace(/^\S+\s/,''):k;}).join(' · ');
+  const paceTxt = (PACES.find(p=>p.key===form.pace)||{}).label||'';
+  $('#summary').innerHTML =
+    '<div class="kicker">MY CUSTOM COURSE</div>'
+    +'<h2>'+region.emoji+' '+esc(region.name)+' '+(nights===0?'당일치기':nights+'박 '+days.length+'일')+' 맞춤 코스</h2>'
+    +'<div class="meta">'+fmtK(days[0].date)+' ~ '+fmtK(days[days.length-1].date)
+    +' · '+esc(form.companion)+' · '+esc(paceTxt)+'<br>취향: '+esc(interestsTxt||'기본')+'</div>'
+    +'<div class="now-weather" id="now-weather" hidden></div>'
+    +'<div class="sum-actions">'
+    +'<button class="sum-btn hot" onclick="recheck()">🔄 실시간 재점검</button>'
+    +'<button class="sum-btn" onclick="openChecklist()">✅ 체크리스트</button>'
+    +'<button class="sum-btn" onclick="copyPlan()">📋 일정 복사</button>'
+    +'<button class="sum-btn" onclick="goSetup()">✏️ 조건 바꾸기</button>'
+    +'</div>';
+
+  // 점검 결과
+  const reds = issues.filter(i=>i.lv==='red'), ambers = issues.filter(i=>i.lv==='amber');
+  const auditEl = $('#audit-area');
+  if(!reds.length && !ambers.length){
+    auditEl.innerHTML = '<div class="audit-bar ok">🛡️ 자동 점검 통과 <span class="det">— 전 일정 휴무일·영업시간·브레이크타임 충돌 없음 ('+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})+' 기준)</span></div>';
+  } else {
+    const top = [...reds, ...ambers].slice(0,4).map(i=>esc(i.msg)).join('<br>');
+    auditEl.innerHTML = '<div class="audit-bar '+(reds.length?'warn':'warn')+'">'+(reds.length?'⚠️ 확인이 필요한 항목 '+ (reds.length+ambers.length) +'건':'ℹ️ 참고 '+ambers.length+'건')
+      +'<span class="det">'+top+'</span></div>';
+  }
+
+  renderWeatherStrip();
+  renderDayTabs();
+  renderDay();
+  updateNowWeather();
+}
+
+function renderWeatherStrip(){
+  const region = byKey(plan.regionKey);
+  const todayISO = iso(new Date());
+  let usedApi=false, usedClimate=false;
+  $('#weather-strip').innerHTML = plan.days.map(day=>{
+    const w = wxData && wxData[day.date];
+    let e,t,r;
+    if(w){ usedApi=true; const inf=wmoInfo(w.code); e=inf.e; t='<b>'+w.hi+'°</b> <span class="lo">'+w.lo+'°</span>'; r=inf.t+(w.pop!=null?' · 강수 '+w.pop+'%':''); }
+    else { usedClimate=true; const c=climateFor(plan.regionKey,day.date); e='🗓️'; t='<b>'+c.hi+'°</b> <span class="lo">'+c.lo+'°</span>'; r='평년 · '+c.memo; }
+    return '<div class="wx-chip'+(day.date===todayISO?' today':'')+'"><div class="d">'+fmtK(day.date)+'</div><div class="e">'+e+'</div><div class="t">'+t+'</div><div class="r">'+esc(r)+'</div></div>';
+  }).join('');
+  const src=[];
+  if(usedApi) src.push('🌐 Open-Meteo 실시간 예보');
+  if(usedClimate) src.push('🗓️ 예보 범위(16일) 밖 날짜는 월별 평년 기후');
+  $('#wx-src').textContent = src.length? '날씨 출처: '+src.join(' · ') : '';
+}
+function updateNowWeather(){
+  const el=$('#now-weather'); if(!el) return;
+  if(wxLive){
+    const inf=wmoInfo(wxLive.code);
+    el.hidden=false;
+    el.textContent = '지금 '+byKey(plan.regionKey).name+' '+inf.e+' '+wxLive.temp+'° · '+inf.t;
+  } else el.hidden=true;
+}
+
+function renderDayTabs(){
+  $('#day-tabs').innerHTML = plan.days.map((d,i)=>
+    '<button class="day-tab'+(plan.activeDay===i?' on':'')+'" onclick="plan.activeDay='+i+';renderDayTabs();renderDay();savePlan()">'
+    +'DAY '+(i+1)+'<span class="sm">'+fmtK(d.date)+'</span></button>'
+  ).join('');
+}
+
+function renderDay(){
+  const region = byKey(plan.regionKey);
+  const day = plan.days[plan.activeDay];
+  const date = fromISO(day.date);
+  const todayISO = iso(new Date());
+
+  let head = '<div class="day-head"><h3>DAY '+(plan.activeDay+1)+'</h3>'
+    +'<span class="area">📍 '+esc(day.area)+' 중심</span>'
+    +'<span class="wx">'+fmtK(day.date)+'</span></div>';
+
+  // 비 예보 팁
+  const w = wxData && wxData[day.date];
+  if(w && ((w.pop!=null && w.pop>=60) || w.code>=61)){
+    head += '<div class="rain-tip">☔ 이 날은 비 소식이 있어요 — 실내 위주(박물관·카페·시장)로 순서를 바꾸거나 우산을 꼭 챙기세요.</div>';
+  }
+
+  const body = day.slots.map((slot, si)=>{
+    if(!slot.placeId){
+      return '<div class="slot"><div class="time">'+slot.t+'</div><div class="empty-slot">이 시간대에 맞는 추천이 없어요. 자유 시간 또는 이동 시간으로 활용하세요 🙂</div></div>';
+    }
+    const p = findPlace(slot.placeId);
+    const cat = CAT[p.c];
+    const st = day.date===todayISO ? liveStatus(p) : null;
+    const warnsHtml = slot.warns && slot.warns.length
+      ? '<div class="pc-warns">'+slot.warns.map(w=>'<div class="pc-warn '+w.lv+'">'+esc(w.msg)+'</div>').join('')+'</div>' : '';
+    return '<div class="slot"><div class="time">'+slot.t+'</div>'
+      +'<div class="place-card">'
+      +'<div class="pc-top"><div style="flex:1;min-width:0">'
+        +'<div class="pc-label">'+esc(slot.label)+'</div>'
+        +'<div class="pc-name">'+cat.icon+' '+esc(p.n)+'<span class="area-tag">'+esc(p.a)+'</span></div>'
+      +'</div>'
+      +'<span class="cat-badge" style="background:'+cat.color+'">'+cat.label+'</span>'
+      +'<button class="shuffle-btn" title="다른 곳 추천" onclick="shuffleSlot('+si+')">↻</button>'
+      +'</div>'
+      +'<div class="pc-desc">'+esc(p.d)+'</div>'
+      +(p.tip?'<div class="pc-tip">💡 '+esc(p.tip)+'</div>':'')
+      +'<div class="pc-info">'
+        +'<span>🕒 <b>'+esc(p.h)+'</b></span>'
+        +(p.b?'<span>😴 브레이크 <b>'+esc(p.b)+'</b></span>':'')
+        +(p.cd&&p.cd.length?'<span>🚫 휴무 <b>'+esc(p.cd.join(', '))+'</b></span>':'<span>📅 연중무휴로 등록됨</span>')
+        +(st?'<span class="status-chip '+st.cls+'">● '+st.txt+'</span>':'')
+      +'</div>'
+      +warnsHtml
+      +'<div class="pc-links"><span class="lbl">실시간 확인</span>'
+        +'<a class="vlink" target="_blank" rel="noopener" href="'+linkNaver(region,p)+'">🟢 네이버 지도</a>'
+        +'<a class="vlink" target="_blank" rel="noopener" href="'+linkInsta(p)+'">📸 인스타 최신</a>'
+        +'<a class="vlink" target="_blank" rel="noopener" href="'+linkYoutube(region,p)+'">▶️ 유튜브</a>'
+        +'<a class="vlink" target="_blank" rel="noopener" href="'+linkGoogle(region,p)+'">🗺️ 구글 지도</a>'
+      +'</div>'
+      +'</div></div>';
+  }).join('');
+
+  $('#day-body').innerHTML = head+'<div class="timeline">'+body+'</div>';
+}
+
+/* 슬롯 교체 */
+function shuffleSlot(si){
+  const day = plan.days[plan.activeDay];
+  const slot = day.slots[si];
+  if(!slot.alts || slot.alts.length<2){ toast('이 시간대의 다른 후보가 없어요 🥲'); return; }
+  // 같은 날 이미 쓰인 곳 제외하고 순환
+  const usedToday = new Set(day.slots.filter((s,i)=>i!==si).map(s=>s.placeId));
+  for(let step=1; step<=slot.alts.length; step++){
+    const idx = (slot.altIdx+step) % slot.alts.length;
+    if(!usedToday.has(slot.alts[idx])){
+      slot.altIdx = idx;
+      slot.placeId = slot.alts[idx];
+      // 교체 후 경고 재계산
+      const p = findPlace(slot.placeId);
+      const date = fromISO(day.date);
+      const slotMin = parseHM(slot.t);
+      slot.warns = [];
+      if(isClosedOn(p,date)) slot.warns.push({lv:'red', msg:'❗ '+WEEK[date.getDay()]+'요일 정기휴무 — 다른 곳으로 교체하세요'});
+      else {
+        if(!isOpenAt(p,slotMin)) slot.warns.push({lv:'amber', msg:'⏰ 예정 시간과 영업시간이 어긋날 수 있어요 — 시간대 조정 필요'});
+        else if(slot.type==='food' && inBreakAt(p,slotMin)) slot.warns.push({lv:'amber', msg:'⏰ 예정 시각이 브레이크타임과 겹쳐요'});
+      }
+      renderDay(); savePlan();
+      toast('↻ "'+p.n+'"(으)로 교체했어요');
+      return;
+    }
+  }
+  toast('교체 가능한 다른 후보가 없어요 🥲');
+}
+
+/* =====================================================================
+   액션
+   ===================================================================== */
+async function generate(){
+  if(!form.region){ toast('🗺️ 여행 지역을 먼저 선택해주세요'); $('#region-grid').scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  const s=$('#date-start').value, e=$('#date-end').value;
+  if(!s||!e){ toast('📅 가는 날과 오는 날을 입력해주세요'); return; }
+  if(fromISO(e)<fromISO(s)){ toast('⚠️ 오는 날이 가는 날보다 빠를 수 없어요'); return; }
+  let endISO=e;
+  const len = Math.round((fromISO(e)-fromISO(s))/86400000)+1;
+  if(len>7){
+    const capped = fromISO(s); capped.setDate(capped.getDate()+6);
+    endISO = iso(capped);
+    toast('일정이 길어 7일까지만 코스를 만들었어요');
+  }
+  form.start=s; form.end=endISO;
+
+  plan = buildPlan();
+  window.__plan = plan;
+  await fetchWeather(byKey(form.region), form.start, form.end);
+  showResult();
+  savePlan();
+  const issues = auditPlan(plan);
+  if(!issues.length) toast('✨ 코스 완성! 자동 점검까지 통과했어요');
+  else toast('코스 완성! 확인이 필요한 항목 '+issues.length+'건이 있어요');
+}
+
+function showResult(){
+  $('#setup-view').hidden=true;
+  $('#result-view').hidden=false;
+  $('#btn-new').hidden=false;
+  $('#btn-checklist').hidden=false;
+  renderResult();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function goSetup(){
+  $('#result-view').hidden=true;
+  $('#setup-view').hidden=false;
+  $('#btn-new').hidden=true;
+  $('#btn-checklist').hidden=true;
+  renderSetup();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function recheck(){
+  toast('🔄 날씨·영업상태를 다시 점검하는 중…');
+  await fetchWeather(byKey(plan.regionKey), plan.days[0].date, plan.days[plan.days.length-1].date);
+  renderResult();
+  toast('✅ 재점검 완료 ('+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})+' 기준)');
+}
+
+function copyPlan(){
+  const region = byKey(plan.regionKey);
+  let txt = '🧭 '+region.name+' 여행 코스 (여로 YEORO)\n';
+  txt += fmtK(plan.days[0].date)+' ~ '+fmtK(plan.days[plan.days.length-1].date)+'\n\n';
+  plan.days.forEach((day,i)=>{
+    txt += '📅 DAY '+(i+1)+' · '+fmtK(day.date)+' — '+day.area+' 중심\n';
+    day.slots.forEach(s=>{
+      if(!s.placeId) return;
+      const p=findPlace(s.placeId);
+      txt += '  '+s.t+'  '+CAT[p.c].icon+' '+p.n+' ('+p.a+') · '+p.h+(p.b?' · 브레이크 '+p.b:'')+(p.cd&&p.cd.length?' · 휴무 '+p.cd.join(','):'')+'\n';
+    });
+    txt+='\n';
+  });
+  txt += '※ 방문 전 네이버 지도에서 폐업·임시휴무를 꼭 확인하세요!';
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject())
+    .then(()=>toast('📋 일정이 클립보드에 복사됐어요'))
+    .catch(()=>{
+      const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); toast('📋 일정이 클립보드에 복사됐어요'); }catch(e){ toast('복사에 실패했어요'); }
+      ta.remove();
+    });
+}
+
+/* 체크리스트 모달 */
+function openChecklist(){
+  if(!plan){ toast('먼저 코스를 만들어주세요'); return; }
+  const region = byKey(plan.regionKey);
+  $('#checklist-body').innerHTML = plan.days.map((day,i)=>{
+    const items = day.slots.filter(s=>s.placeId).map(s=>{
+      const p=findPlace(s.placeId);
+      return '<div class="ck-item"><input type="checkbox">'
+        +'<div class="nm">'+CAT[p.c].icon+' '+esc(p.n)+'<span class="s">'+s.t+' · '+esc(p.h)+(p.cd&&p.cd.length?' · 휴무 '+esc(p.cd.join(',')):'')+'</span></div>'
+        +'<a class="go" target="_blank" rel="noopener" href="'+linkNaver(region,p)+'">네이버</a>'
+        +'<a class="go ig" target="_blank" rel="noopener" href="'+linkInsta(p)+'">인스타</a>'
+        +'</div>';
+    }).join('');
+    return '<div class="ck-day">DAY '+(i+1)+' · '+fmtK(day.date)+'</div>'+items;
+  }).join('');
+  $('#modal-bg').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function closeChecklist(){
+  $('#modal-bg').classList.remove('show');
+  document.body.style.overflow='';
+}
+
+/* =====================================================================
+   저장 · 복원
+   ===================================================================== */
+const LS_KEY='yeoro_v1';
+function savePlan(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      form:{region:form.region,start:form.start,end:form.end,companion:form.companion,pace:form.pace,interests:[...form.interests]},
+      plan
+    }));
+  }catch(e){}
+}
+function loadSaved(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw) return null;
+    const j=JSON.parse(raw);
+    if(!j.plan || !j.plan.days || !byKey(j.plan.regionKey)) return null;
+    // 장소 id 유효성 확인
+    for(const d of j.plan.days) for(const s of d.slots) if(s.placeId && !findPlace(s.placeId)) return null;
+    return j;
+  }catch(e){ return null; }
+}
+async function resumeSaved(){
+  const j=loadSaved(); if(!j){ toast('저장된 일정을 불러올 수 없어요'); return; }
+  form.region=j.form.region; form.start=j.form.start; form.end=j.form.end;
+  form.companion=j.form.companion||form.companion; form.pace=j.form.pace||form.pace;
+  form.interests=new Set(j.form.interests||[...form.interests]);
+  plan=j.plan; plan.activeDay=Math.min(plan.activeDay||0, plan.days.length-1);
+  window.__plan=plan;
+  await fetchWeather(byKey(plan.regionKey), plan.days[0].date, plan.days[plan.days.length-1].date);
+  showResult();
+  toast('🧳 저장된 일정을 불러왔어요');
+}
+
+/* =====================================================================
+   초기화
+   ===================================================================== */
+function init(){
+  // 기본 날짜: 다음주 금~일
+  const today=new Date(); today.setHours(0,0,0,0);
+  const fri=new Date(today); fri.setDate(fri.getDate()+((5-today.getDay()+7)%7)+7);
+  const sun=new Date(fri); sun.setDate(sun.getDate()+2);
+  $('#date-start').value=iso(fri); $('#date-end').value=iso(sun);
+  $('#date-start').min=iso(today);
+  $('#date-start').addEventListener('change',updateTripLen);
+  $('#date-end').addEventListener('change',updateTripLen);
+  document.querySelectorAll('[data-quick]').forEach(b=>b.addEventListener('click',()=>setQuickDate(b.dataset.quick)));
+
+  const saved=loadSaved();
+  if(saved){
+    const r=byKey(saved.plan.regionKey);
+    $('#resume-wrap').innerHTML='<button class="chip on warm" style="font-size:14px;padding:11px 20px" onclick="resumeSaved()">🧳 지난 '+r.name+' 일정 이어보기 →</button>';
+  }
+  renderSetup();
+}
+init();
+
+/* 테스트 훅 */
+window.__audit = ()=>auditPlan(plan);
+window.__generate = generate;
+window.__form = form;
+</script>
+</body>
+</html>
