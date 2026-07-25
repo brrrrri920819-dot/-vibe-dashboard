@@ -141,7 +141,9 @@ async function generatePost(keyword, account) {
    - 중간: 개인 경험담, 꿀팁, 비교 정보 섞기
    - 마지막: 핵심 요약 + 댓글 유도
 3. 태그: 검색량 높은 태그 8개
-4. 이미지 키워드: 영어로 4개 (각각 달라야 함, Unsplash 검색용)
+4. 이미지 키워드: 영어로 4개 — 각 섹션 내용을 가장 잘 표현하는 사진이 나올 구체적 명사+형용사 조합
+   (예: "korean street food market", "woman using smartphone cafe", "stock market graph decline")
+   절대 추상적인 단어 금지 (예: "technology", "lifestyle" 단독 사용 금지)
 
 JSON 형식으로만 응답:
 {
