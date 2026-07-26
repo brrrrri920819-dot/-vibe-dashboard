@@ -319,6 +319,48 @@ main{max-width:980px;margin:0 auto;padding:0 20px 120px}
 .ck-item .go{font-size:11.5px;font-weight:800;color:#fff;background:#03C75A;border-radius:99px;padding:6px 11px;text-decoration:none;flex:none}
 .ck-item .go.ig{background:linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)}
 
+/* 저장 모달 */
+.sv-head{font-size:19px;font-weight:900;letter-spacing:-.02em}
+.sv-sub{font-size:13px;color:var(--sub);font-weight:600;margin-top:5px;line-height:1.55}
+.sv-howto{font-size:13.5px;font-weight:700;color:#157A48;background:#EDFAF2;border:1px solid #BBEBD0;border-radius:12px;padding:12px 15px;margin:14px 0 12px;line-height:1.6}
+.sv-howto b{font-weight:900}
+.sv-img{width:100%;border-radius:12px;border:1px solid var(--line);display:block;box-shadow:var(--shadow)}
+.sv-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.sv-btn{font-size:13px;font-weight:800;padding:10px 16px;border-radius:11px;border:1.5px solid var(--line);background:#FCFBF8;transition:.15s}
+.sv-btn:hover{border-color:var(--ink)}
+.sv-btn.p{background:var(--ink);border-color:var(--ink);color:#fff}
+.sv-note{font-size:12px;color:var(--sub);font-weight:600;margin-top:12px;line-height:1.6}
+.sv-sheet{margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:16px;background:#FCFBF8;max-height:52vh;overflow-y:auto}
+.sv-day{font-size:14px;font-weight:900;background:var(--ink);color:#fff;padding:7px 12px;border-radius:8px;margin:12px 0 8px}
+.sv-day:first-child{margin-top:0}
+.sv-row{display:flex;gap:10px;padding:7px 3px;border-bottom:1px dashed var(--line);font-size:13px}
+.sv-t{font-weight:800;width:48px;flex:none;color:var(--accent-deep)}
+.sv-n{font-weight:700;flex:1}
+.sv-i{display:block;font-size:11.5px;color:var(--sub);font-weight:600;margin-top:2px}
+
+/* 저장한 코스 보관함 */
+.lib-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 22px;margin-top:18px;text-align:left}
+.lib-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.lib-head h3{font-size:16.5px;font-weight:900;letter-spacing:-.01em}
+.lib-head .cnt{font-size:12px;font-weight:800;color:#fff;background:var(--accent);border-radius:99px;padding:2px 9px}
+.lib-filters{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.lib-f{font-size:12.5px;font-weight:700;padding:6px 13px;border-radius:99px;border:1.5px solid var(--line);background:#FCFBF8;color:#3B4256;transition:.14s}
+.lib-f:hover{border-color:#C9C2B2}
+.lib-f.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.lib-list{display:flex;flex-direction:column;gap:9px;margin-top:13px}
+.lib-item{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);border-radius:14px;padding:13px 15px;background:#FCFBF8;transition:.15s}
+.lib-item:hover{border-color:#C9C2B2;background:#fff}
+.lib-emo{font-size:24px;flex:none}
+.lib-info{flex:1;min-width:0}
+.lib-nm{font-size:14.5px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.lib-nm .badge{font-size:10.5px;font-weight:800;color:#157A48;background:#EDFAF2;border:1px solid #BBEBD0;border-radius:99px;padding:2px 8px;white-space:nowrap;flex:none}
+.lib-mt{font-size:11.5px;color:var(--sub);font-weight:600;margin-top:3px;line-height:1.5}
+.lib-act{display:flex;gap:6px;flex:none}
+.lib-b{font-size:11.5px;font-weight:800;padding:7px 11px;border-radius:9px;border:1.5px solid var(--line);background:#fff;transition:.14s}
+.lib-b.load{background:var(--ink);border-color:var(--ink);color:#fff}
+.lib-b.del:hover{border-color:#C0313E;color:#C0313E}
+.lib-empty{font-size:13px;color:var(--sub);font-weight:600;padding:14px 2px;line-height:1.6}
+
 /* toast */
 #toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-size:13.5px;font-weight:700;padding:12px 22px;border-radius:99px;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:90vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -335,6 +377,12 @@ footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color
   .stay-grid,.site-grid{grid-template-columns:repeat(2,1fr)}
   .vp-grid,.vp-grid.n1,.vp-grid.n2{grid-template-columns:1fr}
   .ex-grid{grid-template-columns:1fr}
+  /* 보관함: 좁은 화면에서는 버튼을 아래 줄로 내려 정보가 눌리지 않게 */
+  .lib-item{flex-wrap:wrap}
+  .lib-info{flex:1 1 100%;order:2;min-width:0}
+  .lib-emo{order:1}
+  .lib-act{order:3;flex:1 1 100%;justify-content:flex-end;margin-top:2px}
+  .lib-b{padding:8px 14px}
   .timeline{padding-left:0}
   .timeline::before{display:none}
   .slot .time{position:static;display:inline-block;width:auto;padding:5px 14px;margin-bottom:8px}
@@ -370,6 +418,8 @@ footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color
       </div>
       <div style="margin-top:14px" id="resume-wrap"></div>
     </div>
+
+    <div id="library"></div>
 
     <div class="step">
       <div class="step-head"><div class="step-num">1</div><h2>어디로 떠나요?</h2><span class="hint">지역 하나를 선택</span></div>
@@ -447,6 +497,13 @@ footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color
   장소 정보(영업시간·휴무)는 큐레이션 시점 기준 참고용입니다. 폐업·임시휴무·시간 변경은 각 카드의 <b>네이버 지도</b> 링크에서 방문 직전에 꼭 확인하세요.<br>
   날씨: Open-Meteo 실시간 API · 예보 범위(16일) 밖 날짜는 월별 평년 기후로 안내합니다. — 여로 YEORO
 </footer>
+
+<div class="modal-bg" id="save-modal-bg">
+  <div class="modal">
+    <button class="close" data-action="close-save">✕</button>
+    <div id="save-modal-body"></div>
+  </div>
+</div>
 
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
@@ -1542,6 +1599,7 @@ function renderResult(){
     +'<div class="sum-actions">'
     +'<button class="sum-btn hot" data-action="recheck">🔄 실시간 재점검</button>'
     +'<button class="sum-btn" data-action="checklist">✅ 체크리스트</button>'
+    +'<button class="sum-btn" data-action="lib-save">📚 보관함에 저장</button>'
     +'<button class="sum-btn" data-action="copy">📋 일정 복사</button>'
     +'<button class="sum-btn" data-action="new-trip">✏️ 조건 바꾸기</button>'
     +'</div>';
@@ -1615,25 +1673,49 @@ function renderTravelTo(){
   if(!a){ el.innerHTML=''; return; }
   const enc = encodeURIComponent;
   const dest = tripCityName();
-  const links = [];
-  const mode = isSelfDrive() ? 'driving' : (a.t.key==='air' ? 'flying' : 'transit');
-  links.push('<a class="vlink" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&origin='+enc(a.dep)+'&destination='+enc(dest)+'&travelmode='+(mode==='flying'?'transit':mode)+'">🗺️ 길찾기 (구글)</a>');
-  links.push('<a class="vlink" target="_blank" rel="noopener" href="https://map.naver.com/p/search/'+enc(a.dep+' '+dest+' 가는법')+'">🟢 네이버 경로</a>');
-  if(!isSelfDrive()){
-    if(a.t.key==='train') links.push('<a class="vlink" target="_blank" rel="noopener" href="https://www.letskorail.com/">🚄 코레일 예매</a>');
-    if(a.t.key==='bus')   links.push('<a class="vlink" target="_blank" rel="noopener" href="https://www.kobus.co.kr/">🚌 고속버스 예매</a>');
-    if(a.t.key==='air')   links.push('<a class="vlink" target="_blank" rel="noopener" href="https://flight.naver.com/">✈️ 항공권 최저가</a>');
-    links.push('<a class="vlink" target="_blank" rel="noopener" href="https://map.naver.com/p/search/'+enc(dest+' 시내버스 정보')+'">🚏 현지 교통</a>');
+  const L = (t,u)=>'<a class="vlink" target="_blank" rel="noopener" href="'+u+'">'+t+'</a>';
+  const book = [], nav = [];
+  const routeQ = enc(a.dep+' '+dest);
+
+  if(a.t.key==='train'){
+    // 출발·도착지를 미리 채운 예매 검색
+    book.push(L('🚄 코레일 예매', 'https://www.letskorail.com/ebizprd/EbizPrdTicketpr21100W_pr21110.do'));
+    book.push(L('🚅 SRT 예매', 'https://etk.srail.co.kr/main.do'));
+    book.push(L('🔎 기차 시간표·최저가', 'https://search.naver.com/search.naver?query='+enc(a.dep+' '+dest+' 기차 시간표 예매')));
+  } else if(a.t.key==='bus'){
+    book.push(L('🚌 고속버스 예매(코버스)', 'https://www.kobus.co.kr/mrs/rotinf.do'));
+    book.push(L('🚏 시외버스 예매(버스타고)', 'https://www.bustago.or.kr/newweb/kr/rotinf/rotinf.do'));
+    book.push(L('📱 티머니GO', 'https://www.tmoney.co.kr/'));
+    book.push(L('🔎 버스 시간표', 'https://search.naver.com/search.naver?query='+enc(a.dep+' '+dest+' 고속버스 시간표')));
+  } else if(a.t.key==='air'){
+    book.push(L('✈️ 네이버항공권 최저가', 'https://flight.naver.com/flights/'));
+    book.push(L('🌐 스카이스캐너', 'https://www.skyscanner.co.kr/'));
+    book.push(L('🎫 항공권 비교', 'https://search.naver.com/search.naver?query='+enc(a.dep+' '+dest+' 항공권 최저가')));
+  } else if(form.transport==='rental'){
+    book.push(L('🚙 쏘카', 'https://www.socar.kr/'));
+    book.push(L('🚗 그린카', 'https://www.greencar.co.kr/'));
+    book.push(L('🔎 렌터카 최저가 비교', 'https://search.naver.com/search.naver?query='+enc(dest+' 렌터카 최저가 예약')));
   } else {
-    links.push('<a class="vlink" target="_blank" rel="noopener" href="https://map.naver.com/p/search/'+enc(dest+' 공영주차장')+'">🅿️ 주차장</a>');
-    if(form.transport==='rental') links.push('<a class="vlink" target="_blank" rel="noopener" href="https://www.google.com/search?q='+enc(dest+' 렌터카 최저가')+'">🚙 렌터카 비교</a>');
+    book.push(L('⛽ 최저가 주유소', 'https://www.opinet.co.kr/user/main/mainView.do'));
+    book.push(L('🛣️ 실시간 교통정보', 'https://www.roadplus.co.kr/'));
   }
+
+  // 현지 이동
+  const mode = isSelfDrive() ? 'driving' : 'transit';
+  nav.push(L('🗺️ 길찾기(구글)', 'https://www.google.com/maps/dir/?api=1&origin='+enc(a.dep)+'&destination='+enc(dest)+'&travelmode='+mode));
+  nav.push(L('🟢 네이버 경로', 'https://map.naver.com/p/search/'+routeQ+enc(' 가는법')));
+  if(isSelfDrive()) nav.push(L('🅿️ 현지 주차장', 'https://map.naver.com/p/search/'+enc(dest+' 공영주차장')));
+  else nav.push(L('🚏 현지 대중교통', 'https://map.naver.com/p/search/'+enc(dest+' 시내버스 노선')));
+
   const timeTxt = a.same ? '같은 지역이라 이동 부담이 거의 없어요'
     : (a.min ? '예상 '+fmtMin(a.min)+' · 편도 약 '+fmtKm(a.km)+' (교통상황 제외 추정)' : '거리 정보를 계산할 수 없어요');
   el.innerHTML = '<div class="tt-card">'
     +'<div class="tt-route">🧳 '+esc(a.dep)+'<span class="arrow">→</span>'+esc(dest)+' <span style="font-size:13px;font-weight:700;color:var(--sub)">'+a.t.label+'</span></div>'
     +'<div class="tt-meta">'+esc(timeTxt)+' · '+esc(a.t.note)+'</div>'
-    +'<div class="tt-links">'+links.join('')+'</div>'
+    +'<div class="ins-sub" style="margin-top:14px">🎫 '+esc(a.t.label.replace(/^\S+\s/,''))+' 예약·조회</div>'
+    +'<div class="tt-links">'+book.join('')+'</div>'
+    +'<div class="ins-sub" style="margin-top:14px">🧭 길찾기·현지 이동</div>'
+    +'<div class="tt-links">'+nav.join('')+'</div>'
     +'</div>';
 }
 
@@ -1643,10 +1725,10 @@ function renderExport(){
   if(!confirmed){ el.innerHTML=''; return; }
   el.innerHTML = '<div class="ex-card">'
     +'<div class="ex-head">💾 확정 코스 저장하기</div>'
-    +'<div class="ex-sub">인쇄 창에서 "PDF로 저장"을 고르면 파일로 남습니다. 모바일이면 이미지 카드가 더 편해요.</div>'
+    +'<div class="ex-sub">'+(IS_TOUCH?'이미지로 저장하면 사진첩에 바로 담기고 카톡 공유도 쉬워요.':'이미지는 사진으로, PDF는 인쇄로 남길 수 있어요.')+'</div>'
     +'<div class="ex-grid">'
-    +'<button class="ex-btn primary" data-action="save-png"><b>🖼️ 이미지로 저장</b><span>모바일 추천 · 사진첩에 저장·공유</span></button>'
-    +'<button class="ex-btn" data-action="save-pdf"><b>📄 PDF로 저장 / 인쇄</b><span>전체 일정표 · A4 최적화</span></button>'
+    +'<button class="ex-btn primary" data-action="save-png"><b>🖼️ 이미지로 저장</b><span>'+(IS_TOUCH?'길게 눌러 사진첩에 저장':'우클릭으로 저장 · 공유')+'</span></button>'
+    +'<button class="ex-btn" data-action="save-pdf"><b>📄 PDF · 전체 일정표</b><span>'+(EMBEDDED?'전체 일정 보기 + 인쇄 방법 안내':'인쇄 창에서 PDF로 저장')+'</span></button>'
     +'<button class="ex-btn" data-action="copy"><b>📋 텍스트 복사</b><span>카톡·메모 앱에 붙여넣기</span></button>'
     +'<button class="ex-btn" data-action="share"><b>📤 공유하기</b><span>메신저로 일정 바로 전송</span></button>'
     +'</div></div>';
@@ -1966,7 +2048,8 @@ function pickVariant(key){
 function confirmPlan(){
   confirmed = true;
   renderResult(); savePlan();
-  toast('✅ 코스를 확정했어요! 이제 PDF·이미지로 저장할 수 있어요');
+  saveToLibrary(true);   // 확정 코스는 보관함에 자동 저장
+  toast('✅ 확정 완료! 보관함에 저장했고, 아래에서 이미지·PDF로 남길 수 있어요');
   setTimeout(()=>{ const el=$('#export-area'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }, 250);
 }
 
@@ -1983,6 +2066,7 @@ function goSetup(){
   $('#setup-view').hidden=false;
   $('#btn-new').hidden=true;
   $('#btn-checklist').hidden=true;
+  renderLibrary();
   renderSetup();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -2052,7 +2136,11 @@ function planSubtitle(){
   bits.push(form.departure+' 출발 · '+transportOf().label.replace(/^\S+\s/,''));
   return bits.join(' · ');
 }
-function savePDF(){
+/* 실행 환경 감지 — 임베드(샌드박스 iframe)에서는 print()·다운로드·새 창이 차단된다 */
+const EMBEDDED = (()=>{ try{ return window.top !== window.self; }catch(e){ return true; } })();
+const IS_TOUCH = (()=>{ try{ return window.matchMedia('(pointer:coarse)').matches; }catch(e){ return false; } })();
+
+function buildPrintSheet(){
   const data = planRows();
   const st = plan.custom ? null : tripStats();
   $('#print-sheet').innerHTML =
@@ -2063,8 +2151,41 @@ function savePDF(){
             +'<div class="ps-n">'+esc(r.icon+' '+r.name)+(r.info?'<div class="ps-i">'+esc(r.info)+'</div>':'')+'</div></div>').join('')
       +'</div>').join('')
     +'<div class="ps-foot">여로 YEORO에서 생성 · 방문 전 네이버 지도에서 폐업·임시휴무·영업시간을 최종 확인하세요.</div>';
-  toast('🖨️ 인쇄 창에서 "PDF로 저장"을 선택하세요');
-  setTimeout(()=>window.print(), 400);
+  return data;
+}
+
+/* PDF·인쇄 — 샌드박스에서는 스크립트 인쇄가 차단되므로 전체 일정표를 화면에 띄우고 안내한다 */
+function openPrintView(){
+  const data = buildPrintSheet();
+  const st = plan.custom ? null : tripStats();
+  const sheet = data.map(d=>
+    '<div class="sv-day">'+esc(d.dayLabel)+'</div>'
+    + d.rows.map(r=>'<div class="sv-row"><div class="sv-t">'+esc(r.t)+'</div>'
+        +'<div class="sv-n">'+esc(r.icon+' '+r.name)+(r.info?'<span class="sv-i">'+esc(r.info)+'</span>':'')+'</div></div>').join('')
+  ).join('');
+  $('#save-modal-body').innerHTML =
+    '<div class="sv-head">📄 전체 일정표</div>'
+    +'<div class="sv-sub">'+esc(planTitle())+' · '+esc(planSubtitle())+(st?'<br>1인 예상 경비 '+fmtWon(st.spend)+' · 총 이동 '+fmtKm(st.km):'')+'</div>'
+    +(EMBEDDED
+      ? '<div class="sv-howto">🖨️ <b>PDF로 저장하려면</b><br>'
+        +(IS_TOUCH
+          ? '브라우저 하단 <b>공유 버튼</b> → <b>인쇄</b> → 미리보기를 <b>손가락으로 확대</b> → <b>PDF로 저장</b>'
+          : '<b>Ctrl/⌘ + P</b> → 대상을 <b>PDF로 저장</b>으로 선택')
+        +'<br><span style="font-weight:600">이 화면은 보안 정책상 앱이 직접 인쇄창을 열 수 없어요. 더 간편한 <b>이미지 저장</b>을 추천해요!</span></div>'
+      : '<div class="sv-howto">🖨️ 아래 <b>인쇄 / PDF로 저장</b>을 누르면 인쇄 창이 열려요. 대상에서 <b>PDF로 저장</b>을 고르세요.</div>')
+    +'<div class="sv-actions">'
+    +(EMBEDDED ? '<button class="sv-btn p" data-action="save-png">🖼️ 이미지로 저장하기</button>'
+               : '<button class="sv-btn p" data-action="do-print">🖨️ 인쇄 / PDF로 저장</button>')
+    +'<button class="sv-btn" data-action="copy">📋 텍스트 복사</button>'
+    +'</div>'
+    +'<div class="sv-sheet">'+sheet+'</div>';
+  $('#save-modal-bg').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function doPrint(){
+  buildPrintSheet();
+  try{ window.print(); }catch(e){}
+  toast('인쇄 창에서 "PDF로 저장"을 선택하세요');
 }
 /* 캔버스 포스터 이미지 생성
    긴 일정은 2단 배치 + 해상도 자동 조절로 캔버스 픽셀 상한(iOS Safari 약 1,670만)을 넘지 않게 한다. */
@@ -2192,30 +2313,64 @@ function roundRect(c,x,y,w,h,r){
   c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
   c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
 }
+/* 이미지 저장 — 화면에 띄워 길게 눌러 저장하는 방식이 어떤 환경에서도 동작한다 */
+let lastPosterURL = null;
+function posterFileName(){
+  const slug = (plan.regionKey || String(tripCityName()).replace(/[^\w-]/g,'')) || 'course';
+  return 'yeoro-'+slug+'-'+plan.days[0].date+'.png';
+}
 function savePNG(){
+  let url;
   try{
-    const cv = buildPosterCanvas();
-    // 파일명은 ASCII로 (한글 파일명은 일부 브라우저에서 깨짐)
-    const slug = (plan.regionKey || String(tripCityName()).replace(/[^\w-]/g,'')) || 'course';
-    const name = 'yeoro-'+slug+'-'+plan.days[0].date+'.png';
-    cv.toBlob(blob=>{
-      if(!blob){ toast('이미지 생성에 실패했어요'); return; }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = name;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url), 4000);
-      toast('🖼️ 이미지를 저장했어요 — 모바일은 새 창에서 길게 눌러 저장하세요');
-    }, 'image/png');
-  }catch(err){ toast('이미지 생성 중 문제가 발생했어요'); }
+    url = buildPosterCanvas().toDataURL('image/png');
+  }catch(err){ toast('이미지를 만들지 못했어요 — 일정을 줄여서 다시 시도해주세요'); return; }
+  lastPosterURL = url;
+  const howto = IS_TOUCH
+    ? '📱 <b>아래 이미지를 길게 누른 뒤</b> "이미지 저장" 또는 "사진에 추가"를 선택하세요.'
+    : '🖱️ <b>아래 이미지를 마우스 오른쪽 클릭</b> → "이미지를 다른 이름으로 저장"을 선택하세요.';
+  $('#save-modal-body').innerHTML =
+    '<div class="sv-head">🖼️ 코스 이미지</div>'
+    +'<div class="sv-sub">'+esc(planTitle())+' · 일정표 한 장으로 저장·공유하세요</div>'
+    +'<div class="sv-howto">'+howto+'</div>'
+    +'<img class="sv-img" alt="'+esc(planTitle())+' 여행 코스 일정표" src="'+url+'">'
+    +'<div class="sv-actions">'
+    +(EMBEDDED ? '' : '<button class="sv-btn p" data-action="dl-png">⬇️ 파일로 내려받기</button>')
+    +'<button class="sv-btn" data-action="share">📤 공유하기</button>'
+    +'<button class="sv-btn" data-action="copy">📋 텍스트 복사</button>'
+    +'</div>'
+    +'<div class="sv-note">'+(EMBEDDED
+      ? '이 페이지는 보안 정책상 자동 다운로드를 쓸 수 없어, 위 방법으로 저장하면 됩니다.'
+      : '내려받기가 안 되면 이미지를 길게 누르거나 우클릭해 저장하세요.')+'</div>';
+  $('#save-modal-bg').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function downloadPNG(){
+  if(!lastPosterURL) return;
+  const a = document.createElement('a');
+  a.href = lastPosterURL; a.download = posterFileName();
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('내려받기를 시작했어요 — 안 되면 이미지를 길게 눌러 저장하세요');
 }
 async function sharePlan(){
   const txt = planText();
-  if(navigator.share){
-    try{ await navigator.share({title:planTitle()+' 여행 코스', text:txt}); return; }catch(e){ if(e && e.name==='AbortError') return; }
-  }
+  // 이미지 공유가 가능하면 이미지로, 아니면 텍스트로
+  try{
+    if(navigator.canShare && lastPosterURL){
+      const blob = await (await fetch(lastPosterURL)).blob();
+      const file = new File([blob], posterFileName(), {type:'image/png'});
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:planTitle()+' 여행 코스'});
+        return;
+      }
+    }
+    if(navigator.share){ await navigator.share({title:planTitle()+' 여행 코스', text:txt}); return; }
+  }catch(e){ if(e && e.name==='AbortError') return; }
   copyPlan();
   toast('📋 공유가 지원되지 않아 클립보드에 복사했어요');
+}
+function closeSaveModal(){
+  $('#save-modal-bg').classList.remove('show');
+  document.body.style.overflow='';
 }
 
 /* 체크리스트 모달 */
@@ -2262,6 +2417,127 @@ function savePlan(){
     }));
   }catch(e){}
 }
+/* =====================================================================
+   저장한 코스 보관함
+   ===================================================================== */
+const LIB_KEY='yeoro_lib_v1';
+const LIB_MAX=24;
+let libFilter='전체';
+function loadLib(){
+  try{
+    const raw=localStorage.getItem(LIB_KEY);
+    if(!raw) return [];
+    const arr=JSON.parse(raw);
+    if(!Array.isArray(arr)) return [];
+    // 데이터 유효성 (지역·장소 id가 살아있는 것만)
+    return arr.filter(e=>{
+      if(!e || !e.plan || !e.plan.days || !e.plan.days.length) return false;
+      if(e.plan.custom) return true;
+      if(!byKey(e.plan.regionKey)) return false;
+      return e.plan.days.every(d=>d.slots.every(s=>!s.placeId || !!findPlace(s.placeId)));
+    });
+  }catch(e){ return []; }
+}
+function writeLib(arr){
+  try{ localStorage.setItem(LIB_KEY, JSON.stringify(arr)); return true; }
+  catch(e){
+    // 용량 초과 시 오래된 항목부터 정리 후 재시도
+    while(arr.length>1){
+      arr.pop();
+      try{ localStorage.setItem(LIB_KEY, JSON.stringify(arr)); return true; }catch(e2){}
+    }
+    return false;
+  }
+}
+function libTitle(pl){
+  const n = pl.days.length-1;
+  return (pl.custom||byKey(pl.regionKey).name)+' '+(n===0?'당일치기':n+'박 '+pl.days.length+'일');
+}
+function saveToLibrary(silent){
+  if(!plan) return;
+  const arr = loadLib();
+  // 저장 용량을 위해 대체 후보 목록은 일부만 보관
+  const slim = JSON.parse(JSON.stringify(plan));
+  for(const d of slim.days) for(const s of d.slots) if(s.alts) s.alts = s.alts.slice(0,4);
+  const entry = {
+    id: 'c'+Date.now()+Math.floor(Math.random()*1000),
+    at: Date.now(),
+    title: libTitle(plan),
+    cat: plan.custom ? '즉석' : byKey(plan.regionKey).name,
+    emoji: plan.custom ? '🧪' : byKey(plan.regionKey).emoji,
+    confirmed: !!confirmed,
+    strategy: plan.strategy||null,
+    dates: plan.days[0].date+'~'+plan.days[plan.days.length-1].date,
+    spend: plan.custom ? null : tripStats().spend,
+    form: {region:form.region,customCity:form.customCity,start:form.start,end:form.end,
+           departure:form.departure,transport:form.transport,companion:form.companion,
+           pace:form.pace,interests:[...form.interests]},
+    plan: slim
+  };
+  // 같은 지역·같은 날짜의 기존 저장은 갱신
+  const dup = arr.findIndex(e=>e.cat===entry.cat && e.dates===entry.dates && e.strategy===entry.strategy);
+  if(dup>=0) arr.splice(dup,1);
+  arr.unshift(entry);
+  while(arr.length>LIB_MAX) arr.pop();
+  const ok = writeLib(arr);
+  renderLibrary();
+  if(!silent) toast(ok?'📚 보관함에 저장했어요':'저장 공간이 부족해 오래된 코스를 정리했어요');
+}
+function deleteFromLibrary(id){
+  const arr = loadLib().filter(e=>e.id!==id);
+  writeLib(arr);
+  renderLibrary();
+  toast('삭제했어요');
+}
+async function openFromLibrary(id){
+  const e = loadLib().find(x=>x.id===id);
+  if(!e){ toast('불러올 수 없는 코스예요'); return; }
+  form.region=e.form.region; form.customCity=e.form.customCity;
+  form.start=e.form.start; form.end=e.form.end;
+  form.departure=e.form.departure||form.departure; form.transport=e.form.transport||form.transport;
+  form.companion=e.form.companion||form.companion; form.pace=e.form.pace||form.pace;
+  form.interests=new Set(e.form.interests||[...form.interests]);
+  plan=e.plan; plan.activeDay=0; confirmed=!!e.confirmed; variants=null;
+  window.__plan=plan;
+  if(plan.custom) await fetchWeatherCustom(plan.custom, plan.days[0].date, plan.days[plan.days.length-1].date);
+  else await fetchWeather(byKey(plan.regionKey), plan.days[0].date, plan.days[plan.days.length-1].date);
+  showResult(); savePlan();
+  toast('📚 "'+e.title+'"을(를) 불러왔어요');
+}
+function renderLibrary(){
+  const el = $('#library');
+  if(!el) return;
+  const arr = loadLib();
+  if(!arr.length){ el.innerHTML=''; return; }
+  const cats = ['전체','⭐ 확정'].concat([...new Set(arr.map(e=>e.cat))]);
+  if(!cats.includes(libFilter)) libFilter='전체';
+  const shown = arr.filter(e=> libFilter==='전체' ? true : (libFilter==='⭐ 확정' ? e.confirmed : e.cat===libFilter));
+  const filters = cats.map(c=>
+    '<button class="lib-f'+(libFilter===c?' on':'')+'" data-action="lib-filter" data-val="'+esc(c)+'">'+esc(c)
+    +(c==='전체'?' '+arr.length:'')+'</button>'
+  ).join('');
+  const items = shown.map(e=>{
+    const d = new Date(e.at);
+    const meta = [fmtK(e.dates.split('~')[0])+' 출발',
+                  e.strategy ? (STRATEGIES.find(s=>s.key===e.strategy)||{}).name : null,
+                  e.spend!=null ? '1인 '+fmtWon(e.spend) : null,
+                  (d.getMonth()+1)+'/'+d.getDate()+' 저장'].filter(Boolean).join(' · ');
+    return '<div class="lib-item">'
+      +'<span class="lib-emo">'+e.emoji+'</span>'
+      +'<div class="lib-info"><div class="lib-nm">'+esc(e.title)+(e.confirmed?'<span class="badge">확정</span>':'')+'</div>'
+      +'<div class="lib-mt">'+esc(meta)+'</div></div>'
+      +'<div class="lib-act">'
+      +'<button class="lib-b load" data-action="lib-open" data-id="'+e.id+'">불러오기</button>'
+      +'<button class="lib-b del" data-action="lib-del" data-id="'+e.id+'">🗑</button>'
+      +'</div></div>';
+  }).join('');
+  el.innerHTML = '<div class="lib-card">'
+    +'<div class="lib-head"><h3>📚 내가 저장한 코스</h3><span class="cnt">'+arr.length+'</span></div>'
+    +'<div class="lib-filters">'+filters+'</div>'
+    +'<div class="lib-list">'+(items||'<div class="lib-empty">이 분류에 저장된 코스가 없어요.</div>')+'</div>'
+    +'</div>';
+}
+
 function loadSaved(){
   try{
     const raw=localStorage.getItem(LS_KEY);
@@ -2340,9 +2616,16 @@ function init(){
     else if(a==='generate') generate();
     else if(a==='variant') pickVariant(el.dataset.key);
     else if(a==='confirm') confirmPlan();
-    else if(a==='save-pdf') savePDF();
+    else if(a==='save-pdf') openPrintView();
     else if(a==='save-png') savePNG();
+    else if(a==='do-print') doPrint();
+    else if(a==='dl-png') downloadPNG();
     else if(a==='share') sharePlan();
+    else if(a==='close-save') closeSaveModal();
+    else if(a==='lib-save') saveToLibrary();
+    else if(a==='lib-filter'){ libFilter=el.dataset.val; renderLibrary(); }
+    else if(a==='lib-open') openFromLibrary(el.dataset.id);
+    else if(a==='lib-del') deleteFromLibrary(el.dataset.id);
     else if(a==='recheck') recheck();
     else if(a==='checklist') openChecklist();
     else if(a==='copy') copyPlan();
@@ -2353,7 +2636,12 @@ function init(){
     else if(a==='close-modal') closeChecklist();
   });
   $('#modal-bg').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeChecklist(); });
+  $('#save-modal-bg').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeSaveModal(); });
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){ closeChecklist(); closeSaveModal(); }
+  });
 
+  renderLibrary();
   renderSetup();
 }
 init();
