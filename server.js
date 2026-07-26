@@ -861,8 +861,8 @@ app.get('/api/auto-auth/tistory', auth, async (req, res) => {
 
 // ── Blogger 자격증명 즉석 검증 (가짜 code로 토큰 교환 시도 → 에러 종류로 판정) ──
 app.get('/api/blogger-cred-test', async (req, res) => {
-  const cid = process.env.BLOGGER_CLIENT_ID;
-  const sec = process.env.BLOGGER_CLIENT_SECRET;
+  const cid = tokens.get('BLOGGER_CLIENT_ID');
+  const sec = tokens.get('BLOGGER_CLIENT_SECRET');
   if (!cid || !sec) return res.json({ ok: false, verdict: 'ID 또는 시크릿 미설정' });
   try {
     const axios = require('axios');
@@ -921,9 +921,9 @@ app.post('/api/blogger-cred-set', async (req, res) => {
 
 // ── Setup 페이지 (어떤 클라이언트 ID가 설정됐는지 확인) ──
 app.get('/setup', (req, res) => {
-  const cid = process.env.BLOGGER_CLIENT_ID || '';
+  const cid = tokens.get('BLOGGER_CLIENT_ID') || '';
   const masked = cid ? cid.slice(0, 20) + '...' : '❌ 미설정';
-  const sec = process.env.BLOGGER_CLIENT_SECRET || '';
+  const sec = tokens.get('BLOGGER_CLIENT_SECRET') || '';
   // 시크릿 진단: 앞 7자 + 길이 + 공백/개행 포함 여부 (값 자체는 노출 안 함)
   let secInfo = '❌ 미설정';
   if (sec) {
@@ -933,14 +933,14 @@ app.get('/setup', (req, res) => {
     secInfo = `${trimmed.slice(0, 7)}... (길이 ${sec.length}${hasWs ? ' ⚠️공백포함' : ''}${prefixOk ? '' : ' ⚠️GOCSPX- 아님'})`;
   }
   const baseUrl = getBaseUrl(req);
-  res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:600px;width:100%}h2{color:#ec4899;margin-top:0}.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #222;font-size:14px}.label{color:#888}.val{color:#86efac;font-family:monospace}.btn{display:block;background:#ec4899;border:none;color:#fff;padding:14px;border-radius:8px;font-size:16px;cursor:pointer;width:100%;margin-top:24px;text-decoration:none;text-align:center}</style></head><body><div class="card"><h2>🔧 Blogger 설정 확인</h2><div class="row"><span class="label">BLOGGER_CLIENT_ID</span><span class="val">${masked}</span></div><div class="row"><span class="label">BLOGGER_CLIENT_SECRET</span><span class="val">${secInfo}</span></div><div class="row"><span class="label">BLOGGER_REFRESH_TOKEN</span><span class="val">${process.env.BLOGGER_REFRESH_TOKEN ? '✅ 설정됨' : '❌ 미설정'}</span></div><div class="row"><span class="label">BLOGGER_BLOG_ID</span><span class="val">${process.env.BLOGGER_BLOG_ID || '❌ 미설정'}</span></div><div class="row"><span class="label">감지된 서버 URL</span><span class="val">${baseUrl}</span></div><div class="row"><span class="label">자격증명 검증</span><span class="val" id="cred-test">확인 중...</span></div><div style="margin-top:16px;padding:14px;background:#0f0f0f;border:1px solid #444;border-radius:10px"><div style="color:#fbbf24;font-size:13px;font-weight:bold;margin-bottom:8px">⚠️ 구글 콘솔 → 승인된 리디렉션 URI 에 아래 주소를 등록해야 합니다</div><div style="color:#86efac;font-family:monospace;font-size:12px;word-break:break-all;user-select:all;background:#000;padding:10px;border-radius:6px">${baseUrl}/oauth/blogger/callback</div></div><div style="margin-top:24px;padding-top:20px;border-top:1px solid #333"><div style="color:#ec4899;font-weight:bold;margin-bottom:10px">📋 여기에 직접 붙여넣기 (Railway 안 거침)</div><input id="in-cid" placeholder="클라이언트 ID (...apps.googleusercontent.com)" style="width:100%;box-sizing:border-box;background:#0f0f0f;border:1px solid #444;border-radius:8px;color:#eee;padding:12px;font-size:13px;margin-bottom:8px"><input id="in-sec" placeholder="클라이언트 시크릿 (GOCSPX-...)" style="width:100%;box-sizing:border-box;background:#0f0f0f;border:1px solid #444;border-radius:8px;color:#eee;padding:12px;font-size:13px;margin-bottom:8px"><button onclick="credSet()" style="background:#22c55e;border:none;color:#fff;padding:12px;border-radius:8px;font-size:15px;cursor:pointer;width:100%">✔ 검증하고 저장</button><div id="cred-set-result" style="margin-top:10px;font-size:14px;text-align:center"></div></div><a class="btn" href="/oauth/blogger">🔑 Blogger OAuth 인증 시작</a></div><script>fetch('/api/blogger-cred-test').then(r=>r.json()).then(d=>{var el=document.getElementById('cred-test');el.textContent=d.verdict;el.style.color=d.ok?'#86efac':'#f87171';}).catch(e=>{document.getElementById('cred-test').textContent='테스트 실패: '+e.message;});
+  res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:600px;width:100%}h2{color:#ec4899;margin-top:0}.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #222;font-size:14px}.label{color:#888}.val{color:#86efac;font-family:monospace}.btn{display:block;background:#ec4899;border:none;color:#fff;padding:14px;border-radius:8px;font-size:16px;cursor:pointer;width:100%;margin-top:24px;text-decoration:none;text-align:center}</style></head><body><div class="card"><h2>🔧 Blogger 설정 확인</h2><div class="row"><span class="label">BLOGGER_CLIENT_ID</span><span class="val">${masked}</span></div><div class="row"><span class="label">BLOGGER_CLIENT_SECRET</span><span class="val">${secInfo}</span></div><div class="row"><span class="label">BLOGGER_REFRESH_TOKEN</span><span class="val">${tokens.get('BLOGGER_REFRESH_TOKEN') ? '✅ 설정됨' : '❌ 미설정'}</span></div><div class="row"><span class="label">BLOGGER_BLOG_ID</span><span class="val">${tokens.get('BLOGGER_BLOG_ID') || '❌ 미설정'}</span></div><div class="row"><span class="label">감지된 서버 URL</span><span class="val">${baseUrl}</span></div><div class="row"><span class="label">자격증명 검증</span><span class="val" id="cred-test">확인 중...</span></div><div style="margin-top:16px;padding:14px;background:#0f0f0f;border:1px solid #444;border-radius:10px"><div style="color:#fbbf24;font-size:13px;font-weight:bold;margin-bottom:8px">⚠️ 구글 콘솔 → 승인된 리디렉션 URI 에 아래 주소를 등록해야 합니다</div><div style="color:#86efac;font-family:monospace;font-size:12px;word-break:break-all;user-select:all;background:#000;padding:10px;border-radius:6px">${baseUrl}/oauth/blogger/callback</div></div><div style="margin-top:24px;padding-top:20px;border-top:1px solid #333"><div style="color:#ec4899;font-weight:bold;margin-bottom:10px">📋 여기에 직접 붙여넣기 (Railway 안 거침)</div><input id="in-cid" placeholder="클라이언트 ID (...apps.googleusercontent.com)" style="width:100%;box-sizing:border-box;background:#0f0f0f;border:1px solid #444;border-radius:8px;color:#eee;padding:12px;font-size:13px;margin-bottom:8px"><input id="in-sec" placeholder="클라이언트 시크릿 (GOCSPX-...)" style="width:100%;box-sizing:border-box;background:#0f0f0f;border:1px solid #444;border-radius:8px;color:#eee;padding:12px;font-size:13px;margin-bottom:8px"><button onclick="credSet()" style="background:#22c55e;border:none;color:#fff;padding:12px;border-radius:8px;font-size:15px;cursor:pointer;width:100%">✔ 검증하고 저장</button><div id="cred-set-result" style="margin-top:10px;font-size:14px;text-align:center"></div></div><a class="btn" href="/oauth/blogger">🔑 Blogger OAuth 인증 시작</a></div><script>fetch('/api/blogger-cred-test').then(r=>r.json()).then(d=>{var el=document.getElementById('cred-test');el.textContent=d.verdict;el.style.color=d.ok?'#86efac':'#f87171';}).catch(e=>{document.getElementById('cred-test').textContent='테스트 실패: '+e.message;});
 function credSet(){var r=document.getElementById('cred-set-result');r.textContent='구글에 확인 중...';r.style.color='#aaa';fetch('/api/blogger-cred-set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId:document.getElementById('in-cid').value,clientSecret:document.getElementById('in-sec').value})}).then(function(x){return x.json();}).then(function(d){r.textContent=d.verdict;r.style.color=d.ok?'#86efac':'#f87171';}).catch(function(e){r.textContent='오류: '+e.message;r.style.color='#f87171';});}</script></body></html>`);
 });
 
 // ── Blogger OAuth ────────────────────────────────────────
 app.get('/oauth/blogger', (req, res) => {
   const baseUrl = getBaseUrl(req);
-  const clientId = process.env.BLOGGER_CLIENT_ID;
+  const clientId = tokens.get('BLOGGER_CLIENT_ID');
   if (!clientId) {
     return res.send(`<h2>설정 필요</h2><p>Railway에 BLOGGER_CLIENT_ID 가 설정되지 않았습니다.</p>`);
   }
@@ -956,8 +956,8 @@ app.get('/oauth/blogger/callback', async (req, res) => {
   }
   try {
     const { accessToken, refreshToken } = await exchangeBloggerToken(
-      process.env.BLOGGER_CLIENT_ID,
-      process.env.BLOGGER_CLIENT_SECRET,
+      tokens.get('BLOGGER_CLIENT_ID'),
+      tokens.get('BLOGGER_CLIENT_SECRET'),
       code,
       `${baseUrl}/oauth/blogger/callback`,
     );
@@ -969,8 +969,8 @@ app.get('/oauth/blogger/callback', async (req, res) => {
     try {
       const { getBloggerBlogId } = require('./publisher/blogger');
       const blogs = await getBloggerBlogId(
-        process.env.BLOGGER_CLIENT_ID,
-        process.env.BLOGGER_CLIENT_SECRET,
+        tokens.get('BLOGGER_CLIENT_ID'),
+        tokens.get('BLOGGER_CLIENT_SECRET'),
         refreshToken,
       );
       if (blogs && blogs[0]) {
@@ -979,7 +979,7 @@ app.get('/oauth/blogger/callback', async (req, res) => {
       }
     } catch (_) {}
 
-    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:480px;width:100%;text-align:center}h2{color:#22c55e;margin-top:0}p{color:#aaa;font-size:14px;line-height:1.6}.ok{font-size:64px;margin:16px 0}.btn{display:block;background:#333;border:none;color:#fff;padding:14px;border-radius:8px;font-size:15px;cursor:pointer;width:100%;margin-top:16px;text-decoration:none;font-family:inherit}</style></head><body><div class="card"><div class="ok">✅</div><h2>블로그스팟 인증 완료!</h2><p>토큰이 서버에 <strong>자동 저장</strong>되었습니다.<br>블로그 ID도 자동으로 설정했습니다.<br>이제 창을 닫고 대시보드에서 발행하세요.</p><a class="btn" href="javascript:window.close()">창 닫기</a></div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:480px;width:100%;text-align:center}h2{color:#22c55e;margin-top:0}p{color:#aaa;font-size:14px;line-height:1.6}.ok{font-size:64px;margin:16px 0}.btn{display:block;background:#333;border:none;color:#fff;padding:14px;border-radius:8px;font-size:15px;cursor:pointer;width:100%;margin-top:16px;text-decoration:none;font-family:inherit}</style></head><body><div class="card"><div class="ok">✅</div><h2>블로그스팟 인증 완료!</h2><p>토큰이 서버에 저장되었습니다. 바로 발행 가능합니다.</p><div style="text-align:left;background:#0f0f0f;border:1px solid #444;border-radius:10px;padding:14px;margin-top:16px"><div style="color:#fbbf24;font-size:12px;font-weight:bold;margin-bottom:8px">⚠️ 재배포 후에도 유지하려면 아래 값을 Railway의 BLOGGER_REFRESH_TOKEN 에 저장하세요 (1회만)</div><div style="color:#86efac;font-family:monospace;font-size:11px;word-break:break-all;user-select:all;background:#000;padding:10px;border-radius:6px">${refreshToken || '(재발급 필요 — 인증 다시 시도)'}</div></div><a class="btn" href="javascript:window.close()">창 닫기</a></div></body></html>`);
   } catch (err) {
     res.send(`<h2>토큰 교환 실패</h2><p>${err.message}</p><p><a href="/oauth/blogger">다시 시도</a></p>`);
   }
