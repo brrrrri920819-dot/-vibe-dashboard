@@ -859,6 +859,34 @@ app.get('/api/auto-auth/tistory', auth, async (req, res) => {
   })();
 });
 
+// ── Blogger 자격증명 즉석 검증 (가짜 code로 토큰 교환 시도 → 에러 종류로 판정) ──
+app.get('/api/blogger-cred-test', async (req, res) => {
+  const cid = process.env.BLOGGER_CLIENT_ID;
+  const sec = process.env.BLOGGER_CLIENT_SECRET;
+  if (!cid || !sec) return res.json({ ok: false, verdict: 'ID 또는 시크릿 미설정' });
+  try {
+    const axios = require('axios');
+    await axios.post('https://oauth2.googleapis.com/token', new URLSearchParams({
+      client_id: cid.trim(),
+      client_secret: sec.trim(),
+      code: 'diagnostic_fake_code',
+      redirect_uri: 'https://localhost/cb',
+      grant_type: 'authorization_code',
+    }).toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+    res.json({ ok: true, verdict: '✅ 자격증명 정상' });
+  } catch (err) {
+    const e = err.response?.data?.error || '';
+    if (e === 'invalid_grant') {
+      // code가 가짜라서 나는 에러 = ID/시크릿 자체는 통과
+      res.json({ ok: true, verdict: '✅ ID/시크릿 정상 — 인증 버튼 다시 눌러보세요' });
+    } else if (e === 'invalid_client') {
+      res.json({ ok: false, verdict: '❌ ID/시크릿 짝이 틀림 — 구글 콘솔에서 같은 클라이언트의 ID+시크릿인지 확인', raw: err.response?.data });
+    } else {
+      res.json({ ok: false, verdict: `❓ ${e || err.message}`, raw: err.response?.data });
+    }
+  }
+});
+
 // ── Setup 페이지 (어떤 클라이언트 ID가 설정됐는지 확인) ──
 app.get('/setup', (req, res) => {
   const cid = process.env.BLOGGER_CLIENT_ID || '';
@@ -873,7 +901,7 @@ app.get('/setup', (req, res) => {
     secInfo = `${trimmed.slice(0, 7)}... (길이 ${sec.length}${hasWs ? ' ⚠️공백포함' : ''}${prefixOk ? '' : ' ⚠️GOCSPX- 아님'})`;
   }
   const baseUrl = getBaseUrl(req);
-  res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:600px;width:100%}h2{color:#ec4899;margin-top:0}.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #222;font-size:14px}.label{color:#888}.val{color:#86efac;font-family:monospace}.btn{display:block;background:#ec4899;border:none;color:#fff;padding:14px;border-radius:8px;font-size:16px;cursor:pointer;width:100%;margin-top:24px;text-decoration:none;text-align:center}</style></head><body><div class="card"><h2>🔧 Blogger 설정 확인</h2><div class="row"><span class="label">BLOGGER_CLIENT_ID</span><span class="val">${masked}</span></div><div class="row"><span class="label">BLOGGER_CLIENT_SECRET</span><span class="val">${secInfo}</span></div><div class="row"><span class="label">BLOGGER_REFRESH_TOKEN</span><span class="val">${process.env.BLOGGER_REFRESH_TOKEN ? '✅ 설정됨' : '❌ 미설정'}</span></div><div class="row"><span class="label">BLOGGER_BLOG_ID</span><span class="val">${process.env.BLOGGER_BLOG_ID || '❌ 미설정'}</span></div><div class="row"><span class="label">감지된 서버 URL</span><span class="val">${baseUrl}</span></div><a class="btn" href="/oauth/blogger">🔑 Blogger OAuth 인증 시작</a></div></body></html>`);
+  res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:600px;width:100%}h2{color:#ec4899;margin-top:0}.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #222;font-size:14px}.label{color:#888}.val{color:#86efac;font-family:monospace}.btn{display:block;background:#ec4899;border:none;color:#fff;padding:14px;border-radius:8px;font-size:16px;cursor:pointer;width:100%;margin-top:24px;text-decoration:none;text-align:center}</style></head><body><div class="card"><h2>🔧 Blogger 설정 확인</h2><div class="row"><span class="label">BLOGGER_CLIENT_ID</span><span class="val">${masked}</span></div><div class="row"><span class="label">BLOGGER_CLIENT_SECRET</span><span class="val">${secInfo}</span></div><div class="row"><span class="label">BLOGGER_REFRESH_TOKEN</span><span class="val">${process.env.BLOGGER_REFRESH_TOKEN ? '✅ 설정됨' : '❌ 미설정'}</span></div><div class="row"><span class="label">BLOGGER_BLOG_ID</span><span class="val">${process.env.BLOGGER_BLOG_ID || '❌ 미설정'}</span></div><div class="row"><span class="label">감지된 서버 URL</span><span class="val">${baseUrl}</span></div><div class="row"><span class="label">자격증명 검증</span><span class="val" id="cred-test">확인 중...</span></div><a class="btn" href="/oauth/blogger">🔑 Blogger OAuth 인증 시작</a></div><script>fetch('/api/blogger-cred-test').then(r=>r.json()).then(d=>{var el=document.getElementById('cred-test');el.textContent=d.verdict;el.style.color=d.ok?'#86efac':'#f87171';}).catch(e=>{document.getElementById('cred-test').textContent='테스트 실패: '+e.message;});</script></body></html>`);
 });
 
 // ── Blogger OAuth ────────────────────────────────────────
