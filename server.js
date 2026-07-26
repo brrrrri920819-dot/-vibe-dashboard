@@ -889,7 +889,8 @@ app.get('/api/blogger-cred-test', async (req, res) => {
 
 // ── Blogger 자격증명 직접 입력 + 즉석 검증 + 저장 ──
 app.post('/api/blogger-cred-set', async (req, res) => {
-  const cid = (req.body.clientId || '').trim();
+  // 사파리가 URL처럼 생긴 값에 http:// 를 자동으로 붙이는 경우 제거
+  const cid = (req.body.clientId || '').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
   const sec = (req.body.clientSecret || '').trim();
   if (!cid || !sec) return res.json({ ok: false, verdict: 'ID와 시크릿 둘 다 입력하세요' });
   try {
