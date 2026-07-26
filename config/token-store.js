@@ -18,10 +18,11 @@ function write(data) {
 }
 
 function get(key) {
-  // 1순위: 환경변수 (Railway Variables)
-  if (process.env[key]) return process.env[key];
-  // 2순위: 파일 저장값
-  return read()[key] || null;
+  // 1순위: 파일 저장값 (검증 후 명시적으로 저장된 값 — 잘못된 env가 못 이기게)
+  const fileVal = read()[key];
+  if (fileVal) return fileVal;
+  // 2순위: 환경변수 (Railway Variables)
+  return process.env[key] || null;
 }
 
 function set(key, value) {
