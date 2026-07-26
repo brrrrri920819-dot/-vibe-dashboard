@@ -116,16 +116,21 @@ function getBloggerAuthUrl(clientId, redirectUri) {
  * 인증 코드 → Refresh Token 교환
  */
 async function exchangeBloggerToken(clientId, clientSecret, code, redirectUri) {
-  const res = await axios.post(OAUTH_TOKEN_URL, new URLSearchParams({
-    client_id: clientId,
-    client_secret: clientSecret,
-    code,
-    redirect_uri: redirectUri,
-    grant_type: 'authorization_code',
-  }).toString(), {
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  });
-  return { accessToken: res.data.access_token, refreshToken: res.data.refresh_token };
+  try {
+    const res = await axios.post(OAUTH_TOKEN_URL, new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      code,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+    }).toString(), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+    return { accessToken: res.data.access_token, refreshToken: res.data.refresh_token };
+  } catch (err) {
+    const detail = err.response?.data ? JSON.stringify(err.response.data) : err.message;
+    throw new Error(`Google 토큰 교환 실패 (${err.response?.status || '?'}): ${detail}`);
+  }
 }
 
 /**
