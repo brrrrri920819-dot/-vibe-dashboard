@@ -992,6 +992,29 @@ body{background:
       </div>
 
       <div class="section">
+        <div class="bp-section-title">📄 애드센스 필수 페이지</div>
+        <div class="bp-humanize-tip" style="margin-bottom:10px">
+          <b>소개 · 개인정보처리방침 · 문의하기</b> 3개가 없으면 글을 아무리 많이 써도
+          신뢰도 부족으로 승인이 거절됩니다.<br>아래 버튼 한 번이면 3개가 순서대로 발행됩니다.
+        </div>
+        <div class="bp-row" style="flex-wrap:wrap">
+          <input class="bp-inp" id="ads-blogname" placeholder="블로그 이름" value="brbr819" style="flex:1;min-width:150px">
+          <input class="bp-inp" id="ads-topic" placeholder="주제 (예: 생활정보)" value="생활정보" style="flex:1;min-width:150px">
+        </div>
+        <div class="bp-row" style="flex-wrap:wrap">
+          <input class="bp-inp" id="ads-email" placeholder="문의받을 이메일" value="brrrrri920819@gmail.com" style="flex:1;min-width:180px">
+          <input class="bp-inp" id="ads-siteurl" placeholder="블로그 주소 (선택)" style="flex:1;min-width:180px">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <label class="bp-img-label" style="margin:0"><input type="checkbox" id="ads-p-blogger" checked style="margin-right:6px">🔵 블로그스팟</label>
+          <label class="bp-img-label" style="margin:0"><input type="checkbox" id="ads-p-tistory" style="margin-right:6px">🟠 티스토리</label>
+          <label class="bp-img-label" style="margin:0"><input type="checkbox" id="ads-p-naver" style="margin-right:6px">🟢 네이버</label>
+        </div>
+        <button class="bp-pub-btn" style="max-width:220px" id="ads-pages-btn" onclick="publishAdsensePages()">📄 필수 페이지 3개 발행</button>
+        <div id="ads-pages-result" style="margin-top:12px;display:none"></div>
+      </div>
+
+      <div class="section">
         <div class="bp-section-title">🔍 플랫폼 실제 연결 테스트</div>
         <div class="bp-humanize-tip" style="margin-bottom:10px">자격증명이 실제로 유효한지 확인합니다. 발행이 안 될 때 여기서 원인을 찾으세요.</div>
         <button class="bp-pub-btn" style="max-width:180px" id="plat-test-btn" onclick="testPlatformConnections()">🔌 연결 테스트</button>
@@ -2204,6 +2227,71 @@ async function saveBpServer() {
     status.textContent = '❌ 연결 실패: ' + e.message;
     status.style.color = 'var(--err)';
     bpToast('서버 연결 실패', 'err');
+  }
+}
+
+async function publishAdsensePages() {
+  var btn  = document.getElementById('ads-pages-btn');
+  var wrap = document.getElementById('ads-pages-result');
+  var email = (document.getElementById('ads-email').value || '').trim();
+  if (!email) { bpToast('문의받을 이메일을 입력해주세요', 'err'); return; }
+
+  var platforms = [];
+  ['blogger','tistory','naver'].forEach(function(p) {
+    if (document.getElementById('ads-p-' + p).checked) platforms.push(p);
+  });
+  if (!platforms.length) { bpToast('발행할 플랫폼을 하나 이상 선택해주세요', 'err'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="bp-spinner"></span>발행 중...';
+  wrap.style.display = 'block';
+  wrap.innerHTML = '<div style="color:var(--t2);font-size:13px">3개 페이지를 순서대로 발행합니다. 1~2분 걸립니다...</div>';
+
+  try {
+    var init = await bpFetch('/api/adsense-pages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        blogName:     (document.getElementById('ads-blogname').value || '').trim(),
+        topic:        (document.getElementById('ads-topic').value || '').trim(),
+        ownerName:    (document.getElementById('ads-blogname').value || '').trim(),
+        contactEmail: email,
+        siteUrl:      (document.getElementById('ads-siteurl').value || '').trim(),
+        platforms:    platforms,
+      }),
+    });
+    if (!init.jobId) throw new Error(init.error || '요청 실패');
+
+    var attempts = 0;
+    var data = await new Promise(function(resolve, reject) {
+      var t = setInterval(async function() {
+        attempts++;
+        if (attempts > 90) { clearInterval(t); reject(new Error('시간 초과 (3분)')); return; }
+        try {
+          var s = await bpFetch('/api/adsense-pages-status/' + init.jobId);
+          wrap.innerHTML = '<div style="color:var(--t2);font-size:13px">진행: '
+            + (s.done || 0) + ' / ' + (s.total || 3) + '개 발행됨...</div>';
+          if (s.status === 'done')  { clearInterval(t); resolve(s); }
+          if (s.status === 'error') { clearInterval(t); reject(new Error(s.error || '발행 실패')); }
+        } catch (pe) { if (attempts > 12) { clearInterval(t); reject(pe); } }
+      }, 2000);
+    });
+
+    wrap.innerHTML = (data.results || []).map(function(r) {
+      return '<div class="plat-test-row' + (r.success ? ' ok' : ' fail') + '">'
+        + '<div class="ptr-head"><span class="ptr-icon">' + (r.success ? '✅' : '❌') + '</span>'
+        + '<span class="ptr-name">' + escHtml(r.title) + '</span>'
+        + '<span class="ptr-pill">' + (r.success ? '발행됨' : '실패') + '</span></div>'
+        + (r.error ? '<div class="ptr-msg">' + escHtml(r.error) + '</div>' : '')
+        + '</div>';
+    }).join('');
+    bpToast(data.success ? '✅ 필수 페이지 3개 발행 완료' : '⚠️ 일부 실패 — 아래 확인', data.success ? 'ok' : 'warn');
+  } catch (e) {
+    wrap.innerHTML = '<div style="color:var(--err);font-size:13px">❌ ' + escHtml(e.message) + '</div>';
+    bpToast('발행 실패: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📄 필수 페이지 3개 발행';
   }
 }
 
