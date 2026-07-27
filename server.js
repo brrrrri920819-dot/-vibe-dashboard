@@ -948,8 +948,74 @@ app.get('/setup', (req, res) => {
     secInfo = `${trimmed.slice(0, 7)}... (길이 ${sec.length}${hasWs ? ' ⚠️공백포함' : ''}${prefixOk ? '' : ' ⚠️GOCSPX- 아님'})`;
   }
   const baseUrl = getBaseUrl(req);
-  res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:600px;width:100%}h2{color:#ec4899;margin-top:0}.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #222;font-size:14px}.label{color:#888}.val{color:#86efac;font-family:monospace}.btn{display:block;background:#ec4899;border:none;color:#fff;padding:14px;border-radius:8px;font-size:16px;cursor:pointer;width:100%;margin-top:24px;text-decoration:none;text-align:center}</style></head><body><div class="card"><h2>🔧 Blogger 설정 확인</h2><div class="row"><span class="label">BLOGGER_CLIENT_ID</span><span class="val">${masked}</span></div><div class="row"><span class="label">BLOGGER_CLIENT_SECRET</span><span class="val">${secInfo}</span></div><div class="row"><span class="label">BLOGGER_REFRESH_TOKEN</span><span class="val">${tokens.get('BLOGGER_REFRESH_TOKEN') ? '✅ 설정됨' : '❌ 미설정'}</span></div><div class="row"><span class="label">BLOGGER_BLOG_ID</span><span class="val">${tokens.get('BLOGGER_BLOG_ID') || '❌ 미설정'}</span></div><div class="row"><span class="label">감지된 서버 URL</span><span class="val">${baseUrl}</span></div><div class="row"><span class="label">자격증명 검증</span><span class="val" id="cred-test">확인 중...</span></div><div style="margin-top:16px;padding:14px;background:#0f0f0f;border:1px solid #444;border-radius:10px"><div style="color:#fbbf24;font-size:13px;font-weight:bold;margin-bottom:8px">⚠️ 구글 콘솔 → 승인된 리디렉션 URI 에 아래 주소를 등록해야 합니다</div><div style="color:#86efac;font-family:monospace;font-size:12px;word-break:break-all;user-select:all;background:#000;padding:10px;border-radius:6px">${baseUrl}/oauth/blogger/callback</div></div><div style="margin-top:24px;padding-top:20px;border-top:1px solid #333"><div style="color:#ec4899;font-weight:bold;margin-bottom:10px">📋 여기에 직접 붙여넣기 (Railway 안 거침)</div><input id="in-cid" placeholder="클라이언트 ID (...apps.googleusercontent.com)" style="width:100%;box-sizing:border-box;background:#0f0f0f;border:1px solid #444;border-radius:8px;color:#eee;padding:12px;font-size:13px;margin-bottom:8px"><input id="in-sec" placeholder="클라이언트 시크릿 (GOCSPX-...)" style="width:100%;box-sizing:border-box;background:#0f0f0f;border:1px solid #444;border-radius:8px;color:#eee;padding:12px;font-size:13px;margin-bottom:8px"><button onclick="credSet()" style="background:#22c55e;border:none;color:#fff;padding:12px;border-radius:8px;font-size:15px;cursor:pointer;width:100%">✔ 검증하고 저장</button><div id="cred-set-result" style="margin-top:10px;font-size:14px;text-align:center"></div></div><a class="btn" href="/oauth/blogger">🔑 Blogger OAuth 인증 시작</a></div><script>fetch('/api/blogger-cred-test').then(r=>r.json()).then(d=>{var el=document.getElementById('cred-test');el.textContent=d.verdict;el.style.color=d.ok?'#86efac':'#f87171';}).catch(e=>{document.getElementById('cred-test').textContent='테스트 실패: '+e.message;});
-function credSet(){var r=document.getElementById('cred-set-result');r.textContent='구글에 확인 중...';r.style.color='#aaa';fetch('/api/blogger-cred-set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId:document.getElementById('in-cid').value,clientSecret:document.getElementById('in-sec').value})}).then(function(x){return x.json();}).then(function(d){r.textContent=d.verdict;r.style.color=d.ok?'#86efac':'#f87171';}).catch(function(e){r.textContent='오류: '+e.message;r.style.color='#f87171';});}</script></body></html>`);
+  const refreshOk = !!tokens.get('BLOGGER_REFRESH_TOKEN');
+  const blogIdVal = tokens.get('BLOGGER_BLOG_ID') || '';
+  const dot = (ok) => `<span class="dot ${ok ? 'on' : 'off'}"></span>`;
+  res.send(`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Blogger 연결 설정</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard','Apple SD Gothic Neo',-apple-system,sans-serif;color:#eef0ff;min-height:100vh;padding:28px 16px 64px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  background:radial-gradient(1000px 560px at 80% -10%,rgba(236,72,153,.1),transparent 60%),radial-gradient(760px 460px at -10% 6%,rgba(99,102,241,.07),transparent 58%),#080b14;background-attachment:fixed}
+.wrap{max-width:560px;margin:0 auto}
+.head{display:flex;align-items:center;gap:13px;margin-bottom:22px}
+.logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#ec4899,#f43f5e);display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 8px 24px rgba(236,72,153,.36);flex-shrink:0}
+h1{font-size:19px;font-weight:700;letter-spacing:-.3px}
+.sub{color:#7c85b0;font-size:12.5px;margin-top:2px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.03),transparent 42%),#0e1120;border:1px solid #1e2238;border-radius:16px;padding:20px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -20px rgba(0,0,0,.8)}
+.card-t{font-size:12.5px;font-weight:700;letter-spacing:.3px;margin-bottom:14px;display:flex;align-items:center;gap:8px;color:#eef0ff}
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid #171a2c}
+.row:last-child{border-bottom:none}
+.k{color:#7c85b0;font-size:11.5px;font-weight:600;letter-spacing:.3px;flex-shrink:0}
+.v{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:#86efac;text-align:right;word-break:break-all;min-width:0}
+.v.off{color:#64708f}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.dot.on{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+.dot.off{background:#3d4568}
+.note{border-radius:12px;padding:13px 15px;font-size:12px;line-height:1.65;margin-top:16px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);color:#fcd34d}
+.note b{display:block;margin-bottom:7px}
+.mono-box{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:#86efac;word-break:break-all;user-select:all;background:rgba(0,0,0,.45);border:1px solid #23273d;padding:11px 12px;border-radius:9px;margin-top:8px;line-height:1.6}
+label{display:block;color:#7c85b0;font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin:0 0 6px}
+input{width:100%;background:#141728;border:1px solid #252840;border-radius:10px;color:#eef0ff;padding:12px 13px;font-size:13.5px;font-family:inherit;outline:none;transition:all .2s cubic-bezier(.4,0,.2,1);margin-bottom:13px}
+input:focus{border-color:#ec4899;box-shadow:0 0 0 3px rgba(236,72,153,.14)}
+input::placeholder{color:#3d4568}
+button,.btn{display:block;width:100%;border:none;border-radius:11px;padding:13px;font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer;text-align:center;text-decoration:none;transition:all .2s cubic-bezier(.4,0,.2,1)}
+.btn-green{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 4px 16px rgba(34,197,94,.26)}
+.btn-pink{background:linear-gradient(135deg,#ec4899,#f43f5e);color:#fff;box-shadow:0 4px 16px rgba(236,72,153,.32)}
+button:hover,.btn:hover{transform:translateY(-1px);filter:brightness(1.07)}
+button:active,.btn:active{transform:translateY(1px) scale(.99)}
+.result{margin-top:11px;font-size:13px;text-align:center;line-height:1.6;min-height:19px}
+.steps{counter-reset:s;list-style:none}
+.steps li{counter-increment:s;position:relative;padding-left:30px;margin-bottom:9px;color:#7c85b0;font-size:12.5px;line-height:1.6}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:rgba(236,72,153,.14);color:#f9a8d4;font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.steps li b{color:#eef0ff;font-weight:600}
+::selection{background:rgba(236,72,153,.32);color:#fff}
+:focus-visible{outline:2px solid #ec4899;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+</style></head><body><div class="wrap">
+<div class="head"><div class="logo">🔧</div><div><h1>Blogger 연결 설정</h1><div class="sub">구글 계정을 한 번만 연결하면 이후 자동 발행됩니다</div></div></div>
+
+<div class="card"><div class="card-t">📊 현재 상태</div>
+<div class="row"><span class="k">CLIENT ID</span><span class="v ${cid ? '' : 'off'}">${cid ? masked : '미설정'}</span></div>
+<div class="row"><span class="k">CLIENT SECRET</span><span class="v ${sec ? '' : 'off'}">${sec ? secInfo : '미설정'}</span></div>
+<div class="row"><span class="k">REFRESH TOKEN</span><span class="v ${refreshOk ? '' : 'off'}">${dot(refreshOk)}${refreshOk ? '저장됨' : '미설정'}</span></div>
+<div class="row"><span class="k">BLOG ID</span><span class="v ${blogIdVal ? '' : 'off'}">${dot(!!blogIdVal)}${blogIdVal || '인증 시 자동설정'}</span></div>
+<div class="row"><span class="k">자격증명 검증</span><span class="v" id="cred-test">확인 중…</span></div>
+<div class="note"><b>⚠️ 구글 콘솔 → 승인된 리디렉션 URI 에 등록 필요</b>아래 주소를 그대로 복사해서 추가하세요.<div class="mono-box">${baseUrl}/oauth/blogger/callback</div></div>
+</div>
+
+<div class="card"><div class="card-t">📋 자격증명 직접 입력</div>
+<ol class="steps"><li>구글 클라우드 콘솔 → <b>사용자 인증 정보</b></li><li>OAuth 클라이언트 클릭 → <b>ID·시크릿 복사</b></li><li>아래 붙여넣고 <b>검증하고 저장</b></li></ol>
+<div style="height:16px"></div>
+<label for="in-cid">클라이언트 ID</label><input id="in-cid" placeholder="000000000000-xxxxx.apps.googleusercontent.com" autocapitalize="off" autocorrect="off" spellcheck="false">
+<label for="in-sec">클라이언트 시크릿</label><input id="in-sec" placeholder="GOCSPX-••••••••••••••••" autocapitalize="off" autocorrect="off" spellcheck="false">
+<button class="btn-green" onclick="credSet()">✔ 검증하고 저장</button>
+<div class="result" id="cred-set-result"></div>
+</div>
+
+<a class="btn btn-pink" href="/oauth/blogger">🔑 구글 계정 연결 시작</a>
+</div><script>
+fetch('/api/blogger-cred-test').then(function(r){return r.json();}).then(function(d){var el=document.getElementById('cred-test');el.textContent=d.verdict;el.style.color=d.ok?'#86efac':'#f87171';}).catch(function(){var el=document.getElementById('cred-test');el.textContent='테스트 실패';el.style.color='#f87171';});
+function credSet(){var r=document.getElementById('cred-set-result');r.textContent='구글에 확인 중…';r.style.color='#7c85b0';fetch('/api/blogger-cred-set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId:document.getElementById('in-cid').value,clientSecret:document.getElementById('in-sec').value})}).then(function(x){return x.json();}).then(function(d){r.textContent=d.verdict;r.style.color=d.ok?'#86efac':'#f87171';if(d.ok)setTimeout(function(){location.reload();},1400);}).catch(function(e){r.textContent='오류: '+e.message;r.style.color='#f87171';});}
+</script></body></html>`);
 });
 
 // ── Blogger OAuth ────────────────────────────────────────

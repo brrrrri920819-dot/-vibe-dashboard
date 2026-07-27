@@ -175,6 +175,18 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 .bp-spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--bd2);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* ── PLATFORM TEST ROWS ───────────────────────── */
+.plat-test-row{background:var(--s2);border:1px solid var(--bd2);border-radius:11px;padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--bd2)}
+.plat-test-row.ok{border-left-color:var(--ok)}
+.plat-test-row.fail{border-left-color:var(--err)}
+.ptr-head{display:flex;align-items:center;gap:8px}
+.ptr-icon{font-size:13px;line-height:1;flex-shrink:0}
+.ptr-name{font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;flex-shrink:0}
+.ptr-pill{margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.4px;padding:3px 9px;border-radius:20px;flex-shrink:0}
+.plat-test-row.ok .ptr-pill{background:rgba(34,197,94,.13);color:var(--ok)}
+.plat-test-row.fail .ptr-pill{background:rgba(239,68,68,.13);color:var(--err)}
+.ptr-msg{color:var(--t2);font-size:11.5px;line-height:1.6;margin-top:6px;word-break:break-word}
+
 /* ── ACCOUNT CARDS ────────────────────────────── */
 .acc-card{background:var(--s2);border:1px solid var(--bd2);border-radius:13px;padding:18px;margin-bottom:12px;transition:.15s}
 .acc-card:hover{border-color:rgba(236,72,153,.3)}
@@ -591,6 +603,74 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
   .card-nav-btn{display:none}
   .card-preview-slot{width:150px;height:150px}
   .card-preview-inner{transform:scale(0.278);width:540px;height:540px}
+}
+
+/* ══ POLISH LAYER ═══════════════════════════════════════════
+   깊이감·타이포·모션 다듬기 (레이아웃은 건드리지 않음) */
+
+/* 은은한 배경 그라디언트 — 평평한 단색 대신 공간감 */
+body{background:
+  radial-gradient(1100px 620px at 78% -12%, rgba(236,72,153,.075), transparent 62%),
+  radial-gradient(880px 520px at -8% 8%, rgba(99,102,241,.055), transparent 58%),
+  var(--bg);
+  background-attachment:fixed}
+
+/* 카드류: 미세한 상단 하이라이트로 입체감 */
+.section,.stat-card,.acc-card,.pub-posts{
+  background-image:linear-gradient(180deg,rgba(255,255,255,.028),transparent 42%);
+  box-shadow:0 1px 2px rgba(0,0,0,.28), 0 8px 26px -18px rgba(0,0,0,.7)}
+.section{transition:border-color .22s cubic-bezier(.4,0,.2,1)}
+.section:hover{border-color:var(--bd2)}
+
+/* 모션 통일 — 자연스러운 이징 */
+.nav-item,.stat-card,.acc-card,.bp-platform,.bp-pub-btn,.bp-sch-btn,.add-btn,
+.lock-action,.footer-btn,.plat-test-row,.script-segment{
+  transition:all .22s cubic-bezier(.4,0,.2,1)}
+
+/* 버튼 눌림 피드백 */
+.bp-pub-btn:active,.add-btn:active,.lock-action:active,.bp-sch-btn:active{
+  transform:translateY(1px) scale(.985)}
+
+/* 그라디언트 버튼에 광택 한 겹 */
+.bp-pub-btn,.add-btn,.lock-action{
+  background-image:linear-gradient(135deg,#ec4899,#f43f5e),
+                   linear-gradient(180deg,rgba(255,255,255,.16),transparent 55%);
+  background-blend-mode:overlay,normal}
+
+/* 통계 숫자 — 자릿수 흔들림 방지 */
+.sc-val,.hero-stat-val,.pub-stat-val{font-variant-numeric:tabular-nums}
+
+/* 상태 점 맥동 */
+.plat-test-row.ok .ptr-icon{animation:ptr-breathe 2.6s ease-in-out infinite}
+@keyframes ptr-breathe{0%,100%{opacity:1}50%{opacity:.55}}
+
+/* 스크롤바 */
+*{scrollbar-width:thin;scrollbar-color:var(--bd2) transparent}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:20px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:#33395c;background-clip:content-box}
+
+/* 텍스트 선택 */
+::selection{background:rgba(236,72,153,.32);color:#fff}
+
+/* 키보드 접근성 — 마우스 클릭 시엔 안 뜨고 탭 이동 시에만 */
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px;border-radius:6px}
+
+/* 모바일 여백·타이포 최적화 */
+@media(max-width:720px){
+  .main{padding:18px 14px 84px}
+  .section{padding:15px;border-radius:14px}
+  .page-title{font-size:19px}
+  .sc-val{font-size:26px}
+  .bp-grid,.bp-grid-4{grid-template-columns:repeat(2,1fr)}
+  .acc-fields,.bp-datetime-row{grid-template-columns:1fr}
+  .bp-toast{left:14px;right:14px;bottom:76px;max-width:none}
+}
+
+/* 모션 최소화 선호 존중 */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 </style>
 </head>
@@ -2144,11 +2224,14 @@ async function testPlatformConnections() {
       if (r.ok && r.blogs) {
         extra = '<div style="color:var(--t3);font-size:11px;margin-top:2px">' + r.blogs.map(function(b){ return '· ' + b.name + ' (' + b.id + ')'; }).join('<br>') + '</div>';
       }
-      return '<div style="background:var(--s2);border:1px solid var(--bd2);border-radius:8px;padding:10px 13px;margin-bottom:8px">'
-        + '<div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600">'
-        + '<span>' + icon + '</span><span style="color:' + color + '">' + (icons[p] || p) + '</span>'
-        + '<span style="color:var(--t3);font-size:11px;font-weight:400;margin-left:4px">' + escHtml(msg) + '</span>'
-        + '</div>' + extra + '</div>';
+      return '<div class="plat-test-row' + (r.ok ? ' ok' : ' fail') + '">'
+        + '<div class="ptr-head">'
+        + '<span class="ptr-icon">' + icon + '</span>'
+        + '<span class="ptr-name">' + (icons[p] || p) + '</span>'
+        + '<span class="ptr-pill">' + (r.ok ? '연결됨' : '오류') + '</span>'
+        + '</div>'
+        + '<div class="ptr-msg">' + escHtml(msg) + '</div>'
+        + extra + '</div>';
     }).join('');
     wrap.innerHTML = html;
     wrap.style.display = 'block';
