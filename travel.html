@@ -38,7 +38,85 @@ a{color:inherit}
 .top-btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
 .top-btn.primary:hover{background:#000;color:#fff}
 
-main{max-width:980px;margin:0 auto;padding:0 20px 120px}
+.nav-toggle{width:36px;height:36px;flex:none;border-radius:11px;border:1px solid var(--line);background:#fff;font-size:16px;transition:.15s}
+.nav-toggle:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ---------- 레이아웃: 좌측 카테고리 + 본문 ---------- */
+#shell{max-width:1280px;margin:0 auto;display:flex;align-items:flex-start;gap:22px}
+main{flex:1;min-width:0;max-width:980px;padding:0 20px 120px}
+#side{
+  width:252px;flex:none;position:sticky;top:61px;align-self:flex-start;
+  max-height:calc(100vh - 61px);overflow-y:auto;padding:22px 6px 40px 20px;
+}
+#nav-scrim{display:none}
+
+/* 카테고리 트리 */
+.nav-h{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:var(--sub);letter-spacing:.03em;margin:0 0 10px 6px}
+.nav-h .n{background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px;font-size:10.5px}
+.nav-grp{margin-bottom:6px}
+.nav-top{
+  width:100%;display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:11px;
+  font-size:13.5px;font-weight:800;color:var(--ink);transition:.14s;text-align:left;
+}
+.nav-top:hover{background:#EFEBE1}
+.nav-top .ar{margin-left:auto;font-size:10px;color:var(--sub);transition:transform .18s}
+.nav-grp.open .nav-top .ar{transform:rotate(90deg)}
+.nav-kids{display:none;padding:2px 0 6px 10px;border-left:1.5px solid var(--line);margin-left:16px}
+.nav-grp.open .nav-kids{display:block}
+.nav-item{
+  width:100%;display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:9px;
+  font-size:12.5px;font-weight:700;color:#4B5265;transition:.14s;text-align:left;
+}
+.nav-item:hover{background:#EFEBE1;color:var(--ink)}
+.nav-item.on{background:var(--ink);color:#fff}
+.nav-item .c{margin-left:auto;font-size:10.5px;font-weight:800;opacity:.7}
+.nav-item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-item .x{opacity:0;font-size:11px;padding:0 2px}
+.nav-item:hover .x{opacity:.55}
+.nav-item .x:hover{opacity:1;color:#FF9C9C}
+.nav-empty{font-size:11.5px;color:var(--sub);font-weight:600;padding:6px 10px;line-height:1.5}
+.nav-add{
+  width:100%;display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:9px;
+  font-size:12.5px;font-weight:800;color:var(--accent-deep);border:1.5px dashed #F0C8BF;transition:.14s;margin-top:4px;
+}
+.nav-add:hover{background:#FFF0ED;border-color:var(--accent)}
+.nav-newrow{display:flex;gap:6px;margin-top:6px}
+.nav-newrow input{flex:1;min-width:0;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:12.5px;font-weight:600;background:#fff;color:var(--ink);outline:none}
+.nav-newrow input:focus{border-color:var(--accent)}
+.nav-newrow button{font-size:12px;font-weight:800;padding:0 12px;border-radius:9px;background:var(--ink);color:#fff}
+
+/* 보관함 갤러리 */
+.gal-head{padding:30px 0 4px}
+.gal-head .bc{font-size:12.5px;font-weight:800;color:var(--sub);letter-spacing:.02em}
+.gal-head h1{font-size:clamp(22px,4vw,30px);font-weight:900;letter-spacing:-.02em;margin-top:6px}
+.gal-head .sub{font-size:13.5px;color:var(--sub);font-weight:600;margin-top:5px}
+.gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:14px;margin-top:20px}
+.gal-card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);transition:.16s;display:flex;flex-direction:column}
+.gal-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.gal-thumb{position:relative;display:block;width:100%;aspect-ratio:3/4;background:#1B2540;border:0;padding:0;cursor:pointer;overflow:hidden}
+.gal-thumb img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.gal-thumb .ph{position:absolute;inset:0;display:grid;place-items:center;color:#8D9AC0;font-size:12px;font-weight:700;text-align:center;padding:14px;line-height:1.6}
+.gal-thumb .zoom{position:absolute;bottom:8px;right:8px;background:rgba(22,33,58,.82);color:#fff;font-size:10.5px;font-weight:800;border-radius:99px;padding:4px 9px}
+.gal-body{padding:13px 14px 14px;display:flex;flex-direction:column;gap:3px;flex:1}
+.gal-nm{font-size:14px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.gal-nm .badge{font-size:10px;font-weight:800;color:#157A48;background:#EDFAF2;border:1px solid #BBEBD0;border-radius:99px;padding:1px 7px;white-space:nowrap}
+.gal-mt{font-size:11.5px;color:var(--sub);font-weight:600;line-height:1.5}
+.gal-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.gal-tag{font-size:10.5px;font-weight:800;color:var(--indigo);background:#EEF0FE;border:1px solid #D8DCFB;border-radius:99px;padding:2px 8px}
+.gal-acts{display:flex;gap:6px;margin-top:auto;padding-top:11px}
+.gal-b{flex:1;font-size:11.5px;font-weight:800;padding:8px 4px;border-radius:9px;border:1.5px solid var(--line);background:#FCFBF8;transition:.14s}
+.gal-b:hover{border-color:var(--ink)}
+.gal-b.p{background:var(--ink);border-color:var(--ink);color:#fff}
+.gal-b.d{flex:none;width:34px}
+.gal-b.d:hover{border-color:#C0313E;color:#C0313E}
+.tagbox{border-top:1px dashed var(--line);margin-top:10px;padding-top:10px}
+.tagbox .lb{font-size:10.5px;font-weight:800;color:var(--sub)}
+.tagbox .row{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.tagbox .t{font-size:11px;font-weight:700;border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:4px 10px;transition:.14s}
+.tagbox .t.on{background:var(--indigo);border-color:var(--indigo);color:#fff}
+.gal-none{background:#FCFBF8;border:1.5px dashed #D8D2C2;border-radius:16px;padding:34px 22px;text-align:center;margin-top:20px}
+.gal-none .t{font-size:15.5px;font-weight:800}
+.gal-none .s{font-size:13px;color:var(--sub);font-weight:600;margin-top:6px;line-height:1.6}
 
 /* ---------- hero ---------- */
 .hero{padding:56px 0 8px;text-align:center}
@@ -367,11 +445,27 @@ main{max-width:980px;margin:0 auto;padding:0 20px 120px}
 
 footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color:var(--sub);text-align:center;line-height:1.7}
 
+/* 태블릿 이하: 사이드바를 서랍으로 */
+@media (max-width:900px){
+  #side{
+    position:fixed;top:0;left:0;bottom:0;width:274px;z-index:90;background:var(--card);
+    border-right:1px solid var(--line);box-shadow:0 0 40px rgba(22,33,58,.16);
+    padding:20px 14px 40px;max-height:none;
+    transform:translateX(-100%);transition:transform .24s ease;
+  }
+  #side.open{transform:none}
+  #nav-scrim{display:block;position:fixed;inset:0;background:rgba(15,20,35,.45);z-index:89;opacity:0;pointer-events:none;transition:opacity .24s}
+  #nav-scrim.open{opacity:1;pointer-events:auto}
+  #shell{gap:0}
+}
+@media (min-width:901px){ .nav-toggle{display:none} }
+
 @media (max-width:640px){
   .logo{white-space:nowrap}
   .logo .sub{display:none}
-  #topbar .in{padding:12px 14px;gap:8px}
-  .top-btn{padding:7px 11px;font-size:12px;white-space:nowrap}
+  #topbar .in{padding:12px 12px;gap:6px}
+  .top-btn{padding:7px 10px;font-size:13px;white-space:nowrap}
+  .top-btn .lbl{display:none}   /* 좁은 화면에서는 아이콘만 */
   .region-grid{grid-template-columns:repeat(2,1fr)}
   .stat-grid{grid-template-columns:repeat(2,1fr)}
   .stay-grid,.site-grid{grid-template-columns:repeat(2,1fr)}
@@ -396,14 +490,23 @@ footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color
 
 <header id="topbar">
   <div class="in">
+    <button class="nav-toggle" data-action="toggle-nav" aria-label="카테고리 열기">☰</button>
     <div class="logo"><span class="mark">여로</span><span>YEORO</span><span class="sub">나만의 한국 여행 코스</span></div>
     <div class="sp"></div>
-    <button class="top-btn" id="btn-checklist" hidden data-action="checklist">✅ 실시간 체크리스트</button>
-    <button class="top-btn primary" id="btn-new" hidden data-action="new-trip">＋ 새 여행</button>
+    <button class="top-btn" id="btn-checklist" hidden data-action="checklist">✅<span class="lbl"> 실시간 체크리스트</span></button>
+    <button class="top-btn primary" id="btn-new" hidden data-action="new-trip">＋<span class="lbl"> 새 여행</span></button>
   </div>
 </header>
 
+<div id="shell">
+<aside id="side" aria-label="코스 카테고리">
+  <div id="nav-tree"></div>
+</aside>
+<div id="nav-scrim" data-action="close-nav"></div>
 <main>
+  <!-- ============ 보관함 갤러리 ============ -->
+  <section id="gallery-view" hidden></section>
+
   <!-- ============ SETUP ============ -->
   <section id="setup-view">
     <div class="hero">
@@ -419,7 +522,6 @@ footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color
       <div style="margin-top:14px" id="resume-wrap"></div>
     </div>
 
-    <div id="library"></div>
 
     <div class="step">
       <div class="step-head"><div class="step-num">1</div><h2>어디로 떠나요?</h2><span class="hint">지역 하나를 선택</span></div>
@@ -492,6 +594,7 @@ footer{max-width:980px;margin:0 auto;padding:30px 20px 46px;font-size:12px;color
   </section>
   <div id="print-sheet" aria-hidden="true"></div>
 </main>
+</div>
 
 <footer>
   장소 정보(영업시간·휴무)는 큐레이션 시점 기준 참고용입니다. 폐업·임시휴무·시간 변경은 각 카드의 <b>네이버 지도</b> 링크에서 방문 직전에 꼭 확인하세요.<br>
@@ -2055,6 +2158,7 @@ function confirmPlan(){
 
 function showResult(){
   $('#setup-view').hidden=true;
+  $('#gallery-view').hidden=true;
   $('#result-view').hidden=false;
   $('#btn-new').hidden=false;
   $('#btn-checklist').hidden=false;
@@ -2063,10 +2167,12 @@ function showResult(){
 }
 function goSetup(){
   $('#result-view').hidden=true;
+  $('#gallery-view').hidden=true;
   $('#setup-view').hidden=false;
   $('#btn-new').hidden=true;
   $('#btn-checklist').hidden=true;
-  renderLibrary();
+  navSel={type:'all',key:null};
+  renderNav();
   renderSetup();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -2422,7 +2528,6 @@ function savePlan(){
    ===================================================================== */
 const LIB_KEY='yeoro_lib_v1';
 const LIB_MAX=24;
-let libFilter='전체';
 function loadLib(){
   try{
     const raw=localStorage.getItem(LIB_KEY);
@@ -2453,6 +2558,76 @@ function libTitle(pl){
   const n = pl.days.length-1;
   return (pl.custom||byKey(pl.regionKey).name)+' '+(n===0?'당일치기':n+'박 '+pl.days.length+'일');
 }
+
+/* ---------- 사용자 카테고리 ---------- */
+const CAT_KEY='yeoro_cats_v1';
+function loadCats(){
+  try{ const a=JSON.parse(localStorage.getItem(CAT_KEY)||'[]'); return Array.isArray(a)?a:[]; }
+  catch(e){ return []; }
+}
+function writeCats(a){ try{ localStorage.setItem(CAT_KEY, JSON.stringify(a)); }catch(e){} }
+function addCat(name){
+  name = String(name||'').trim().slice(0,20);
+  if(!name){ toast('카테고리 이름을 입력해주세요'); return false; }
+  const a = loadCats();
+  if(a.some(c=>c.name===name)){ toast('이미 있는 카테고리예요'); return false; }
+  if(a.length>=20){ toast('카테고리는 20개까지 만들 수 있어요'); return false; }
+  a.push({id:'g'+Date.now()+Math.floor(Math.random()*100), name});
+  writeCats(a); renderNav();
+  toast('🏷️ "'+name+'" 카테고리를 만들었어요');
+  return true;
+}
+function removeCat(id){
+  writeCats(loadCats().filter(c=>c.id!==id));
+  // 저장된 코스에서 해당 태그 제거
+  const arr = loadLib();
+  let changed=false;
+  for(const e of arr){ if(e.tags && e.tags.includes(id)){ e.tags = e.tags.filter(t=>t!==id); changed=true; } }
+  if(changed) writeLib(arr);
+  if(navSel.type==='custom' && navSel.key===id) navSel={type:'all',key:null};
+  renderNav(); if(!$('#gallery-view').hidden) renderGallery();
+  toast('카테고리를 삭제했어요');
+}
+function toggleTag(entryId, catId){
+  const arr = loadLib();
+  const e = arr.find(x=>x.id===entryId);
+  if(!e) return;
+  e.tags = e.tags||[];
+  e.tags = e.tags.includes(catId) ? e.tags.filter(t=>t!==catId) : e.tags.concat([catId]);
+  writeLib(arr);
+  renderNav(); renderGallery();
+}
+
+/* ---------- 저장된 코스 → 포스터 이미지 다시 보기 ---------- */
+/* 저장된 항목을 현재 상태처럼 잠시 적용해 포스터를 렌더한 뒤 원상 복구 */
+function withEntry(entry, fn){
+  const sPlan=plan, sForm=form, sVar=variants, sConf=confirmed;
+  try{
+    plan = entry.plan;
+    form = Object.assign({}, sForm, entry.form||{}, {interests:new Set((entry.form&&entry.form.interests)||[])});
+    variants = null; confirmed = !!entry.confirmed;
+    return fn();
+  } finally {
+    plan=sPlan; form=sForm; variants=sVar; confirmed=sConf;
+  }
+}
+function makeThumb(){
+  try{
+    const src = buildPosterCanvas();
+    const W=280, H=374;                    // 3:4 카드 비율 · 상단(제목·요약·첫 일정) 위주로 크롭
+    const c = document.createElement('canvas');
+    c.width=W; c.height=H;
+    const ctx = c.getContext('2d');
+    const sh = Math.min(src.height, Math.round(src.width*(H/W)));
+    ctx.drawImage(src, 0,0, src.width, sh, 0,0, W, H);
+    return c.toDataURL('image/jpeg', 0.55);
+  }catch(e){ return null; }
+}
+function viewSavedPoster(id){
+  const e = loadLib().find(x=>x.id===id);
+  if(!e){ toast('이미지를 만들 수 없는 코스예요'); return; }
+  withEntry(e, ()=>savePNG());
+}
 function saveToLibrary(silent){
   if(!plan) return;
   const arr = loadLib();
@@ -2462,6 +2637,8 @@ function saveToLibrary(silent){
   const entry = {
     id: 'c'+Date.now()+Math.floor(Math.random()*1000),
     at: Date.now(),
+    thumb: makeThumb(),      // 갤러리 미리보기 (전체 이미지는 열 때 다시 생성)
+    tags: [],
     title: libTitle(plan),
     cat: plan.custom ? '즉석' : byKey(plan.regionKey).name,
     emoji: plan.custom ? '🧪' : byKey(plan.regionKey).emoji,
@@ -2474,19 +2651,21 @@ function saveToLibrary(silent){
            pace:form.pace,interests:[...form.interests]},
     plan: slim
   };
-  // 같은 지역·같은 날짜의 기존 저장은 갱신
+  // 같은 지역·같은 날짜의 기존 저장은 갱신 (사용자가 지정한 카테고리는 유지)
   const dup = arr.findIndex(e=>e.cat===entry.cat && e.dates===entry.dates && e.strategy===entry.strategy);
-  if(dup>=0) arr.splice(dup,1);
+  if(dup>=0){ entry.tags = arr[dup].tags||[]; arr.splice(dup,1); }
   arr.unshift(entry);
   while(arr.length>LIB_MAX) arr.pop();
   const ok = writeLib(arr);
-  renderLibrary();
+  renderNav();
+  if(!$('#gallery-view').hidden) renderGallery();
   if(!silent) toast(ok?'📚 보관함에 저장했어요':'저장 공간이 부족해 오래된 코스를 정리했어요');
 }
 function deleteFromLibrary(id){
   const arr = loadLib().filter(e=>e.id!==id);
   writeLib(arr);
-  renderLibrary();
+  renderNav();
+  if(!$('#gallery-view').hidden) renderGallery();
   toast('삭제했어요');
 }
 async function openFromLibrary(id){
@@ -2504,39 +2683,181 @@ async function openFromLibrary(id){
   showResult(); savePlan();
   toast('📚 "'+e.title+'"을(를) 불러왔어요');
 }
-function renderLibrary(){
-  const el = $('#library');
-  if(!el) return;
+/* =====================================================================
+   좌측 카테고리 트리 + 보관함 갤러리
+   ===================================================================== */
+let navSel = {type:'all', key:null};
+let navOpen = {region:true, schedule:true, custom:true};
+let navDrawer = false;
+let addingCat = false;
+let tagOpenId = null;
+
+/* 일정별 소분류 라벨 (예: "8월 7일 ~ 8월 9일 · 2박3일") */
+function schedLen(e){
+  const n = e.plan.days.length-1;
+  return n===0 ? '당일치기' : n+'박'+e.plan.days.length+'일';
+}
+function schedLabel(e){   // 갤러리 제목용 (읽기 좋은 전체 표기)
+  const [s,t] = e.dates.split('~');
+  return (s===t ? fmtK(s) : fmtK(s)+' ~ '+fmtK(t))+' · '+schedLen(e);
+}
+function schedShort(e){   // 사이드바용 (좁은 폭에 맞춘 짧은 표기)
+  const [s,t] = e.dates.split('~');
+  const md = d => { const x=fromISO(d); return (x.getMonth()+1)+'/'+x.getDate(); };
+  return (s===t ? md(s) : md(s)+'~'+md(t))+' · '+schedLen(e);
+}
+function groupLib(){
   const arr = loadLib();
-  if(!arr.length){ el.innerHTML=''; return; }
-  const cats = ['전체','⭐ 확정'].concat([...new Set(arr.map(e=>e.cat))]);
-  if(!cats.includes(libFilter)) libFilter='전체';
-  const shown = arr.filter(e=> libFilter==='전체' ? true : (libFilter==='⭐ 확정' ? e.confirmed : e.cat===libFilter));
-  const filters = cats.map(c=>
-    '<button class="lib-f'+(libFilter===c?' on':'')+'" data-action="lib-filter" data-val="'+esc(c)+'">'+esc(c)
-    +(c==='전체'?' '+arr.length:'')+'</button>'
-  ).join('');
-  const items = shown.map(e=>{
+  const regions = new Map();   // 지역명 → {emoji, items[]}
+  const scheds  = new Map();   // 날짜범위 → {label, items[]}
+  for(const e of arr){
+    if(!regions.has(e.cat)) regions.set(e.cat, {emoji:e.emoji, items:[]});
+    regions.get(e.cat).items.push(e);
+    if(!scheds.has(e.dates)) scheds.set(e.dates, {label:schedLabel(e), short:schedShort(e), start:e.dates.split('~')[0], items:[]});
+    scheds.get(e.dates).items.push(e);
+  }
+  const schedList = [...scheds.entries()].sort((a,b)=> a[1].start<b[1].start?1:-1);
+  return {arr, regions:[...regions.entries()], scheds:schedList};
+}
+function selectedEntries(){
+  const {arr, regions, scheds} = groupLib();
+  if(navSel.type==='region'){ const g=regions.find(r=>r[0]===navSel.key); return g?g[1].items:[]; }
+  if(navSel.type==='schedule'){ const g=scheds.find(s=>s[0]===navSel.key); return g?g[1].items:[]; }
+  if(navSel.type==='custom') return arr.filter(e=>(e.tags||[]).includes(navSel.key));
+  return arr;
+}
+function selectedTitle(){
+  if(navSel.type==='region') return {bc:'📍 지역별 코스', h:navSel.key+' 코스 모음'};
+  if(navSel.type==='schedule'){
+    const g = groupLib().scheds.find(s=>s[0]===navSel.key);
+    return {bc:'📅 일정별 코스', h:g?g[1].label:'일정'};
+  }
+  if(navSel.type==='custom'){
+    const c = loadCats().find(x=>x.id===navSel.key);
+    return {bc:'🏷️ 내 카테고리', h:c?c.name:'카테고리'};
+  }
+  return {bc:'📚 보관함', h:'저장한 코스 전체'};
+}
+
+function renderNav(){
+  const el = $('#nav-tree');
+  if(!el) return;
+  const {arr, regions, scheds} = groupLib();
+  const cats = loadCats();
+  const grp = (key, icon, name, kids) =>
+    '<div class="nav-grp'+(navOpen[key]?' open':'')+'">'
+    +'<button class="nav-top" data-action="nav-grp" data-key="'+key+'">'+icon+' '+name+'<span class="ar">▶</span></button>'
+    +'<div class="nav-kids">'+kids+'</div></div>';
+
+  const regionKids = regions.length
+    ? regions.map(([nm,g])=>
+        '<button class="nav-item'+(navSel.type==='region'&&navSel.key===nm?' on':'')+'" data-action="nav-pick" data-type="region" data-key="'+esc(nm)+'">'
+        +'<span>'+g.emoji+'</span><span class="nm">'+esc(nm)+'</span><span class="c">'+g.items.length+'</span></button>').join('')
+    : '<div class="nav-empty">코스를 저장하면 지역이 자동으로 추가돼요.</div>';
+
+  const schedKids = scheds.length
+    ? scheds.map(([k,g])=>
+        '<button class="nav-item'+(navSel.type==='schedule'&&navSel.key===k?' on':'')+'" data-action="nav-pick" data-type="schedule" data-key="'+esc(k)+'">'
+        +'<span>🗓️</span><span class="nm" title="'+esc(g.label)+'">'+esc(g.short)+'</span><span class="c">'+g.items.length+'</span></button>').join('')
+    : '<div class="nav-empty">일정을 만들면 날짜별로 자동 정리돼요.</div>';
+
+  const customKids = cats.map(c=>{
+    const n = arr.filter(e=>(e.tags||[]).includes(c.id)).length;
+    return '<button class="nav-item'+(navSel.type==='custom'&&navSel.key===c.id?' on':'')+'" data-action="nav-pick" data-type="custom" data-key="'+c.id+'">'
+      +'<span>🏷️</span><span class="nm">'+esc(c.name)+'</span><span class="c">'+n+'</span>'
+      +'<span class="x" data-action="cat-del" data-key="'+c.id+'" title="카테고리 삭제">✕</span></button>';
+  }).join('')
+  + (addingCat
+      ? '<div class="nav-newrow"><input id="cat-input" type="text" placeholder="예: 가족여행" maxlength="20" autocomplete="off"><button data-action="cat-save">추가</button></div>'
+      : '<button class="nav-add" data-action="cat-new">＋ 새 카테고리</button>');
+
+  el.innerHTML =
+    '<div class="nav-h">내 코스 보관함 <span class="n">'+arr.length+'</span></div>'
+    +'<button class="nav-item'+(navSel.type==='all'?' on':'')+'" style="margin-bottom:8px" data-action="nav-pick" data-type="all" data-key="">'
+      +'<span>📚</span><span class="nm">전체 보기</span><span class="c">'+arr.length+'</span></button>'
+    +grp('region','📍','지역별 코스', regionKids)
+    +grp('schedule','📅','일정별 코스', schedKids)
+    +grp('custom','🏷️','내 카테고리', customKids);
+
+  if(addingCat){
+    const inp = $('#cat-input');
+    if(inp){
+      inp.focus();
+      inp.addEventListener('keydown', ev=>{
+        if(ev.key==='Enter'){ if(addCat(inp.value)) addingCat=false; renderNav(); }
+        if(ev.key==='Escape'){ addingCat=false; renderNav(); }
+      });
+    }
+  }
+}
+
+function renderGallery(){
+  const el = $('#gallery-view');
+  const items = selectedEntries();
+  const t = selectedTitle();
+  const cats = loadCats();
+  const head = '<div class="gal-head"><div class="bc">'+t.bc+'</div><h1>'+esc(t.h)+'</h1>'
+    +'<div class="sub">'+items.length+'개의 코스 · 카드를 누르면 저장한 일정표 이미지를 다시 볼 수 있어요</div></div>';
+  if(!items.length){
+    el.innerHTML = head
+      +'<div class="gal-none"><div class="t">아직 저장된 코스가 없어요</div>'
+      +'<div class="s">코스를 만들고 <b>확정</b>하면 지역·일정별로 자동 저장됩니다.<br>저장된 코스는 언제든 이미지로 다시 볼 수 있어요.</div>'
+      +'<div style="margin-top:16px"><button class="chip on warm" data-action="new-trip">🧭 코스 만들러 가기</button></div></div>';
+    return;
+  }
+  const cards = items.map(e=>{
     const d = new Date(e.at);
     const meta = [fmtK(e.dates.split('~')[0])+' 출발',
-                  e.strategy ? (STRATEGIES.find(s=>s.key===e.strategy)||{}).name : null,
-                  e.spend!=null ? '1인 '+fmtWon(e.spend) : null,
-                  (d.getMonth()+1)+'/'+d.getDate()+' 저장'].filter(Boolean).join(' · ');
-    return '<div class="lib-item">'
-      +'<span class="lib-emo">'+e.emoji+'</span>'
-      +'<div class="lib-info"><div class="lib-nm">'+esc(e.title)+(e.confirmed?'<span class="badge">확정</span>':'')+'</div>'
-      +'<div class="lib-mt">'+esc(meta)+'</div></div>'
-      +'<div class="lib-act">'
-      +'<button class="lib-b load" data-action="lib-open" data-id="'+e.id+'">불러오기</button>'
-      +'<button class="lib-b del" data-action="lib-del" data-id="'+e.id+'">🗑</button>'
+                  e.strategy ? (STRATEGIES.find(s=>s.key===e.strategy)||{}).name.replace(/^\S+\s/,'') : null,
+                  e.spend!=null ? '1인 '+fmtWon(e.spend) : null].filter(Boolean).join(' · ');
+    const tags = (e.tags||[]).map(id=>{ const c=cats.find(x=>x.id===id); return c?'<span class="gal-tag">🏷️ '+esc(c.name)+'</span>':''; }).join('');
+    const tagbox = tagOpenId===e.id
+      ? '<div class="tagbox"><div class="lb">카테고리에 담기</div><div class="row">'
+        +(cats.length ? cats.map(c=>
+            '<button class="t'+((e.tags||[]).includes(c.id)?' on':'')+'" data-action="tag-toggle" data-id="'+e.id+'" data-key="'+c.id+'">'+esc(c.name)+'</button>').join('')
+          : '<span class="nav-empty" style="padding:0">왼쪽 <b>＋ 새 카테고리</b>로 먼저 만들어주세요.</span>')
+        +'</div></div>' : '';
+    return '<div class="gal-card">'
+      +'<button class="gal-thumb" data-action="lib-img" data-id="'+e.id+'" title="일정표 이미지 보기">'
+        +(e.thumb ? '<img src="'+e.thumb+'" alt="'+esc(e.title)+' 일정표">' : '<span class="ph">'+e.emoji+'<br>'+esc(e.title)+'</span>')
+        +'<span class="zoom">🖼️ 이미지 보기</span>'
+      +'</button>'
+      +'<div class="gal-body">'
+        +'<div class="gal-nm">'+e.emoji+' '+esc(e.title)+(e.confirmed?'<span class="badge">확정</span>':'')+'</div>'
+        +'<div class="gal-mt">'+esc(meta)+'</div>'
+        +'<div class="gal-mt" style="opacity:.75">'+(d.getMonth()+1)+'/'+d.getDate()+' 저장</div>'
+        +(tags?'<div class="gal-tags">'+tags+'</div>':'')
+        +tagbox
+        +'<div class="gal-acts">'
+          +'<button class="gal-b p" data-action="lib-open" data-id="'+e.id+'">불러오기</button>'
+          +'<button class="gal-b" data-action="tag-open" data-id="'+e.id+'">🏷️</button>'
+          +'<button class="gal-b d" data-action="lib-del" data-id="'+e.id+'">🗑</button>'
+        +'</div>'
       +'</div></div>';
   }).join('');
-  el.innerHTML = '<div class="lib-card">'
-    +'<div class="lib-head"><h3>📚 내가 저장한 코스</h3><span class="cnt">'+arr.length+'</span></div>'
-    +'<div class="lib-filters">'+filters+'</div>'
-    +'<div class="lib-list">'+(items||'<div class="lib-empty">이 분류에 저장된 코스가 없어요.</div>')+'</div>'
-    +'</div>';
+  el.innerHTML = head+'<div class="gal-grid">'+cards+'</div>';
 }
+
+function showGallery(){
+  $('#setup-view').hidden=true; $('#result-view').hidden=true;
+  $('#gallery-view').hidden=false;
+  $('#btn-new').hidden=false;
+  $('#btn-checklist').hidden = !plan;
+  renderGallery();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function pickNav(type,key){
+  navSel = {type, key:key||null};
+  tagOpenId = null;
+  navDrawer = false; syncDrawer();
+  renderNav(); showGallery();
+}
+function syncDrawer(){
+  $('#side').classList.toggle('open', navDrawer);
+  $('#nav-scrim').classList.toggle('open', navDrawer);
+}
+/* 이전 버전 호환 */
+function renderLibrary(){ renderNav(); }
 
 function loadSaved(){
   try{
@@ -2623,9 +2944,18 @@ function init(){
     else if(a==='share') sharePlan();
     else if(a==='close-save') closeSaveModal();
     else if(a==='lib-save') saveToLibrary();
-    else if(a==='lib-filter'){ libFilter=el.dataset.val; renderLibrary(); }
     else if(a==='lib-open') openFromLibrary(el.dataset.id);
     else if(a==='lib-del') deleteFromLibrary(el.dataset.id);
+    else if(a==='lib-img') viewSavedPoster(el.dataset.id);
+    else if(a==='toggle-nav'){ navDrawer=!navDrawer; syncDrawer(); }
+    else if(a==='close-nav'){ navDrawer=false; syncDrawer(); }
+    else if(a==='nav-grp'){ const k=el.dataset.key; navOpen[k]=!navOpen[k]; renderNav(); }
+    else if(a==='nav-pick') pickNav(el.dataset.type, el.dataset.key);
+    else if(a==='cat-new'){ addingCat=true; renderNav(); }
+    else if(a==='cat-save'){ const i=$('#cat-input'); if(i && addCat(i.value)) addingCat=false; renderNav(); }
+    else if(a==='cat-del'){ e.stopPropagation(); removeCat(el.dataset.key); }
+    else if(a==='tag-open'){ tagOpenId = tagOpenId===el.dataset.id ? null : el.dataset.id; renderGallery(); }
+    else if(a==='tag-toggle') toggleTag(el.dataset.id, el.dataset.key);
     else if(a==='recheck') recheck();
     else if(a==='checklist') openChecklist();
     else if(a==='copy') copyPlan();
@@ -2638,10 +2968,10 @@ function init(){
   $('#modal-bg').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeChecklist(); });
   $('#save-modal-bg').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeSaveModal(); });
   document.addEventListener('keydown', e=>{
-    if(e.key==='Escape'){ closeChecklist(); closeSaveModal(); }
+    if(e.key==='Escape'){ closeChecklist(); closeSaveModal(); navDrawer=false; syncDrawer(); }
   });
 
-  renderLibrary();
+  renderNav();
   renderSetup();
 }
 init();
