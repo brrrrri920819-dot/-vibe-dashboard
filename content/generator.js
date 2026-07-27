@@ -69,33 +69,59 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
   });
 }
 
-// Pixabay에서 키워드 관련 사진 URL 가져오기 (무료 API — PIXABAY_API_KEY 필요)
-async function fetchImageUrl(keyword, index) {
-  const apiKey = process.env.PIXABAY_API_KEY;
+// JSON GET 헬퍼 (10초 타임아웃)
+function getJson(url) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers: { 'User-Agent': 'vibe-dashboard/1.0' } }, (res) => {
+      let d = '';
+      res.on('data', c => { d += c; });
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { reject(e); } });
+    });
+    req.on('error', reject);
+    req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
+  });
+}
 
+// 키워드에 맞는 사진 URL 가져오기 — Pixabay → Openverse(키 불필요) → picsum 폴백
+async function fetchImageUrl(keyword, index) {
+  const clean = keyword.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim() || 'business';
+
+  // 1순위: Pixabay (PIXABAY_API_KEY 있을 때 — 품질 가장 좋음)
+  const apiKey = process.env.PIXABAY_API_KEY;
   if (apiKey) {
     try {
-      const q   = encodeURIComponent(keyword.toLowerCase().replace(/\s+/g, '+'));
-      const url = `https://pixabay.com/api/?key=${apiKey}&q=${q}&image_type=photo&orientation=horizontal&per_page=10&safesearch=true&min_width=800&order=popular`;
-      const json = await new Promise((resolve, reject) => {
-        https.get(url, (res) => {
-          let d = '';
-          res.on('data', c => { d += c; });
-          res.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { reject(e); } });
-        }).on('error', reject);
-      });
+      const url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(clean)}&image_type=photo&orientation=horizontal&per_page=20&safesearch=true&min_width=800&order=popular`;
+      const json = await getJson(url);
       const hits = json.hits || [];
       if (hits.length > 0) {
         const pick = hits[index % hits.length];
+        console.log(`[Image] Pixabay "${clean}" → ${hits.length}건`);
         return pick.largeImageURL || pick.webformatURL;
       }
+      console.warn(`[Image] Pixabay "${clean}" 결과 없음`);
     } catch (e) {
-      console.warn(`[Image] Pixabay 실패 (${keyword}):`, e.message);
+      console.warn(`[Image] Pixabay 실패 (${clean}):`, e.message);
     }
   }
 
-  // 폴백: picsum (keyword 기반 seed → 중복 없이 일관된 고품질 사진)
-  const seed = keyword.split('').reduce((a, c) => a + c.charCodeAt(0), 0) + index * 97;
+  // 2순위: Openverse — API 키 불필요, CC 라이선스 실사진
+  try {
+    const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(clean)}&page_size=20&license_type=commercial&mature=false`;
+    const json = await getJson(url);
+    const items = (json.results || []).filter(r => r.url);
+    if (items.length > 0) {
+      const pick = items[index % items.length];
+      console.log(`[Image] Openverse "${clean}" → ${items.length}건`);
+      return pick.url;
+    }
+    console.warn(`[Image] Openverse "${clean}" 결과 없음`);
+  } catch (e) {
+    console.warn(`[Image] Openverse 실패 (${clean}):`, e.message);
+  }
+
+  // 최종 폴백: picsum (주제 무관 — 여기까지 오면 키워드 검색이 다 실패한 것)
+  console.warn(`[Image] "${clean}" — 검색 전부 실패, 랜덤 사진 사용`);
+  const seed = clean.split('').reduce((a, c) => a + c.charCodeAt(0), 0) + index * 97;
   return `https://picsum.photos/seed/${seed % 9999}/1200/630`;
 }
 
