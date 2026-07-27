@@ -934,6 +934,41 @@ app.post('/api/blogger-cred-set', async (req, res) => {
   }
 });
 
+/** Blogger 연결 진단 — 어느 단계에서 막혔는지 한 번에 알려준다 */
+app.get('/api/blogger-diagnose', auth, async (req, res) => {
+  const steps = [];
+  const cid = tokens.get('BLOGGER_CLIENT_ID');
+  const sec = tokens.get('BLOGGER_CLIENT_SECRET');
+  const ref = tokens.get('BLOGGER_REFRESH_TOKEN');
+
+  steps.push({ step: '1. 클라이언트 ID', ok: !!cid, detail: cid ? cid.slice(0, 22) + '…' : '없음' });
+  steps.push({ step: '2. 클라이언트 시크릿', ok: !!sec, detail: sec ? `${sec.slice(0, 7)}… (${sec.length}자)` : '없음' });
+  steps.push({ step: '3. 리프레시 토큰', ok: !!ref, detail: ref ? `저장됨 (${ref.length}자)` : '없음 — 구글 계정 연결 필요' });
+
+  if (cid && sec && ref) {
+    try {
+      const blogs = await getBloggerBlogId(cid, sec, ref);
+      if (blogs.length) {
+        if (!tokens.get('BLOGGER_BLOG_ID')) tokens.set('BLOGGER_BLOG_ID', blogs[0].id);
+        steps.push({ step: '4. 구글 통신', ok: true, detail: `연결됨 — ${blogs[0].name}` });
+      } else {
+        steps.push({ step: '4. 구글 통신', ok: false, detail: '인증은 됐으나 소유한 블로그가 없음' });
+      }
+    } catch (e) {
+      const g = e.response?.data || {};
+      let hint = g.error_description || e.message;
+      if (g.error === 'invalid_grant') hint = '토큰 만료/취소됨 — 구글 계정 연결을 다시 하세요. (OAuth 앱이 "테스트" 상태면 7일마다 만료되니 "프로덕션"으로 전환하세요)';
+      if (g.error === 'invalid_client') hint = 'ID/시크릿 짝이 맞지 않음 — 아래 폼에 다시 입력하세요';
+      steps.push({ step: '4. 구글 통신', ok: false, detail: hint });
+    }
+  } else {
+    steps.push({ step: '4. 구글 통신', ok: false, detail: '앞 단계 완료 후 확인 가능' });
+  }
+
+  const firstFail = steps.find(s => !s.ok);
+  res.json({ ok: !firstFail, steps, blocked: firstFail ? firstFail.step : null, storage: tokens.keys() });
+});
+
 /* ── 자격증명 자동 복구 ────────────────────────────────────
  * Railway는 배포할 때마다 컨테이너를 새로 만들기 때문에 config/tokens.json 이
  * 사라진다. 그래서 코드를 고칠 때마다 Blogger 연결이 끊겼다.
@@ -1130,6 +1165,7 @@ button:active,.btn:active{transform:translateY(1px) scale(.99)}
 <div class="row"><span class="k">REFRESH TOKEN</span><span class="v ${refreshOk ? '' : 'off'}">${dot(refreshOk)}${refreshOk ? '저장됨' : '미설정'}</span></div>
 <div class="row"><span class="k">BLOG ID</span><span class="v ${blogIdVal ? '' : 'off'}">${dot(!!blogIdVal)}${blogIdVal || '인증 시 자동설정'}</span></div>
 <div class="row"><span class="k">자격증명 검증</span><span class="v" id="cred-test">확인 중…</span></div>
+<div id="diag" style="margin-top:14px"></div>
 <div class="note"><b>⚠️ 구글 콘솔 → 승인된 리디렉션 URI 에 등록 필요</b>아래 주소를 그대로 복사해서 추가하세요.<div class="mono-box">${baseUrl}/oauth/blogger/callback</div></div>
 </div>
 
@@ -1145,6 +1181,18 @@ button:active,.btn:active{transform:translateY(1px) scale(.99)}
 <a class="btn btn-pink" href="/oauth/blogger">🔑 구글 계정 연결 시작</a>
 </div><script>
 fetch('/api/blogger-cred-test').then(function(r){return r.json();}).then(function(d){var el=document.getElementById('cred-test');el.textContent=d.verdict;el.style.color=d.ok?'#86efac':'#f87171';}).catch(function(){var el=document.getElementById('cred-test');el.textContent='테스트 실패';el.style.color='#f87171';});
+fetch('/api/blogger-diagnose').then(function(r){return r.json();}).then(function(d){
+  var h='<div style="font-size:11.5px;font-weight:700;color:#7c85b0;letter-spacing:.4px;margin-bottom:8px">단계별 진단</div>';
+  d.steps.forEach(function(s){
+    h+='<div style="display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px solid #171a2c">'
+      +'<span style="flex-shrink:0">'+(s.ok?'✅':'❌')+'</span>'
+      +'<span style="flex-shrink:0;font-size:12px;color:#eef0ff;min-width:120px">'+s.step+'</span>'
+      +'<span style="font-size:11.5px;color:'+(s.ok?'#86efac':'#f87171')+';word-break:break-all">'+s.detail+'</span></div>';
+  });
+  if(!d.ok) h+='<div style="margin-top:10px;font-size:12px;color:#fcd34d">👉 막힌 곳: <b>'+d.blocked+'</b></div>';
+  else h+='<div style="margin-top:10px;font-size:12px;color:#86efac">✅ 모든 단계 정상 — 바로 발행 가능합니다</div>';
+  document.getElementById('diag').innerHTML=h;
+}).catch(function(e){document.getElementById('diag').textContent='진단 실패: '+e.message;});
 function credSet(){var r=document.getElementById('cred-set-result');r.textContent='구글에 확인 중…';r.style.color='#7c85b0';fetch('/api/blogger-cred-set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId:document.getElementById('in-cid').value,clientSecret:document.getElementById('in-sec').value})}).then(function(x){return x.json();}).then(function(d){r.textContent=d.verdict;r.style.color=d.ok?'#86efac':'#f87171';if(d.ok)setTimeout(function(){location.reload();},1400);}).catch(function(e){r.textContent='오류: '+e.message;r.style.color='#f87171';});}
 </script></body></html>`);
 });
