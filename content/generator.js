@@ -102,19 +102,35 @@ function isHotlinkSafe(url) {
 }
 
 // 1순위: Unsplash (UNSPLASH_ACCESS_KEY 필요 — 무료, 핫링크 필수 정책)
+// 긴 키워드는 결과가 0건 나오기 쉬워서, 점점 줄여가며 재시도한다.
+// (여기서 못 찾으면 품질 낮은 소스로 떨어지므로 히트율이 곧 사진 품질)
+function broadenQueries(q) {
+  const words = q.split(' ').filter(Boolean);
+  const tries = [q];
+  if (words.length > 2) tries.push(words.slice(0, 2).join(' '));
+  if (words.length > 1) tries.push(words[words.length - 1]); // 핵심 명사는 보통 뒤쪽
+  return [...new Set(tries)];
+}
+
 async function searchUnsplash(q, index) {
   const key = process.env.UNSPLASH_ACCESS_KEY;
   if (!key) return null;
-  const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&per_page=20&orientation=landscape&content_filter=high`;
-  const json = await getJson(url, { Authorization: `Client-ID ${key}` });
-  const items = (json.results || []).filter(r => r.urls && r.urls.regular);
-  if (!items.length) return null;
-  const p = items[index % items.length];
-  return {
-    url: p.urls.regular,
-    credit: p.user && p.user.name ? `Photo by ${p.user.name} on Unsplash` : '',
-    source: 'Unsplash',
-  };
+
+  for (const term of broadenQueries(q)) {
+    const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(term)}&per_page=20&orientation=landscape&content_filter=high`;
+    const json = await getJson(url, { Authorization: `Client-ID ${key}` });
+    const items = (json.results || []).filter(r => r.urls && r.urls.regular);
+    if (items.length) {
+      const p = items[index % items.length];
+      if (term !== q) console.log(`[Image] Unsplash 키워드 완화: "${q}" → "${term}"`);
+      return {
+        url: p.urls.regular,
+        credit: p.user && p.user.name ? `Photo by ${p.user.name} on Unsplash` : '',
+        source: 'Unsplash',
+      };
+    }
+  }
+  return null;
 }
 
 // 2순위: Openverse (키 불필요) — 핫링크 가능한 원본만 채택
