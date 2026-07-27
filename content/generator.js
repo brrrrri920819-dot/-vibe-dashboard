@@ -199,69 +199,110 @@ function imageTag(img, alt) {
     + `<figcaption style="color:#888;font-size:13px;margin-top:8px">${caption}</figcaption></figure>`;
 }
 
-const SYSTEM_PROMPT = `당신은 대한민국 MZ세대가 즐겨 보는 정보성 블로그를 운영하는 20-30대 여성입니다.
+/* 애드센스 심사 기준에 맞춘 프롬프트.
+ * 구글이 '가치 없는 콘텐츠'로 거절하는 요인을 역으로 제거한다:
+ *   깊이 부족 / 구조 없음 / 어디서나 볼 수 있는 내용 / 분량 미달 / 꾸며낸 후기
+ * 이전 버전은 'AI 티 지우기'에 맞춰져 있어서 오타·산만한 구성·가짜 경험담을
+ * 일부러 넣었는데, 그게 정확히 심사에서 감점되는 항목들이었다. */
+const SYSTEM_PROMPT = `당신은 한 분야를 오래 다뤄 온 한국인 블로그 운영자입니다.
+독자가 검색해서 들어왔을 때, 이 글 하나로 궁금증이 완전히 해결되어
+다른 글을 더 찾아볼 필요가 없게 만드는 것이 목표입니다.
 
-글쓰기 스타일:
-- 친구에게 카톡으로 얘기하듯 자연스러운 구어체
-- "저도 처음엔 몰랐는데요~", "근데 진짜로", "솔직히 말하면" 같은 표현 자연스럽게 사용
-- 가끔 오타나 줄임말 섞기 ("ㅎㅎ", "ㅠㅠ", "진짜루", "대박이더라고요")
-- 개인 경험담처럼 서술 ("제가 직접 써봤는데", "친구한테 물어보니까")
-- AI가 절대 쓰지 않는 한국어 표현들: "이게 뭐야 싶었는데", "알고보니", "완전 꿀팁"
-- 완벽하게 구조화된 글 금지 — 약간 산만하고 자연스럽게
-- 이모지는 2~4개만, 제목 말고 본문 중간에 자연스럽게
+문체:
+- 존댓말 기반의 편안한 블로그체 ("~해요", "~합니다" 혼용)
+- 과장·낚시 없이 담백하게. 감탄사와 이모지는 글 전체에 1~2개면 충분
+- 오타, 초성체(ㅎㅎ/ㅠㅠ), 유행어는 쓰지 않음
+- 겪지 않은 일을 겪은 것처럼 쓰지 않음.
+  "제가 직접 써봤는데" 같은 표현 금지. 대신 "일반적으로", "사례를 보면",
+  "공식 기준에 따르면" 처럼 근거의 출처를 밝히며 서술
 
-SEO 전략:
-- 키워드를 첫 문단과 소제목에 자연스럽게 포함
-- 롱테일 키워드 변형 3~5회 사용
-- 1500~2000자 분량 (정보 충실도 높게)
-- 독자가 끝까지 읽도록 궁금증 유발 구조`;
+반드시 담아야 하는 것 (이게 없으면 검색해도 나오는 뻔한 글이 됩니다):
+- 구체적인 숫자: 금액, 기간, 비율, 조건, 기준일
+- 절차나 방법은 순서대로, 독자가 그대로 따라 할 수 있게
+- 선택지가 있으면 비교표로 정리
+- 사람들이 흔히 놓치는 예외·주의사항·불이익
+- 상황별로 답이 갈리는 지점 ("A라면 이렇게, B라면 저렇게")
+
+쓰지 말아야 하는 것:
+- "매우 중요합니다", "다양한 방법이 있습니다" 같은 알맹이 없는 문장
+- 같은 내용을 표현만 바꿔 반복하는 분량 늘리기
+- 근거 없는 단정, 확인되지 않은 수치`;
 
 async function generatePost(keyword, account) {
   const { topic = '라이프스타일', tone = '친근한', platform = 'blogger' } = account;
 
   const prompt = `
-트렌딩 키워드: "${keyword}"
+검색 키워드: "${keyword}"
 블로그 주제: ${topic}
-글 톤: ${tone}
 플랫폼: ${platform}
 
-이 키워드로 수익형 블로그 포스팅을 작성해주세요.
+이 키워드로 검색한 사람이 무엇을 알고 싶어 하는지 먼저 파악한 뒤,
+그 질문에 끝까지 답하는 글을 작성해주세요.
 
-요구사항:
-1. 제목: 실제로 클릭하고 싶은 제목 (숫자/후기/비교/놀라운 사실 활용)
-2. 본문: HTML 형식, 1800~2200자
-   - 첫 문단: 공감 or 충격 사실로 시작 (독자를 잡아당겨야 함)
-   - 소제목 3개 (h3 태그)로 구성 — 각 섹션마다 실용 정보
-   - 이미지 플레이스홀더 3~4곳에 [IMAGE:영어키워드] 형식으로 각 섹션 사이에 배치
-   - 중간: 개인 경험담, 꿀팁, 비교 정보 섞기
-   - 마지막: 핵심 요약 + 댓글 유도
-3. 태그: 검색량 높은 태그 8개
-4. 이미지 키워드: 영어로 4개 — 각 섹션 내용을 가장 잘 표현하는 사진이 나올 구체적 명사+형용사 조합
-   (예: "korean street food market", "woman using smartphone cafe", "stock market graph decline")
-   절대 추상적인 단어 금지 (예: "technology", "lifestyle" 단독 사용 금지)
+구성:
+1. 제목 — 검색 의도에 그대로 답하는 제목. 낚시성 표현("충격", "발칵") 금지.
+   "직접 해봤다", "솔직 후기" 같은 표현은 실제 체험 글이 아니면 쓰지 마세요.
 
-JSON 형식으로만 응답:
+2. 본문 — HTML, 공백 제외 2500~3500자
+   · 도입(2~3문단): 독자가 처한 상황을 짚고, 이 글에서 무엇을 알게 되는지 제시
+   · <h2> 소제목 4~5개. 각 소제목 아래 최소 3문단씩, 구체적 정보로 채움
+   · 최소 1개의 비교표를 <table>로 (항목/조건/금액 등 실제로 비교되는 내용)
+     표는 <table><thead><tr><th>…</th></tr></thead><tbody><tr><td>…</td></tr></tbody></table>
+   · 핵심 목록은 <ul><li>로 정리
+   · "자주 묻는 질문" <h2> 섹션에 실제로 궁금해할 질문 3개와 답변
+   · 마무리: 핵심 3줄 요약 + 주의사항
+   · 이미지 자리 3~4곳에 [IMAGE:영어키워드] 를 소제목 사이에 배치
+
+3. 태그 8개 — 실제 검색어 형태로
+
+4. 이미지 키워드 4개 — 영어, 각 섹션을 대표하는 사진이 나올 구체적 표현
+   (예: "korean cafe interior", "person filling out documents", "container ship port")
+   추상어 단독 사용 금지 ("technology", "lifestyle" 등)
+
+JSON만 출력 (설명 문장 없이):
 {
   "title": "제목",
-  "content": "HTML 본문 ([IMAGE:영어키워드] 3~4개 포함)",
-  "tags": ["태그1", ..., "태그8"],
-  "imageKeywords": ["english keyword 1", "english keyword 2", "english keyword 3", "english keyword 4"]
+  "content": "HTML 본문",
+  "tags": ["태그1", "…", "태그8"],
+  "imageKeywords": ["kw1", "kw2", "kw3", "kw4"]
 }`;
 
+  // 본문 글자 수 (HTML 태그·공백 제외) — 애드센스 심사에서 분량은 최소 조건
+  const textLen = (html) => String(html).replace(/<[^>]+>/g, '').replace(/\s/g, '').length;
+  const MIN_LEN = 2000;
+
   let json;
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    const raw     = await callClaude(prompt, SYSTEM_PROMPT, 4096);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const raw     = await callClaude(prompt, SYSTEM_PROMPT, 8192);
     const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
     let parsed = null;
     try { parsed = JSON.parse(cleaned); } catch (e) {
-      if (attempt === 2) throw new Error(`JSON 파싱 실패: ${e.message}`);
+      if (attempt === 3) throw new Error(`JSON 파싱 실패: ${e.message}`);
       console.warn('[Generator] JSON 파싱 실패, 재시도 중...');
       continue;
     }
-    if (parsed.title && parsed.content) { json = parsed; break; }
-    if (attempt === 2) throw new Error('글 생성 결과 불완전 (제목/본문 누락)');
-    console.warn('[Generator] JSON 불완전, 재시도 중...');
+    if (!parsed.title || !parsed.content) {
+      if (attempt === 3) throw new Error('글 생성 결과 불완전 (제목/본문 누락)');
+      console.warn('[Generator] JSON 불완전, 재시도 중...');
+      continue;
+    }
+    const len = textLen(parsed.content);
+    if (len < MIN_LEN && attempt < 3) {
+      console.warn(`[Generator] 분량 미달 (${len}자 < ${MIN_LEN}자) — 재생성`);
+      continue;
+    }
+    if (len < MIN_LEN) console.warn(`[Generator] ⚠️ 분량 ${len}자로 최종 — 애드센스 심사에 불리할 수 있음`);
+    json = parsed;
+    break;
   }
+
+  // 심사 감점 요소 점검 (로그로만 경고 — 발행은 막지 않음)
+  const warns = [];
+  if (!/<h2/i.test(json.content))    warns.push('h2 소제목 없음');
+  if (!/<table/i.test(json.content)) warns.push('비교표 없음');
+  if (!/자주 묻는 질문|FAQ/i.test(json.content)) warns.push('FAQ 섹션 없음');
+  if (/직접 (써|해)봤|솔직 후기|찐후기/.test(json.title + json.content)) warns.push('꾸며낸 체험 표현 포함');
+  if (warns.length) console.warn(`[Generator] ⚠️ 품질 점검: ${warns.join(', ')}`);
 
   // 이미지 플레이스홀더 수집
   let content = json.content;

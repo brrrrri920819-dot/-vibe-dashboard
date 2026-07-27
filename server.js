@@ -934,6 +934,57 @@ app.post('/api/blogger-cred-set', async (req, res) => {
   }
 });
 
+// ── 애드센스 필수 페이지 3종 발행 ──
+// 소개/개인정보처리방침/문의가 없으면 심사에서 신뢰도 부족으로 거절된다.
+const _adsenseJobs = new Map();
+app.post('/api/adsense-pages', auth, async (req, res) => {
+  const { buildAdsensePages } = require('./content/adsense-pages');
+  const { blogName, topic, ownerName, contactEmail, siteUrl, platforms } = req.body;
+  let pages;
+  try {
+    pages = buildAdsensePages({ blogName, topic, ownerName, contactEmail, siteUrl });
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+  const targets = Array.isArray(platforms) && platforms.length ? platforms : ['blogger'];
+
+  const jobId = `ads_${Date.now()}`;
+  _adsenseJobs.set(jobId, { status: 'running', total: pages.length, done: 0, results: [] });
+  res.json({ success: true, jobId, pages: pages.map(p => p.title) });
+
+  (async () => {
+    const results = [];
+    for (const page of pages) {
+      try {
+        const r = await publishJob({
+          title: page.title, content: page.content, tags: page.tags,
+          imagePaths: [], platforms: targets,
+        });
+        const ok = Object.values(r).some(x => x && x.success);
+        results.push({ title: page.title, success: ok, detail: r });
+        console.log(`[AdSense] ${ok ? '✅' : '❌'} "${page.title}"`);
+      } catch (e) {
+        results.push({ title: page.title, success: false, error: e.message });
+        console.error(`[AdSense] ❌ "${page.title}": ${e.message}`);
+      }
+      _adsenseJobs.set(jobId, { status: 'running', total: pages.length, done: results.length, results });
+      await new Promise(r2 => setTimeout(r2, 4000));
+    }
+    _adsenseJobs.set(jobId, {
+      status: 'done', total: pages.length, done: results.length, results,
+      success: results.every(r => r.success),
+    });
+  })().catch(e => _adsenseJobs.set(jobId, { status: 'error', error: e.message }));
+
+  setTimeout(() => _adsenseJobs.delete(jobId), 60 * 60 * 1000);
+});
+
+app.get('/api/adsense-pages-status/:jobId', auth, (req, res) => {
+  const job = _adsenseJobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'job not found' });
+  res.json(job);
+});
+
 // ── 이미지 검증 페이지 — 키워드로 실제 사진을 눈으로 확인 ──
 app.get('/images', async (req, res) => {
   const q = (req.query.q || '').trim();
