@@ -934,6 +934,50 @@ app.post('/api/blogger-cred-set', async (req, res) => {
   }
 });
 
+/* ── 연결 상태 자동 점검 ──────────────────────────────────
+ * 구글 리프레시 토큰은 방치하면 만료되고(특히 OAuth 앱이 '테스트' 상태면 7일),
+ * 그때야 발행이 실패하면서 끊긴 걸 알게 된다.
+ * 6시간마다 실제로 구글과 통신해 살아있는지 확인하고,
+ * 끊겼으면 즉시 알림을 보내 발행 실패 전에 손 쓸 수 있게 한다. */
+let _bloggerHealth = { checkedAt: null, ok: null, detail: '아직 확인 안 함' };
+
+async function checkBloggerHealth(notify = true) {
+  const cid = tokens.get('BLOGGER_CLIENT_ID');
+  const sec = tokens.get('BLOGGER_CLIENT_SECRET');
+  const ref = tokens.get('BLOGGER_REFRESH_TOKEN');
+  if (!cid || !sec || !ref) {
+    _bloggerHealth = { checkedAt: new Date().toISOString(), ok: false, detail: '자격증명 없음 — 구글 계정 연결 필요' };
+    return _bloggerHealth;
+  }
+  try {
+    const blogs = await getBloggerBlogId(cid, sec, ref);
+    if (!tokens.get('BLOGGER_BLOG_ID') && blogs[0]) tokens.set('BLOGGER_BLOG_ID', blogs[0].id);
+    _bloggerHealth = { checkedAt: new Date().toISOString(), ok: true, detail: blogs[0] ? blogs[0].name : '연결됨' };
+    console.log(`[Health] Blogger 정상 — ${_bloggerHealth.detail}`);
+  } catch (e) {
+    const g = e.response?.data || {};
+    let detail = g.error_description || e.message;
+    if (g.error === 'invalid_grant') {
+      detail = '토큰 만료 — 재연결 필요. OAuth 앱이 "테스트" 상태면 7일마다 만료되니 "프로덕션"으로 전환하세요';
+    }
+    _bloggerHealth = { checkedAt: new Date().toISOString(), ok: false, detail };
+    console.error(`[Health] Blogger 끊김 — ${detail}`);
+    if (notify) {
+      try {
+        await notifyPublished('⚠️ 블로그스팟 연결 끊김', {
+          blogger: { success: false, error: detail + ' → /setup 에서 재연결하세요' },
+        });
+      } catch (_) {}
+    }
+  }
+  return _bloggerHealth;
+}
+
+app.get('/api/health/blogger', auth, async (req, res) => {
+  if (req.query.refresh === '1' || !_bloggerHealth.checkedAt) await checkBloggerHealth(false);
+  res.json({ ..._bloggerHealth, storage: tokens.storageInfo() });
+});
+
 /** Blogger 연결 진단 — 어느 단계에서 막혔는지 한 번에 알려준다 */
 app.get('/api/blogger-diagnose', auth, async (req, res) => {
   const steps = [];
@@ -1114,6 +1158,7 @@ app.get('/setup', (req, res) => {
     secInfo = `${trimmed.slice(0, 7)}... (길이 ${sec.length}${hasWs ? ' ⚠️공백포함' : ''}${prefixOk ? '' : ' ⚠️GOCSPX- 아님'})`;
   }
   const baseUrl = getBaseUrl(req);
+  const store = tokens.storageInfo();
   const refreshOk = !!tokens.get('BLOGGER_REFRESH_TOKEN');
   const blogIdVal = tokens.get('BLOGGER_BLOG_ID') || '';
   const dot = (ok) => `<span class="dot ${ok ? 'on' : 'off'}"></span>`;
@@ -1166,6 +1211,10 @@ button:active,.btn:active{transform:translateY(1px) scale(.99)}
 <div class="row"><span class="k">BLOG ID</span><span class="v ${blogIdVal ? '' : 'off'}">${dot(!!blogIdVal)}${blogIdVal || '인증 시 자동설정'}</span></div>
 <div class="row"><span class="k">자격증명 검증</span><span class="v" id="cred-test">확인 중…</span></div>
 <div id="diag" style="margin-top:14px"></div>
+<div class="row"><span class="k">영구 저장</span><span class="v ${store.persistent ? '' : 'off'}">${dot(store.persistent)}${store.persistent ? '켜짐 — 재배포해도 유지' : '꺼짐 — 재배포 시 재연결 필요'}</span></div>
+${store.persistent ? '' : `<div class="note"><b>🔌 연결이 계속 끊기지 않게 하려면 (1회, 30초)</b>
+Railway 프로젝트 → 서비스 우클릭 → <b>Add Volume</b> → Mount path 에 <b>/data</b> 입력 → 저장.<br>
+이걸 붙이면 재배포해도 토큰이 남아 다시는 끊기지 않습니다.</div>`}
 <div class="note"><b>⚠️ 구글 콘솔 → 승인된 리디렉션 URI 에 등록 필요</b>아래 주소를 그대로 복사해서 추가하세요.<div class="mono-box">${baseUrl}/oauth/blogger/callback</div></div>
 </div>
 
@@ -1261,6 +1310,12 @@ app.listen(PORT, () => {
   console.log(`   티스토리 인증: http://localhost:${PORT}/oauth/tistory`);
   console.log(`   Blogger 인증: http://localhost:${PORT}/oauth/blogger\n`);
   startScheduler(publishJob);
+
+  // 시작 직후 + 6시간마다 연결 점검 (만료를 발행 실패 전에 잡아냄)
+  setTimeout(() => checkBloggerHealth(false).catch(() => {}), 8000);
+  cron.schedule('0 */6 * * *', () => { checkBloggerHealth(true).catch(() => {}); }, { timezone: 'Asia/Seoul' });
+  console.log('[Health] 연결 점검 크론 등록됨 (6시간 간격)');
+
   startDailyCron();
 
   // 매일 09:00 부업 분석 리포트 자동 생성 + 발행

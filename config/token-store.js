@@ -1,36 +1,56 @@
 /**
  * config/token-store.js
- * 자격증명 저장소
+ * 자격증명 저장소 — 재배포·재시작에도 연결이 끊기지 않게 여러 겹으로 저장한다.
  *
- * Railway 같은 환경은 파일 쓰기가 막히거나 재배포 시 컨테이너가 새로 만들어져
- * 파일이 사라진다. 파일 쓰기에만 의존하면 저장이 조용히 실패해서
- * "분명 인증했는데 연결 안 됨" 상태가 된다.
- * 그래서 메모리를 1차 저장소로 쓰고, 파일은 재시작 대비 보조 수단으로만 쓴다.
- * (컨테이너를 넘어서는 영속성은 대시보드의 자동 복구가 담당한다)
+ * 저장 위치를 우선순위대로 자동 감지한다:
+ *   1) Railway 볼륨 (RAILWAY_VOLUME_MOUNT_PATH) — 재배포해도 남는 영구 디스크
+ *   2) 앱 폴더의 config/tokens.json — 재시작엔 살아남지만 재배포 시 사라짐
+ *   3) 메모리 — 프로세스가 사는 동안만
+ * 어디에 쓰든 메모리에는 항상 두기 때문에, 디스크 쓰기가 막혀도 동작한다.
+ * (컨테이너 자체가 새로 만들어지는 경우는 대시보드의 자동 복구가 메운다)
  */
 
 const fs   = require('fs');
 const path = require('path');
 
-const FILE = path.join(__dirname, 'tokens.json');
+// Railway에서 볼륨을 붙이면 이 경로가 자동으로 주입된다
+const VOLUME = process.env.RAILWAY_VOLUME_MOUNT_PATH
+  || process.env.PERSIST_DIR
+  || null;
 
-// 1차 저장소 — 프로세스가 살아있는 동안 항상 유효
+const LOCAL_FILE  = path.join(__dirname, 'tokens.json');
+const VOLUME_FILE = VOLUME ? path.join(VOLUME, 'tokens.json') : null;
+
 const mem = new Map();
-let fileWritable = true;
+let writable = { volume: !!VOLUME, local: true };
 
-function readFile() {
-  try { return JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch { return {}; }
+function readJson(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
 }
 
-// 시작 시 파일 내용을 메모리로 올림
-for (const [k, v] of Object.entries(readFile())) {
-  if (typeof v === 'string' && v) mem.set(k, v);
+function writeJson(file, data) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
 }
+
+// 시작 시: 영구 저장소 → 로컬 파일 순으로 메모리에 올림 (영구 저장소가 우선)
+(function bootstrap() {
+  const sources = [];
+  if (VOLUME_FILE) sources.push(readJson(VOLUME_FILE));
+  sources.push(readJson(LOCAL_FILE));
+  // 뒤쪽(로컬)을 먼저 깔고 앞쪽(볼륨)으로 덮어써서 볼륨 값이 이기게 한다
+  for (const src of sources.reverse()) {
+    for (const [k, v] of Object.entries(src)) {
+      if (typeof v === 'string' && v) mem.set(k, v);
+    }
+  }
+  console.log(VOLUME
+    ? `[TokenStore] 영구 저장소 사용: ${VOLUME} (재배포해도 유지됩니다)`
+    : '[TokenStore] 영구 저장소 없음 — Railway에 볼륨을 붙이면 재배포에도 연결이 유지됩니다');
+})();
 
 function get(key) {
-  // 1순위: 메모리 (이번 프로세스에서 저장·복구된 값)
   if (mem.has(key)) return mem.get(key);
-  // 2순위: 환경변수 (Railway Variables)
   return process.env[key] || null;
 }
 
@@ -39,26 +59,31 @@ function set(key, value) {
   const val = value.trim();
 
   mem.set(key, val);
-  process.env[key] = val;   // 같은 프로세스의 다른 코드가 env를 봐도 되게
+  process.env[key] = val;
 
-  // 파일은 best-effort — 실패해도 메모리 저장은 이미 끝났으므로 동작에 지장 없음
-  if (fileWritable) {
-    try {
-      const data = readFile();
-      data[key] = val;
-      fs.mkdirSync(path.dirname(FILE), { recursive: true });
-      fs.writeFileSync(FILE, JSON.stringify(data, null, 2), 'utf8');
-    } catch (e) {
-      fileWritable = false;
-      console.warn(`[TokenStore] 파일 저장 불가 (메모리로만 유지): ${e.message}`);
-    }
+  const snapshot = Object.fromEntries(mem);
+  if (VOLUME_FILE && writable.volume) {
+    try { writeJson(VOLUME_FILE, snapshot); }
+    catch (e) { writable.volume = false; console.warn(`[TokenStore] 볼륨 저장 실패: ${e.message}`); }
+  }
+  if (writable.local) {
+    try { writeJson(LOCAL_FILE, snapshot); }
+    catch (e) { writable.local = false; console.warn(`[TokenStore] 로컬 저장 실패 (메모리 유지): ${e.message}`); }
   }
   return true;
 }
 
-/** 저장된 키 목록 (값은 노출하지 않음) */
-function keys() {
-  return [...new Set([...mem.keys()])];
+function keys() { return [...mem.keys()]; }
+
+/** 저장 상태 (진단용 — 값은 노출하지 않음) */
+function storageInfo() {
+  return {
+    persistent: !!VOLUME,
+    volumePath: VOLUME || null,
+    volumeWritable: writable.volume,
+    localWritable: writable.local,
+    keyCount: mem.size,
+  };
 }
 
-module.exports = { get, set, keys, read: readFile };
+module.exports = { get, set, keys, storageInfo, read: () => Object.fromEntries(mem) };
