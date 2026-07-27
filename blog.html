@@ -1504,11 +1504,39 @@ async function unlockApp() {
   }
 }
 
+/* Railway는 재배포할 때마다 컨테이너를 새로 만들어 서버에 저장된 토큰이 사라진다.
+   그래서 코드를 고칠 때마다 Blogger 연결이 끊겼다.
+   이 브라우저에 보관해 둔 사본을 올려보내 서버가 스스로 복구하게 한다. */
+async function bpRestoreCredentials() {
+  try {
+    var raw = localStorage.getItem('riri_bp_creds');
+    if (raw) {
+      var r = await bpFetch('/api/credentials/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: raw,
+      });
+      if (r && r.restored && r.restored.length) {
+        console.log('[Restore] 복구됨:', r.restored.join(', '));
+        bpToast('🔄 블로그 연결을 자동으로 복구했습니다', 'ok');
+      }
+    }
+    // 서버의 최신 값을 다시 사본으로 보관 (다음 재배포 대비)
+    var backup = await bpFetch('/api/credentials/backup');
+    if (backup && Object.keys(backup).length) {
+      localStorage.setItem('riri_bp_creds', JSON.stringify(backup));
+    }
+  } catch (e) {
+    console.warn('[Restore] 실패:', e.message);
+  }
+}
+
 function enterApp() {
   document.getElementById('lock').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   showView('blog');
-  bpCheckServerStatus();
+  // 자격증명 복구를 먼저 끝낸 뒤 상태를 표시해야 '연결 안 됨'으로 잘못 보이지 않는다
+  bpRestoreCredentials().then(function() { bpCheckServerStatus(); });
   bpLoadQueue();
   loadHeroStats();
   bpFetch('/api/drafts').then(function(ds){ updateDraftBadge(ds.filter(function(d){return d.status==='draft';}).length); }).catch(function(){});

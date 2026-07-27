@@ -934,6 +934,37 @@ app.post('/api/blogger-cred-set', async (req, res) => {
   }
 });
 
+/* ── 자격증명 자동 복구 ────────────────────────────────────
+ * Railway는 배포할 때마다 컨테이너를 새로 만들기 때문에 config/tokens.json 이
+ * 사라진다. 그래서 코드를 고칠 때마다 Blogger 연결이 끊겼다.
+ * 대시보드(같은 도메인)의 localStorage에 사본을 두고, 페이지가 열릴 때
+ * 서버에 없는 값만 되돌려 넣어 스스로 복구되게 한다. */
+const RESTORABLE = ['BLOGGER_CLIENT_ID', 'BLOGGER_CLIENT_SECRET', 'BLOGGER_REFRESH_TOKEN', 'BLOGGER_BLOG_ID'];
+
+app.post('/api/credentials/restore', auth, (req, res) => {
+  const incoming = req.body || {};
+  const restored = [];
+  for (const key of RESTORABLE) {
+    const val = typeof incoming[key] === 'string' ? incoming[key].trim() : '';
+    if (!val) continue;
+    if (tokens.get(key)) continue;   // 서버에 이미 있으면 건드리지 않음
+    tokens.set(key, val);
+    restored.push(key);
+  }
+  if (restored.length) console.log(`[Restore] 자격증명 복구됨: ${restored.join(', ')}`);
+  res.json({ ok: true, restored });
+});
+
+/** 대시보드가 보관할 자격증명 사본 (복구용) */
+app.get('/api/credentials/backup', auth, (req, res) => {
+  const out = {};
+  for (const key of RESTORABLE) {
+    const v = tokens.get(key);
+    if (v) out[key] = v;
+  }
+  res.json(out);
+});
+
 // ── 애드센스 필수 페이지 3종 발행 ──
 // 소개/개인정보처리방침/문의가 없으면 심사에서 신뢰도 부족으로 거절된다.
 const _adsenseJobs = new Map();
@@ -1160,7 +1191,16 @@ app.get('/oauth/blogger/callback', async (req, res) => {
       }
     } catch (_) {}
 
-    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:480px;width:100%;text-align:center}h2{color:#22c55e;margin-top:0}p{color:#aaa;font-size:14px;line-height:1.6}.ok{font-size:64px;margin:16px 0}.btn{display:block;background:#333;border:none;color:#fff;padding:14px;border-radius:8px;font-size:15px;cursor:pointer;width:100%;margin-top:16px;text-decoration:none;font-family:inherit}</style></head><body><div class="card"><div class="ok">✅</div><h2>블로그스팟 인증 완료!</h2><p>토큰이 서버에 저장되었습니다. 바로 발행 가능합니다.</p><div style="text-align:left;background:#0f0f0f;border:1px solid #444;border-radius:10px;padding:14px;margin-top:16px"><div style="color:#fbbf24;font-size:12px;font-weight:bold;margin-bottom:8px">⚠️ 재배포 후에도 유지하려면 아래 값을 Railway의 BLOGGER_REFRESH_TOKEN 에 저장하세요 (1회만)</div><div style="color:#86efac;font-family:monospace;font-size:11px;word-break:break-all;user-select:all;background:#000;padding:10px;border-radius:6px">${refreshToken || '(재발급 필요 — 인증 다시 시도)'}</div></div><a class="btn" href="javascript:window.close()">창 닫기</a></div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:480px;width:100%;text-align:center}h2{color:#22c55e;margin-top:0}p{color:#aaa;font-size:14px;line-height:1.6}.ok{font-size:64px;margin:16px 0}.btn{display:block;background:#333;border:none;color:#fff;padding:14px;border-radius:8px;font-size:15px;cursor:pointer;width:100%;margin-top:16px;text-decoration:none;font-family:inherit}</style></head><body><div class="card"><div class="ok">✅</div><h2>블로그스팟 인증 완료!</h2><p>토큰이 서버에 저장되었습니다. 바로 발행 가능합니다.</p><div id="saved" style="color:#86efac;font-size:13px;margin-top:16px">이 브라우저에 안전하게 보관 중…</div><a class="btn" href="javascript:window.close()">창 닫기</a></div><script>
+try{
+  var c={BLOGGER_CLIENT_ID:${JSON.stringify(tokens.get('BLOGGER_CLIENT_ID') || '')},
+         BLOGGER_CLIENT_SECRET:${JSON.stringify(tokens.get('BLOGGER_CLIENT_SECRET') || '')},
+         BLOGGER_REFRESH_TOKEN:${JSON.stringify(refreshToken || '')},
+         BLOGGER_BLOG_ID:${JSON.stringify(tokens.get('BLOGGER_BLOG_ID') || '')}};
+  localStorage.setItem('riri_bp_creds', JSON.stringify(c));
+  document.getElementById('saved').textContent='✅ 보관 완료 — 앞으로 서버가 재배포돼도 자동으로 다시 연결됩니다';
+}catch(e){ document.getElementById('saved').textContent='⚠️ 브라우저 보관 실패: '+e.message; }
+</script></body></html>`);
   } catch (err) {
     res.send(`<h2>토큰 교환 실패</h2><p>${err.message}</p><p><a href="/oauth/blogger">다시 시도</a></p>`);
   }
