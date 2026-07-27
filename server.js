@@ -224,11 +224,26 @@ app.get('/api/test-platforms', auth, async (req, res) => {
     results.tistory = { ok: false, error: 'TISTORY_ID / TISTORY_PW / TISTORY_BLOG_NAME 미설정' };
   }
 
-  // Blogger: Playwright 방식 — 환경변수 존재 여부만 확인
-  if (tokens.get('BLOGGER_EMAIL') && tokens.get('BLOGGER_PW')) {
+  // Blogger: OAuth 방식 — 실제로 토큰 갱신 + 블로그 목록 조회까지 검증
+  const bClientId     = tokens.get('BLOGGER_CLIENT_ID');
+  const bClientSecret = tokens.get('BLOGGER_CLIENT_SECRET');
+  const bRefreshToken = tokens.get('BLOGGER_REFRESH_TOKEN');
+  if (bClientId && bClientSecret && bRefreshToken) {
+    try {
+      const blogs = await getBloggerBlogId(bClientId, bClientSecret, bRefreshToken);
+      if (blogs.length > 0) {
+        if (!tokens.get('BLOGGER_BLOG_ID')) tokens.set('BLOGGER_BLOG_ID', blogs[0].id);
+        results.blogger = { ok: true, message: `OAuth 연결됨 — ${blogs[0].name} (${blogs.length}개 블로그)` };
+      } else {
+        results.blogger = { ok: false, error: '인증은 됐으나 소유한 Blogger 블로그가 없습니다' };
+      }
+    } catch (e) {
+      results.blogger = { ok: false, error: `OAuth 검증 실패: ${e.response?.data?.error_description || e.message}` };
+    }
+  } else if (tokens.get('BLOGGER_EMAIL') && tokens.get('BLOGGER_PW')) {
     results.blogger = { ok: true, message: `Playwright 로그인 방식 (${tokens.get('BLOGGER_EMAIL')})` };
   } else {
-    results.blogger = { ok: false, error: 'BLOGGER_EMAIL / BLOGGER_PW 미설정' };
+    results.blogger = { ok: false, error: '설정 > 구글 계정 연결 버튼으로 인증 필요' };
   }
 
   // Naver: 브라우저 설치 여부만 확인 (실제 로그인은 시간이 오래 걸림)
