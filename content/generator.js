@@ -69,65 +69,118 @@ function callClaude(prompt, systemPrompt, maxTokens = 4096) {
   });
 }
 
-// JSON GET 헬퍼 (10초 타임아웃)
-function getJson(url) {
+// JSON GET 헬퍼 (10초 타임아웃, 헤더 지정 가능)
+function getJson(url, headers = {}) {
   return new Promise((resolve, reject) => {
-    const req = https.get(url, { headers: { 'User-Agent': 'vibe-dashboard/1.0' } }, (res) => {
+    const req = https.get(url, { headers: { 'User-Agent': 'vibe-dashboard/1.0', ...headers } }, (res) => {
       let d = '';
       res.on('data', c => { d += c; });
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { reject(e); } });
+      res.on('end', () => {
+        if (res.statusCode >= 400) return reject(new Error(`HTTP ${res.statusCode}: ${d.slice(0, 120)}`));
+        try { resolve(JSON.parse(d)); } catch (e) { reject(new Error(`파싱 실패: ${d.slice(0, 120)}`)); }
+      });
     });
     req.on('error', reject);
     req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
   });
 }
 
-// 키워드에 맞는 사진 URL 가져오기 — Pixabay → Openverse(키 불필요) → picsum 폴백
-async function fetchImageUrl(keyword, index) {
-  const clean = keyword.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim() || 'business';
+/* ── 이미지 소스 정책 ────────────────────────────────────────
+ * 발행된 글은 외부 도메인(blogspot/tistory/naver)에서 이미지를 불러오므로
+ * "핫링크 허용" 소스만 써야 한다. 핫링크를 막는 곳(Pixabay 등)의 URL을 넣으면
+ * 발행 직후 403으로 사진이 깨진다.
+ *   Unsplash  — 핫링크가 필수 요건 (API 가이드라인). 최우선.
+ *   Openverse — 키 불필요. Flickr/Wikimedia 등 핫링크 가능한 원본만 골라 사용.
+ *   Wikimedia — 핫링크 허용. 인물·지명·사건 등 고유명사에 강함.
+ *   picsum    — 주제 무관 랜덤. 위가 전부 실패했을 때만.
+ * ──────────────────────────────────────────────────────── */
 
-  // 1순위: Pixabay (PIXABAY_API_KEY 있을 때 — 품질 가장 좋음)
-  const apiKey = process.env.PIXABAY_API_KEY;
-  if (apiKey) {
-    try {
-      const url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(clean)}&image_type=photo&orientation=horizontal&per_page=20&safesearch=true&min_width=800&order=popular`;
-      const json = await getJson(url);
-      const hits = json.hits || [];
-      if (hits.length > 0) {
-        const pick = hits[index % hits.length];
-        console.log(`[Image] Pixabay "${clean}" → ${hits.length}건`);
-        return pick.largeImageURL || pick.webformatURL;
-      }
-      console.warn(`[Image] Pixabay "${clean}" 결과 없음`);
-    } catch (e) {
-      console.warn(`[Image] Pixabay 실패 (${clean}):`, e.message);
-    }
-  }
-
-  // 2순위: Openverse — API 키 불필요, CC 라이선스 실사진
-  try {
-    const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(clean)}&page_size=20&license_type=commercial&mature=false`;
-    const json = await getJson(url);
-    const items = (json.results || []).filter(r => r.url);
-    if (items.length > 0) {
-      const pick = items[index % items.length];
-      console.log(`[Image] Openverse "${clean}" → ${items.length}건`);
-      return pick.url;
-    }
-    console.warn(`[Image] Openverse "${clean}" 결과 없음`);
-  } catch (e) {
-    console.warn(`[Image] Openverse 실패 (${clean}):`, e.message);
-  }
-
-  // 최종 폴백: picsum (주제 무관 — 여기까지 오면 키워드 검색이 다 실패한 것)
-  console.warn(`[Image] "${clean}" — 검색 전부 실패, 랜덤 사진 사용`);
-  const seed = clean.split('').reduce((a, c) => a + c.charCodeAt(0), 0) + index * 97;
-  return `https://picsum.photos/seed/${seed % 9999}/1200/630`;
+// 핫링크가 가능한 호스트만 통과
+const HOTLINK_SAFE = /(^|\.)(staticflickr\.com|upload\.wikimedia\.org|images\.unsplash\.com|live\.staticflickr\.com|nasa\.gov|si\.edu)$/i;
+function isHotlinkSafe(url) {
+  try { return HOTLINK_SAFE.test(new URL(url).hostname); } catch { return false; }
 }
 
-// 이미지 HTML 태그 생성 (URL 직접 받음)
-function imageTag(url, alt) {
-  return `<figure style="text-align:center;margin:28px 0"><img src="${url}" alt="${alt}" loading="lazy" style="max-width:100%;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.12)"><figcaption style="color:#888;font-size:13px;margin-top:8px">${alt}</figcaption></figure>`;
+// 1순위: Unsplash (UNSPLASH_ACCESS_KEY 필요 — 무료, 핫링크 필수 정책)
+async function searchUnsplash(q, index) {
+  const key = process.env.UNSPLASH_ACCESS_KEY;
+  if (!key) return null;
+  const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&per_page=20&orientation=landscape&content_filter=high`;
+  const json = await getJson(url, { Authorization: `Client-ID ${key}` });
+  const items = (json.results || []).filter(r => r.urls && r.urls.regular);
+  if (!items.length) return null;
+  const p = items[index % items.length];
+  return {
+    url: p.urls.regular,
+    credit: p.user && p.user.name ? `Photo by ${p.user.name} on Unsplash` : '',
+    source: 'Unsplash',
+  };
+}
+
+// 2순위: Openverse (키 불필요) — 핫링크 가능한 원본만 채택
+async function searchOpenverse(q, index) {
+  const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&page_size=20&license_type=commercial&mature=false`;
+  const json = await getJson(url);
+  const items = (json.results || []).filter(r => r.url && isHotlinkSafe(r.url));
+  if (!items.length) return null;
+  const p = items[index % items.length];
+  return {
+    url: p.url,
+    credit: p.creator ? `${p.creator} (${p.license ? p.license.toUpperCase() : 'CC'})` : '',
+    source: 'Openverse',
+  };
+}
+
+// 3순위: Wikimedia Commons (키 불필요) — 고유명사/시사 주제에 강함
+async function searchWikimedia(q, index) {
+  const url = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search'
+    + `&gsrsearch=${encodeURIComponent('filetype:bitmap ' + q)}&gsrnamespace=6&gsrlimit=20`
+    + '&prop=imageinfo&iiprop=url&iiurlwidth=1200';
+  const json = await getJson(url);
+  const pages = json.query && json.query.pages ? Object.values(json.query.pages) : [];
+  const items = pages
+    .map(pg => pg.imageinfo && pg.imageinfo[0])
+    .filter(ii => ii && ii.thumburl && isHotlinkSafe(ii.thumburl));
+  if (!items.length) return null;
+  const p = items[index % items.length];
+  return { url: p.thumburl, credit: 'Wikimedia Commons', source: 'Wikimedia' };
+}
+
+// 키워드에 맞는 사진 찾기 — 위 순서대로 시도, 실패 로그 남김
+async function fetchImage(keyword, index) {
+  const clean = String(keyword || '').toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim() || 'business';
+
+  if (!process.env.UNSPLASH_ACCESS_KEY) {
+    console.warn('[Image] UNSPLASH_ACCESS_KEY 미설정 — Openverse/Wikimedia만 사용 (품질 낮음)');
+  }
+
+  for (const [name, fn] of [['Unsplash', searchUnsplash], ['Openverse', searchOpenverse], ['Wikimedia', searchWikimedia]]) {
+    try {
+      const hit = await fn(clean, index);
+      if (hit) {
+        console.log(`[Image] ✅ ${name} "${clean}" → ${hit.url.slice(0, 70)}`);
+        return hit;
+      }
+      if (name !== 'Unsplash' || process.env.UNSPLASH_ACCESS_KEY) {
+        console.warn(`[Image] ${name} "${clean}" 결과 없음`);
+      }
+    } catch (e) {
+      console.warn(`[Image] ${name} 실패 (${clean}): ${e.message}`);
+    }
+  }
+
+  console.warn(`[Image] ⚠️ "${clean}" — 전부 실패, 랜덤 사진 사용`);
+  const seed = clean.split('').reduce((a, c) => a + c.charCodeAt(0), 0) + index * 97;
+  return { url: `https://picsum.photos/seed/${seed % 9999}/1200/630`, credit: '', source: 'picsum' };
+}
+
+// 이미지 HTML 태그 생성
+function imageTag(img, alt) {
+  const caption = img.credit ? `${alt} · ${img.credit}` : alt;
+  return `<figure style="text-align:center;margin:28px 0">`
+    + `<img src="${img.url}" alt="${alt}" loading="lazy" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.12)">`
+    + `<figcaption style="color:#888;font-size:13px;margin-top:8px">${caption}</figcaption></figure>`;
 }
 
 const SYSTEM_PROMPT = `당신은 대한민국 MZ세대가 즐겨 보는 정보성 블로그를 운영하는 20-30대 여성입니다.
@@ -205,22 +258,23 @@ JSON 형식으로만 응답:
     placeholders.push(...imgKeywords.slice(0, 3));
   }
 
-  // 이미지 URL 병렬 가져오기 (Pixabay → picsum 폴백)
-  const imageUrls = await Promise.all(placeholders.map((kw, i) => fetchImageUrl(kw, i)));
-  console.log(`[Generator] 이미지 ${imageUrls.length}개 준비 완료`);
+  // 이미지 병렬 가져오기 (핫링크 허용 소스만)
+  const images = await Promise.all(placeholders.map((kw, i) => fetchImage(kw, i)));
+  const bySource = images.reduce((a, im) => { a[im.source] = (a[im.source] || 0) + 1; return a; }, {});
+  console.log(`[Generator] 이미지 ${images.length}개 준비 — ${JSON.stringify(bySource)}`);
 
   // 플레이스홀더 교체
   let urlIdx = 0;
   content = content.replace(/\[IMAGE:([^\]]+)\]/g, (_, kw) => {
-    const url = imageUrls[urlIdx++] || imageUrls[0];
-    return imageTag(url, kw);
+    const img = images[urlIdx++] || images[0];
+    return imageTag(img, kw);
   });
 
   // 플레이스홀더가 없었으면 본문 중간에 삽입
-  if (urlIdx === 0 && imageUrls.length > 0) {
+  if (urlIdx === 0 && images.length > 0) {
     const mid = content.indexOf('</p>', Math.floor(content.length * 0.4));
     if (mid !== -1) {
-      content = content.slice(0, mid + 4) + imageTag(imageUrls[0], imgKeywords[0] || keyword) + content.slice(mid + 4);
+      content = content.slice(0, mid + 4) + imageTag(images[0], imgKeywords[0] || keyword) + content.slice(mid + 4);
     }
   }
 
@@ -228,4 +282,4 @@ JSON 형식으로만 응답:
   return { title: json.title, content, tags: json.tags || [keyword] };
 }
 
-module.exports = { generatePost };
+module.exports = { generatePost, fetchImage };

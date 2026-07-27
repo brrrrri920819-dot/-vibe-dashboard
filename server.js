@@ -934,6 +934,55 @@ app.post('/api/blogger-cred-set', async (req, res) => {
   }
 });
 
+// ── 이미지 검증 페이지 — 키워드로 실제 사진을 눈으로 확인 ──
+app.get('/images', async (req, res) => {
+  const q = (req.query.q || '').trim();
+  const { fetchImage } = require('./content/generator');
+  let cards = '';
+  if (q) {
+    const kws = q.split(',').map(s => s.trim()).filter(Boolean).slice(0, 6);
+    const imgs = await Promise.all(kws.map((k, i) => fetchImage(k, i).catch(e => ({ url: '', credit: e.message, source: 'error' }))));
+    cards = imgs.map((im, i) => `<figure class="shot">
+      <div class="thumb">${im.url ? `<img src="${im.url}" alt="" loading="lazy" onerror="this.parentNode.classList.add('broken')">` : ''}</div>
+      <figcaption><span class="kw">${kws[i].replace(/[<>&]/g, '')}</span><span class="src src-${im.source}">${im.source}</span>
+      ${im.credit ? `<span class="cr">${String(im.credit).replace(/[<>&]/g, '').slice(0, 60)}</span>` : ''}</figcaption></figure>`).join('');
+  }
+  res.send(`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>이미지 검증</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard','Apple SD Gothic Neo',-apple-system,sans-serif;color:#eef0ff;min-height:100vh;padding:28px 16px 64px;line-height:1.5;
+ background:radial-gradient(1000px 560px at 80% -10%,rgba(236,72,153,.1),transparent 60%),#080b14;background-attachment:fixed}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:19px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
+.sub{color:#7c85b0;font-size:12.5px;margin-bottom:20px}
+form{display:flex;gap:9px;margin-bottom:22px;flex-wrap:wrap}
+input{flex:1;min-width:240px;background:#141728;border:1px solid #252840;border-radius:10px;color:#eef0ff;padding:12px 13px;font-size:13.5px;font-family:inherit;outline:none}
+input:focus{border-color:#ec4899;box-shadow:0 0 0 3px rgba(236,72,153,.14)}
+button{background:linear-gradient(135deg,#ec4899,#f43f5e);border:none;color:#fff;border-radius:10px;padding:12px 22px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.shot{background:#0e1120;border:1px solid #1e2238;border-radius:14px;overflow:hidden}
+.thumb{aspect-ratio:1200/630;background:#141728;display:flex;align-items:center;justify-content:center;position:relative}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb.broken::after{content:'❌ 로드 실패 (핫링크 차단)';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.12);color:#f87171;font-size:12px;font-weight:600}
+figcaption{padding:11px 13px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.kw{font-size:12px;font-weight:600;color:#eef0ff;width:100%}
+.src{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.06);color:#7c85b0}
+.src-Unsplash{background:rgba(34,197,94,.14);color:#4ade80}
+.src-Openverse{background:rgba(96,165,250,.14);color:#60a5fa}
+.src-Wikimedia{background:rgba(167,139,250,.14);color:#a78bfa}
+.src-picsum{background:rgba(239,68,68,.14);color:#f87171}
+.cr{font-size:10.5px;color:#3d4568}
+.note{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);color:#fcd34d;border-radius:12px;padding:13px 15px;font-size:12px;line-height:1.7;margin-top:20px}
+.note b{color:#fde68a}
+::selection{background:rgba(236,72,153,.32)}
+</style></head><body><div class="wrap">
+<h1>🖼 이미지 검증</h1><div class="sub">발행 전에 어떤 사진이 들어갈지 직접 확인하세요. 쉼표로 여러 키워드를 넣을 수 있습니다.</div>
+${process.env.UNSPLASH_ACCESS_KEY ? '' : '<div class="note" style="margin:0 0 18px"><b>⚠️ UNSPLASH_ACCESS_KEY 미설정</b><br>지금은 Openverse·Wikimedia만 쓰고 있어 사진 품질이 떨어집니다. unsplash.com/developers 에서 무료 키를 발급받아 Railway에 <b>UNSPLASH_ACCESS_KEY</b> 로 추가하세요. (PIXABAY_API_KEY 는 핫링크가 차단돼 더 이상 쓰지 않습니다)</div>'}
+<form method="get"><input name="q" value="${q.replace(/"/g, '&quot;')}" placeholder="예: stock market decline, korean street food, container ship port" autocapitalize="off"><button>검색</button></form>
+<div class="grid">${cards}</div>
+${q ? `<div class="note"><b>판정 기준</b><br>· 배지가 <b>Unsplash / Openverse / Wikimedia</b> → 주제에 맞는 실사진, 핫링크 정상<br>· 배지가 <b>picsum</b> → 검색 실패로 나온 랜덤 사진 (키워드를 더 구체적으로)<br>· <b>❌ 로드 실패</b> → 핫링크 차단된 URL (발행하면 글에서도 깨짐)</div>` : ''}
+</div></body></html>`);
+});
+
 // ── Setup 페이지 (어떤 클라이언트 ID가 설정됐는지 확인) ──
 app.get('/setup', (req, res) => {
   const cid = tokens.get('BLOGGER_CLIENT_ID') || '';
