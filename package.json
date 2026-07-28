@@ -8,7 +8,7 @@
     "dev": "node --watch server.js",
     "install-browsers": "npx playwright install chromium --with-deps",
     "postinstall": "npx playwright install chromium --with-deps || echo '[Playwright] 브라우저 설치 실패 (무시 가능)'",
-    "test": "node test/image-pipeline.test.js && node test/image-e2e.test.js && node test/image-broaden.test.js && node test/adsense-quality.test.js && node test/content-length.test.js && node test/credentials-restore.test.js && node test/persistence.test.js"
+    "test": "node test/image-pipeline.test.js && node test/image-e2e.test.js && node test/image-broaden.test.js && node test/adsense-quality.test.js && node test/content-length.test.js && node test/credentials-restore.test.js && node test/persistence.test.js && node test/scheduler-retry.test.js"
   },
   "dependencies": {
     "express": "^4.18.2",

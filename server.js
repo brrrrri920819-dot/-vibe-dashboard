@@ -1288,14 +1288,22 @@ app.get('/oauth/blogger/callback', async (req, res) => {
       }
     } catch (_) {}
 
-    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:480px;width:100%;text-align:center}h2{color:#22c55e;margin-top:0}p{color:#aaa;font-size:14px;line-height:1.6}.ok{font-size:64px;margin:16px 0}.btn{display:block;background:#333;border:none;color:#fff;padding:14px;border-radius:8px;font-size:15px;cursor:pointer;width:100%;margin-top:16px;text-decoration:none;font-family:inherit}</style></head><body><div class="card"><div class="ok">✅</div><h2>블로그스팟 인증 완료!</h2><p>토큰이 서버에 저장되었습니다. 바로 발행 가능합니다.</p><div id="saved" style="color:#86efac;font-size:13px;margin-top:16px">이 브라우저에 안전하게 보관 중…</div><a class="btn" href="javascript:window.close()">창 닫기</a></div><script>
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:480px;width:100%;text-align:center}h2{color:#22c55e;margin-top:0}p{color:#aaa;font-size:14px;line-height:1.6}.ok{font-size:64px;margin:16px 0}.btn{display:block;background:#333;border:none;color:#fff;padding:14px;border-radius:8px;font-size:15px;cursor:pointer;width:100%;margin-top:16px;text-decoration:none;font-family:inherit}</style></head><body><div class="card"><div class="ok">✅</div><h2>블로그스팟 인증 완료!</h2><p>토큰이 서버에 저장되었습니다. 바로 발행 가능합니다.</p><div id="saved" style="color:#86efac;font-size:13px;margin-top:16px">이 브라우저에 보관 중…</div><div style="text-align:left;background:#0f0f0f;border:1px solid #444;border-radius:10px;padding:14px;margin-top:16px"><div style="color:#fbbf24;font-size:12px;font-weight:bold;margin-bottom:8px">🔒 다시는 안 끊기게 하려면 (1회면 끝)</div><div style="color:#aaa;font-size:12px;line-height:1.6;margin-bottom:10px">아래 버튼으로 복사한 뒤 Railway → Variables 에 <b style="color:#eee">BLOGGER_REFRESH_TOKEN</b> 이름으로 붙여넣으세요. 환경변수는 재배포해도 지워지지 않습니다.</div><button id="copyBtn" style="background:#22c55e;border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;width:100%;font-family:inherit">📋 토큰 복사하기</button><div id="copied" style="color:#86efac;font-size:12px;margin-top:8px;text-align:center;min-height:16px"></div></div><a class="btn" href="javascript:window.close()">창 닫기</a></div><script>
 try{
   var c={BLOGGER_CLIENT_ID:${JSON.stringify(tokens.get('BLOGGER_CLIENT_ID') || '')},
          BLOGGER_CLIENT_SECRET:${JSON.stringify(tokens.get('BLOGGER_CLIENT_SECRET') || '')},
          BLOGGER_REFRESH_TOKEN:${JSON.stringify(refreshToken || '')},
          BLOGGER_BLOG_ID:${JSON.stringify(tokens.get('BLOGGER_BLOG_ID') || '')}};
   localStorage.setItem('riri_bp_creds', JSON.stringify(c));
-  document.getElementById('saved').textContent='✅ 보관 완료 — 앞으로 서버가 재배포돼도 자동으로 다시 연결됩니다';
+  document.getElementById('saved').textContent='✅ 보관 완료 — 대시보드를 열면 자동으로 다시 연결됩니다';
+  document.getElementById('copyBtn').onclick=function(){
+    var t=c.BLOGGER_REFRESH_TOKEN||'';
+    function done(){document.getElementById('copied').textContent='✅ 복사됨 — Railway Variables 에 BLOGGER_REFRESH_TOKEN 으로 붙여넣으세요';}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done).catch(fallback);}else{fallback();}
+    function fallback(){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy');done();}catch(e){document.getElementById('copied').textContent='복사 실패 — 길게 눌러 직접 복사하세요: '+t;}
+      document.body.removeChild(ta);}
+  };
 }catch(e){ document.getElementById('saved').textContent='⚠️ 브라우저 보관 실패: '+e.message; }
 </script></body></html>`);
   } catch (err) {

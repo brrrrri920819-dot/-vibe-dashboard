@@ -98,8 +98,46 @@ function startScheduler(publishFn) {
 
       try {
         const results = await publishFn(job);
+
+        /* 재배포 직후엔 토큰이 아직 복구되기 전일 수 있다.
+           이때 실패로 처리하면 글이 그냥 사라지므로,
+           '연결 없음'이 원인인 경우엔 버리지 않고 대기 상태로 되돌려
+           연결이 돌아왔을 때 자동으로 다시 발행한다. */
+        const errs = Object.values(results).filter(r => r && !r.success).map(r => r.error || '');
+        const authProblem = errs.length > 0 && errs.every(e =>
+          /인증|연결 필요|재인증|invalid_grant|설정 필요|미설정|토큰/i.test(e));
+        const anyOk = Object.values(results).some(r => r && r.success);
+
+        if (!anyOk && authProblem) {
+          const tries = (job.authRetries || 0) + 1;
+          const q2 = readQueue();
+          const j2 = q2.find(j => j.id === job.id);
+          if (j2 && tries <= 60) {          // 1분 간격 → 최대 1시간 대기
+            j2.status = 'pending';
+            j2.authRetries = tries;
+            writeQueue(q2);
+            if (tries === 1) console.warn(`[Scheduler] 연결 복구 대기 중, 발행 보류: ${job.id}`);
+            continue;
+          }
+          updateJobStatus(job.id, 'failed', { error: '연결이 복구되지 않아 발행 취소' });
+          appendLog({ ...job, status: 'failed', error: '연결이 복구되지 않아 발행 취소' });
+          console.error(`[Scheduler] 연결 미복구로 포기: ${job.id}`);
+          continue;
+        }
+
+        /* 예전엔 모든 플랫폼이 실패해도 'done'으로 기록해서
+           실패가 성공으로 집계되고 원인도 남지 않았다. */
+        if (!anyOk) {
+          const msg = errs.filter(Boolean).join(' | ') || '모든 플랫폼 발행 실패';
+          updateJobStatus(job.id, 'failed', { error: msg, results });
+          appendLog({ ...job, status: 'failed', error: msg, results });
+          console.error(`[Scheduler] 실패: ${job.id} — ${msg}`);
+          continue;
+        }
+
         updateJobStatus(job.id, 'done', results);
         appendLog({ ...job, status: 'done', results });
+        dequeue(job.id);   // 끝난 작업은 큐에서 제거 (기록은 로그에 남음)
         console.log(`[Scheduler] 완료: ${job.id}`);
       } catch (err) {
         updateJobStatus(job.id, 'failed', { error: err.message });

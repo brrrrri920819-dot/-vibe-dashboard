@@ -1537,6 +1537,13 @@ function enterApp() {
   showView('blog');
   // 자격증명 복구를 먼저 끝낸 뒤 상태를 표시해야 '연결 안 됨'으로 잘못 보이지 않는다
   bpRestoreCredentials().then(function() { bpCheckServerStatus(); });
+  // 서버가 재배포돼 자격증명이 비면 스스로 다시 채우도록 주기적으로 확인
+  if (!window._bpRestoreTimer) {
+    window._bpRestoreTimer = setInterval(function(){ bpRestoreCredentials(); }, 3 * 60 * 1000);
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) bpRestoreCredentials();
+    });
+  }
   bpLoadQueue();
   loadHeroStats();
   bpFetch('/api/drafts').then(function(ds){ updateDraftBadge(ds.filter(function(d){return d.status==='draft';}).length); }).catch(function(){});
