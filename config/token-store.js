@@ -75,6 +75,14 @@ function set(key, value) {
 
 function keys() { return [...mem.keys()]; }
 
+/** 값의 출처 — 'saved'(저장소) | 'env'(Railway 환경변수) | null
+ *  둘이 다를 때 어느 쪽이 쓰이는지 헷갈려 생기는 문제를 잡기 위한 것 */
+function sourceOf(key) {
+  if (mem.has(key)) return 'saved';
+  if (process.env[key]) return 'env';
+  return null;
+}
+
 /** 저장 상태 (진단용 — 값은 노출하지 않음) */
 function storageInfo() {
   return {
@@ -86,4 +94,4 @@ function storageInfo() {
   };
 }
 
-module.exports = { get, set, keys, storageInfo, read: () => Object.fromEntries(mem) };
+module.exports = { get, set, keys, sourceOf, storageInfo, read: () => Object.fromEntries(mem) };

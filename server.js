@@ -928,7 +928,7 @@ app.post('/api/blogger-cred-set', async (req, res) => {
       return res.json({ ok: true, verdict: '✅ 정상! 저장 완료 — 아래 인증 버튼을 누르세요' });
     }
     if (e === 'invalid_client') {
-      return res.json({ ok: false, verdict: '❌ 이 ID/시크릿 짝은 구글이 거부함 — 새 OAuth 클라이언트를 만들어서 그 값을 넣어보세요' });
+      return res.json({ ok: false, verdict: '❌ 구글이 이 ID/시크릿 짝을 거부했습니다 — 같은 OAuth 클라이언트의 값인지 확인하세요' });
     }
     res.json({ ok: false, verdict: `❓ ${e || err.message}` });
   }
@@ -985,9 +985,12 @@ app.get('/api/blogger-diagnose', auth, async (req, res) => {
   const sec = tokens.get('BLOGGER_CLIENT_SECRET');
   const ref = tokens.get('BLOGGER_REFRESH_TOKEN');
 
-  steps.push({ step: '1. 클라이언트 ID', ok: !!cid, detail: cid ? cid.slice(0, 22) + '…' : '없음' });
-  steps.push({ step: '2. 클라이언트 시크릿', ok: !!sec, detail: sec ? `${sec.slice(0, 7)}… (${sec.length}자)` : '없음' });
-  steps.push({ step: '3. 리프레시 토큰', ok: !!ref, detail: ref ? `저장됨 (${ref.length}자)` : '없음 — 구글 계정 연결 필요' });
+  const where = (k) => tokens.sourceOf(k) === 'env' ? ' [Railway 환경변수]'
+                     : tokens.sourceOf(k) === 'saved' ? ' [이 화면에서 저장됨]' : '';
+
+  steps.push({ step: '1. 클라이언트 ID', ok: !!cid, detail: (cid ? cid.slice(0, 22) + '…' : '없음') + where('BLOGGER_CLIENT_ID') });
+  steps.push({ step: '2. 클라이언트 시크릿', ok: !!sec, detail: (sec ? `${sec.slice(0, 7)}… (${sec.length}자)` : '없음') + where('BLOGGER_CLIENT_SECRET') });
+  steps.push({ step: '3. 리프레시 토큰', ok: !!ref, detail: (ref ? `저장됨 (${ref.length}자)` : '없음 — 구글 계정 연결 필요') + where('BLOGGER_REFRESH_TOKEN') });
 
   if (cid && sec && ref) {
     try {
@@ -1002,7 +1005,11 @@ app.get('/api/blogger-diagnose', auth, async (req, res) => {
       const g = e.response?.data || {};
       let hint = g.error_description || e.message;
       if (g.error === 'invalid_grant') hint = '토큰 만료/취소됨 — 구글 계정 연결을 다시 하세요. (OAuth 앱이 "테스트" 상태면 7일마다 만료되니 "프로덕션"으로 전환하세요)';
-      if (g.error === 'invalid_client') hint = 'ID/시크릿 짝이 맞지 않음 — 아래 폼에 다시 입력하세요';
+      if (g.error === 'invalid_client') {
+        hint = tokens.sourceOf('BLOGGER_CLIENT_SECRET') === 'env'
+          ? 'Railway 환경변수의 BLOGGER_CLIENT_SECRET 이 틀렸습니다 — Railway에서 그 변수를 삭제하거나 올바른 값으로 고치세요'
+          : 'ID/시크릿 짝이 맞지 않음 — 아래 폼에 같은 클라이언트의 값을 다시 입력하세요';
+      }
       steps.push({ step: '4. 구글 통신', ok: false, detail: hint });
     }
   } else {
