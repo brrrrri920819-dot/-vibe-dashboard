@@ -1033,7 +1033,12 @@ app.post('/api/credentials/restore', auth, (req, res) => {
   for (const key of RESTORABLE) {
     const val = typeof incoming[key] === 'string' ? incoming[key].trim() : '';
     if (!val) continue;
-    if (tokens.get(key)) continue;   // 서버에 이미 있으면 건드리지 않음
+    /* 이 프로세스에서 직접 저장된 값('saved')만 보호한다.
+       환경변수('env')는 틀린 값이 들어있을 수 있으므로 브라우저 사본으로 덮어쓴다.
+       — 예전엔 "값이 있으면 건너뛰기"여서 Railway의 잘못된 시크릿이
+         올바른 값의 복구를 계속 막았다. 이게 invalid_client 반복의 원인. */
+    if (tokens.sourceOf(key) === 'saved' && tokens.get(key) === val) continue;
+    if (tokens.sourceOf(key) === 'saved' && key === 'BLOGGER_REFRESH_TOKEN') continue; // 방금 발급된 토큰이 최신
     tokens.set(key, val);
     restored.push(key);
   }
@@ -1041,12 +1046,14 @@ app.post('/api/credentials/restore', auth, (req, res) => {
   res.json({ ok: true, restored });
 });
 
-/** 대시보드가 보관할 자격증명 사본 (복구용) */
+/** 대시보드가 보관할 자격증명 사본 (복구용)
+ *  검증을 거쳐 저장된 값('saved')만 내려준다 —
+ *  환경변수 값까지 내려주면 틀린 값이 브라우저 사본을 오염시킨다 */
 app.get('/api/credentials/backup', auth, (req, res) => {
   const out = {};
   for (const key of RESTORABLE) {
-    const v = tokens.get(key);
-    if (v) out[key] = v;
+    if (tokens.sourceOf(key) !== 'saved') continue;
+    out[key] = tokens.get(key);
   }
   res.json(out);
 });
@@ -1236,7 +1243,16 @@ Railway 프로젝트 → 서비스 우클릭 → <b>Add Volume</b> → Mount pat
 
 <a class="btn btn-pink" href="/oauth/blogger">🔑 구글 계정 연결 시작</a>
 </div><script>
+// 이 브라우저에 보관된 올바른 값으로 서버를 먼저 복구한 뒤 검증한다
+// (Railway 환경변수에 틀린 값이 있어도 여기서 덮어써져 자가치유됨)
+var _boot=Promise.resolve();
+try{
+  var _saved=localStorage.getItem('riri_bp_creds');
+  if(_saved){_boot=fetch('/api/credentials/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:_saved}).then(function(r){return r.json();}).then(function(d){if(d.restored&&d.restored.length){console.log('복구:',d.restored.join(','));}}).catch(function(){});}
+}catch(e){}
+_boot.then(function(){
 fetch('/api/blogger-cred-test').then(function(r){return r.json();}).then(function(d){var el=document.getElementById('cred-test');el.textContent=d.verdict;el.style.color=d.ok?'#86efac':'#f87171';}).catch(function(){var el=document.getElementById('cred-test');el.textContent='테스트 실패';el.style.color='#f87171';});
+});
 fetch('/api/blogger-diagnose').then(function(r){return r.json();}).then(function(d){
   var h='<div style="font-size:11.5px;font-weight:700;color:#7c85b0;letter-spacing:.4px;margin-bottom:8px">단계별 진단</div>';
   d.steps.forEach(function(s){
@@ -1249,7 +1265,17 @@ fetch('/api/blogger-diagnose').then(function(r){return r.json();}).then(function
   else h+='<div style="margin-top:10px;font-size:12px;color:#86efac">✅ 모든 단계 정상 — 바로 발행 가능합니다</div>';
   document.getElementById('diag').innerHTML=h;
 }).catch(function(e){document.getElementById('diag').textContent='진단 실패: '+e.message;});
-function credSet(){var r=document.getElementById('cred-set-result');r.textContent='구글에 확인 중…';r.style.color='#7c85b0';fetch('/api/blogger-cred-set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId:document.getElementById('in-cid').value,clientSecret:document.getElementById('in-sec').value})}).then(function(x){return x.json();}).then(function(d){r.textContent=d.verdict;r.style.color=d.ok?'#86efac':'#f87171';if(d.ok)setTimeout(function(){location.reload();},1400);}).catch(function(e){r.textContent='오류: '+e.message;r.style.color='#f87171';});}
+function credSet(){var r=document.getElementById('cred-set-result');r.textContent='구글에 확인 중…';r.style.color='#7c85b0';
+var cid=(document.getElementById('in-cid').value||'').trim().replace(/^https?:\\/\\//,'');
+var sec=(document.getElementById('in-sec').value||'').trim();
+fetch('/api/blogger-cred-set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId:cid,clientSecret:sec})}).then(function(x){return x.json();}).then(function(d){r.textContent=d.verdict;r.style.color=d.ok?'#86efac':'#f87171';
+if(d.ok){
+  // 검증 통과한 짝을 브라우저에 보관 → 재배포돼도 이 페이지가 열릴 때마다 자동 복구
+  try{var c={};try{c=JSON.parse(localStorage.getItem('riri_bp_creds')||'{}');}catch(e){}
+  c.BLOGGER_CLIENT_ID=cid;c.BLOGGER_CLIENT_SECRET=sec;
+  localStorage.setItem('riri_bp_creds',JSON.stringify(c));}catch(e){}
+  setTimeout(function(){location.reload();},1400);
+}}).catch(function(e){r.textContent='오류: '+e.message;r.style.color='#f87171';});}
 </script></body></html>`);
 });
 
