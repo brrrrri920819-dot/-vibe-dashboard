@@ -238,7 +238,12 @@ app.get('/api/test-platforms', auth, async (req, res) => {
         results.blogger = { ok: false, error: '인증은 됐으나 소유한 Blogger 블로그가 없습니다' };
       }
     } catch (e) {
-      results.blogger = { ok: false, error: `OAuth 검증 실패: ${e.response?.data?.error_description || e.message}` };
+      const g = e.response?.data || {};
+      let msg = g.error_description || g.error?.message || e.message;
+      if (e.response?.status === 403) {
+        msg = 'Blogger API가 꺼져 있습니다 — console.cloud.google.com/apis/library/blogger.googleapis.com 에서 「사용」 클릭 후 1분 뒤 재시도';
+      }
+      results.blogger = { ok: false, error: `OAuth 검증 실패: ${msg}` };
     }
   } else if (tokens.get('BLOGGER_EMAIL') && tokens.get('BLOGGER_PW')) {
     results.blogger = { ok: true, message: `Playwright 로그인 방식 (${tokens.get('BLOGGER_EMAIL')})` };
@@ -956,7 +961,10 @@ async function checkBloggerHealth(notify = true) {
     console.log(`[Health] Blogger 정상 — ${_bloggerHealth.detail}`);
   } catch (e) {
     const g = e.response?.data || {};
-    let detail = g.error_description || e.message;
+    let detail = g.error_description || g.error?.message || e.message;
+    if (e.response?.status === 403) {
+      detail = 'Blogger API 비활성 — 구글 콘솔 API 라이브러리에서 Blogger API를 「사용」으로 켜세요';
+    }
     if (g.error === 'invalid_grant') {
       detail = '토큰 만료 — 재연결 필요. OAuth 앱이 "테스트" 상태면 7일마다 만료되니 "프로덕션"으로 전환하세요';
     }
