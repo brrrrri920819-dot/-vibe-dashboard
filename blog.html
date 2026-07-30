@@ -175,6 +175,12 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 .bp-spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--bd2);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* 일괄 발행 담기 버튼 */
+.kw-add-chip{background:var(--s3);border:1px solid var(--bd2);border-left:none;color:var(--t2);
+  font-size:15px;line-height:1;padding:9px 11px;border-radius:0 9px 9px 0;cursor:pointer;
+  font-family:inherit;transition:all .18s cubic-bezier(.4,0,.2,1)}
+.kw-add-chip:hover{background:rgba(236,72,153,.16);color:#f9a8d4;border-color:rgba(236,72,153,.35)}
+
 /* ── PLATFORM TEST ROWS ───────────────────────── */
 .plat-test-row{background:var(--s2);border:1px solid var(--bd2);border-radius:11px;padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--bd2)}
 .plat-test-row.ok{border-left-color:var(--ok)}
@@ -1074,6 +1080,54 @@ body{background:
         </div>
       </div>
 
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">📦 키워드 일괄 발행</div>
+        <div class="bp-humanize-tip" style="margin-bottom:12px">
+          키워드를 여러 개 넣고 버튼 한 번이면 <b>각 키워드로 글을 만들어 선택한 블로그에 전부 발행</b>합니다.<br>
+          <span style="color:var(--t3)">아래 키워드 목록에서 칩을 눌러 담을 수도 있습니다.</span>
+        </div>
+
+        <textarea class="bp-inp" id="bulk-keywords" style="min-height:90px;font-size:14px"
+          oninput="bulkUpdateCount()"
+          placeholder="키워드를 쉼표 또는 줄바꿈으로 구분해서 입력&#10;예: 출산휴가 급여, 청년도약계좌, 전기차 보조금"></textarea>
+        <div id="bulk-kw-count" style="color:var(--t3);font-size:12px;margin:-4px 0 12px"></div>
+
+        <div style="color:var(--t2);font-size:11px;font-weight:700;letter-spacing:.5px;margin-bottom:8px">발행할 블로그</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <label class="bp-img-label" style="margin:0"><input type="checkbox" id="bulk-p-blogger" checked style="margin-right:6px">🔵 블로그스팟</label>
+          <label class="bp-img-label" style="margin:0"><input type="checkbox" id="bulk-p-tistory" style="margin-right:6px">🟠 티스토리</label>
+          <label class="bp-img-label" style="margin:0"><input type="checkbox" id="bulk-p-naver" style="margin-right:6px">🟢 네이버</label>
+          <button class="bp-sch-btn" style="flex:0 0 auto;min-width:0;padding:10px 14px;font-size:12px" onclick="bulkSelectAll()">전체 선택</button>
+        </div>
+
+        <div style="color:var(--t2);font-size:11px;font-weight:700;letter-spacing:.5px;margin-bottom:8px">제휴 링크</div>
+        <label class="bp-img-label" style="margin:0 0 6px;width:100%;justify-content:flex-start">
+          <input type="checkbox" id="bulk-affiliate" checked style="margin-right:8px">
+          <span>제휴 포함 — 주제에 맞는 수익 높은 프로그램을 자동 추천해 링크와 고지문 삽입</span>
+        </label>
+        <div style="color:var(--t3);font-size:11.5px;line-height:1.7;margin-bottom:14px">
+          네이버는 정책상 허용되는 프로그램(네이버 쇼핑파트너 등)만 자동으로 선택됩니다.
+          대가성 고지문이 글 맨 앞에 자동으로 들어갑니다.
+        </div>
+
+        <div style="color:var(--t2);font-size:11px;font-weight:700;letter-spacing:.5px;margin-bottom:8px">발행 시점</div>
+        <div class="bp-row" style="flex-wrap:wrap;align-items:center">
+          <select class="bp-inp" id="bulk-schedule" style="flex:1;min-width:150px;margin-bottom:0" onchange="bulkToggleInterval()">
+            <option value="now">지금 바로 전부</option>
+            <option value="spread" selected>시간 간격 두고 (자연스럽게)</option>
+          </select>
+          <select class="bp-inp" id="bulk-interval" style="flex:1;min-width:130px;margin-bottom:0">
+            <option value="30">30분 간격</option>
+            <option value="60" selected>1시간 간격</option>
+            <option value="180">3시간 간격</option>
+            <option value="360">6시간 간격</option>
+          </select>
+        </div>
+
+        <button class="bp-pub-btn" style="max-width:240px;margin-top:14px" id="bulk-btn" onclick="runBulkPublish()">🚀 전체 글 발행</button>
+        <div id="bulk-result" style="margin-top:12px"></div>
+      </div>
+
       <div id="kw-sources-wrap">
         <div class="section"><div style="text-align:center;padding:30px;color:var(--t3)"><span class="bp-spinner"></span> 키워드 수집 중...</div></div>
       </div>
@@ -1645,7 +1699,7 @@ function showView(v) {
   });
 
   if (v === 'blog')      { bpCheckServerStatus(); bpLoadQueue(); loadHeroStats(); }
-  if (v === 'keywords')  { loadKeywordsView(); }
+  if (v === 'keywords')  { loadKeywordsView(); bulkUpdateCount(); bulkToggleInterval(); }
   if (v === 'month')     { loadMonthView(); }
   if (v === 'affiliate') { loadAffiliateView(false); }
   if (v === 'income')    { loadIncomeView(); }
@@ -2376,6 +2430,119 @@ async function saveKeys() {
   }
 }
 
+// ── 키워드 일괄 발행 ──────────────────────────────────────
+function bulkParseKeywords() {
+  var raw = (document.getElementById('bulk-keywords').value || '');
+  return raw.split(/[,\n]/).map(function(s){ return s.trim(); }).filter(Boolean);
+}
+
+function bulkUpdateCount() {
+  var el = document.getElementById('bulk-kw-count');
+  if (!el) return;
+  var n = bulkParseKeywords().length;
+  el.textContent = n ? n + '개 키워드 (최대 30개)' : '';
+}
+
+function bulkSelectAll() {
+  ['blogger','tistory','naver'].forEach(function(p){
+    var el = document.getElementById('bulk-p-' + p); if (el) el.checked = true;
+  });
+}
+
+function bulkToggleInterval() {
+  var mode = document.getElementById('bulk-schedule').value;
+  document.getElementById('bulk-interval').style.display = (mode === 'spread') ? '' : 'none';
+}
+
+/** 키워드 칩을 눌러 일괄 목록에 담기 */
+function bulkAddKeyword(kw) {
+  var ta = document.getElementById('bulk-keywords');
+  if (!ta) return;
+  var cur = bulkParseKeywords();
+  if (cur.indexOf(kw) !== -1) { bpToast('이미 담긴 키워드입니다', 'warn'); return; }
+  ta.value = cur.concat([kw]).join(', ');
+  bulkUpdateCount();
+  bpToast('📦 담김: ' + kw, 'ok');
+}
+
+async function runBulkPublish() {
+  var btn  = document.getElementById('bulk-btn');
+  var wrap = document.getElementById('bulk-result');
+  var keywords = bulkParseKeywords();
+  if (!keywords.length) { bpToast('키워드를 입력해주세요', 'err'); return; }
+
+  var platforms = [];
+  ['blogger','tistory','naver'].forEach(function(p){
+    if (document.getElementById('bulk-p-' + p).checked) platforms.push(p);
+  });
+  if (!platforms.length) { bpToast('발행할 블로그를 선택해주세요', 'err'); return; }
+
+  var includeAffiliate = document.getElementById('bulk-affiliate').checked;
+  var scheduleMode = document.getElementById('bulk-schedule').value;
+  var intervalMinutes = parseInt(document.getElementById('bulk-interval').value, 10) || 60;
+
+  if (!confirm(keywords.length + '개 키워드로 글을 만들어 ' + platforms.length + '개 블로그에 발행합니다.\n총 '
+      + (keywords.length * platforms.length) + '건. 진행할까요?')) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="bp-spinner"></span>생성 중...';
+  wrap.innerHTML = '<div style="color:var(--t2);font-size:13px">글을 하나씩 생성합니다. 키워드당 1~2분 걸립니다...</div>';
+
+  try {
+    var init = await bpFetch('/api/bulk-publish', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keywords: keywords, platforms: platforms,
+        includeAffiliate: includeAffiliate, scheduleMode: scheduleMode, intervalMinutes: intervalMinutes }),
+    });
+    if (!init.jobId) throw new Error(init.error || '요청 실패');
+
+    var attempts = 0;
+    var data = await new Promise(function(resolve, reject) {
+      var t = setInterval(async function() {
+        attempts++;
+        if (attempts > 900) { clearInterval(t); reject(new Error('시간 초과')); return; }
+        try {
+          var s = await bpFetch('/api/bulk-publish-status/' + init.jobId);
+          wrap.innerHTML = bulkRenderItems(s);
+          if (s.status === 'done')  { clearInterval(t); resolve(s); }
+          if (s.status === 'error') { clearInterval(t); reject(new Error(s.error || '실패')); }
+        } catch (pe) { if (attempts > 12) { clearInterval(t); reject(pe); } }
+      }, 3000);
+    });
+
+    bpToast('📦 ' + data.okCount + '/' + data.total + '개 발행 예약 완료', data.okCount ? 'ok' : 'warn');
+    bpLoadQueue && bpLoadQueue();
+  } catch (e) {
+    wrap.innerHTML = '<div style="color:var(--err);font-size:13px">❌ ' + escHtml(e.message) + '</div>';
+    bpToast('실패: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🚀 전체 글 발행';
+  }
+}
+
+function bulkRenderItems(s) {
+  var head = '<div style="color:var(--t2);font-size:13px;margin-bottom:10px">진행 '
+    + (s.done || 0) + ' / ' + (s.total || 0) + '</div>';
+  var rows = (s.items || []).map(function(it) {
+    var icon = it.status === 'done' ? '✅' : it.status === 'error' ? '❌' : '⏳';
+    var cls  = it.status === 'done' ? ' ok' : it.status === 'error' ? ' fail' : '';
+    var plats = Object.keys(it.platforms || {}).map(function(p){
+      var i = { naver:'🟢', tistory:'🟠', blogger:'🔵' }; return (i[p] || p);
+    }).join(' ');
+    var aff = (it.affiliates || []).map(function(a){ return a.name; }).join(', ');
+    return '<div class="plat-test-row' + cls + '" style="margin-bottom:6px">'
+      + '<div class="ptr-head"><span class="ptr-icon">' + icon + '</span>'
+      + '<span class="ptr-name">' + escHtml(it.keyword) + '</span>'
+      + '<span class="ptr-pill">' + (plats || '-') + '</span></div>'
+      + (it.title  ? '<div class="ptr-msg">' + escHtml(it.title) + '</div>' : '')
+      + (aff       ? '<div class="ptr-msg" style="color:var(--ok)">제휴: ' + escHtml(aff) + '</div>' : '')
+      + (it.error  ? '<div class="ptr-msg" style="color:var(--err)">' + escHtml(it.error) + '</div>' : '')
+      + '</div>';
+  }).join('');
+  return head + rows;
+}
+
 async function runAllHustles() {
   var btn = document.getElementById('hustle-run-btn');
   var out = document.getElementById('hustle-run-result');
@@ -2811,11 +2978,14 @@ async function refreshKeywords() {
         + '<div class="kw-chips-grid">'
         + kws.map(function(k, i) {
             var isHot = i < 5;
-            return '<button class="kw-gen-chip' + (isHot ? ' kw-hot-chip' : '') + '" onclick="generateFromKeyword(\'' + escHtml(k.keyword) + '\')">'
+            return '<span style="display:inline-flex;align-items:center;gap:0">'
+              + '<button class="kw-gen-chip' + (isHot ? ' kw-hot-chip' : '') + '" onclick="generateFromKeyword(\'' + escHtml(k.keyword) + '\')">'
               + '<span class="kw-chip-rank">' + (i + 1) + '</span>'
               + '<span>' + escHtml(k.keyword) + '</span>'
               + (isHot ? '<span class="kw-chip-icon">🔥</span>' : '<span class="kw-chip-icon">✍️</span>')
-              + '</button>';
+              + '</button>'
+              + '<button class="kw-add-chip" title="일괄 발행 목록에 담기" onclick="bulkAddKeyword(\'' + escHtml(k.keyword) + '\')">＋</button>'
+              + '</span>';
           }).join('')
         + '</div></div>';
     });
@@ -2827,11 +2997,14 @@ async function refreshKeywords() {
         + '<div class="kw-chips-grid">'
         + data.slice(0, 50).map(function(k, i) {
             var isHot = i < 10;
-            return '<button class="kw-gen-chip' + (isHot ? ' kw-hot-chip' : '') + '" onclick="generateFromKeyword(\'' + escHtml(k.keyword) + '\')">'
+            return '<span style="display:inline-flex;align-items:center;gap:0">'
+              + '<button class="kw-gen-chip' + (isHot ? ' kw-hot-chip' : '') + '" onclick="generateFromKeyword(\'' + escHtml(k.keyword) + '\')">'
               + '<span class="kw-chip-rank">#' + (i+1) + '</span>'
               + '<span>' + escHtml(k.keyword) + '</span>'
               + (i < 3 ? '<span class="kw-chip-icon">🔥</span>' : '')
-              + '</button>';
+              + '</button>'
+              + '<button class="kw-add-chip" title="일괄 발행 목록에 담기" onclick="bulkAddKeyword(\'' + escHtml(k.keyword) + '\')">＋</button>'
+              + '</span>';
           }).join('')
         + '</div></div>';
     }

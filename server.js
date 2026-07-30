@@ -106,8 +106,20 @@ async function publishJob(job) {
 
   for (const platform of platforms) {
     // 플랫폼마다 약간 다른 버전 사용
-    const variantContent = variantForPlatform(humanizeHtml(content), platform);
-    const variantTitle   = humanizeTitle(title);
+    let variantContent = variantForPlatform(humanizeHtml(content), platform);
+    const variantTitle = humanizeTitle(title);
+
+    /* 네이버 글은 항상 제휴 구조를 포함한다 (요청 사항).
+       이미 제휴 블록이 붙어 있으면(일괄 발행 경로) 중복으로 넣지 않는다. */
+    if (platform === 'naver' && !/함께 보면 좋은 제휴 서비스/.test(variantContent)) {
+      try {
+        const { applyAffiliates } = require('./affiliates/recommender');
+        const r = await applyAffiliates(variantContent, `${job.keyword || ''} ${title}`, { platform: 'naver', limit: 2 });
+        variantContent = r.content;
+      } catch (e) {
+        console.warn('[Affiliate] 네이버 제휴 삽입 실패(본문은 그대로 발행):', e.message);
+      }
+    }
 
     if (platform === 'naver') {
       results.naver = await publishToNaver({
@@ -555,6 +567,125 @@ app.get('/api/generate-status/:jobId', auth, (req, res) => {
     });
   }
   res.status(404).json({ error: 'job not found' });
+});
+
+/* ── 키워드 일괄 발행 ─────────────────────────────────────
+ * 키워드 여러 개를 한 번에 → 각각 글 생성 → 선택한 블로그에 발행.
+ * 제휴 포함을 선택하면 주제에 맞는 프로그램을 골라 고지문과 함께 본문에 넣는다.
+ * 네이버는 외부 제휴 정책이 달라 허용되는 프로그램만 고른다. */
+const _bulkJobs = new Map();
+
+app.post('/api/bulk-publish', auth, async (req, res) => {
+  const {
+    keywords = [], platforms = ['blogger'],
+    includeAffiliate = false, scheduleMode = 'now', intervalMinutes = 30, accountId,
+  } = req.body;
+
+  const list = (Array.isArray(keywords) ? keywords : String(keywords).split(','))
+    .map(k => String(k).trim()).filter(Boolean).slice(0, 30);
+  if (!list.length) return res.status(400).json({ error: '키워드를 하나 이상 입력하세요' });
+  if (!Array.isArray(platforms) || !platforms.length) {
+    return res.status(400).json({ error: '발행할 블로그를 하나 이상 선택하세요' });
+  }
+
+  const jobId = `bulk_${Date.now()}`;
+  _bulkJobs.set(jobId, { status: 'running', total: list.length, done: 0, items: [] });
+  res.json({ success: true, jobId, total: list.length, platforms, includeAffiliate });
+
+  (async () => {
+    const { applyAffiliates } = require('./affiliates/recommender');
+    const accounts = readAccounts();
+    const account  = (accountId && accounts.find(a => a.id === accountId)) || accounts[0] || {};
+    const items = [];
+
+    for (let i = 0; i < list.length; i++) {
+      const keyword = list[i];
+      const item = { keyword, status: 'running', platforms: {}, affiliates: [] };
+      items.push(item);
+      _bulkJobs.set(jobId, { status: 'running', total: list.length, done: i, items });
+
+      try {
+        const post = await generatePost(keyword, {
+          topic:    account.topic || '생활정보',
+          tone:     account.tone  || '친근한',
+          platform: platforms[0],
+        });
+
+        // 플랫폼마다 제휴 구성이 다르므로 개별로 만든다
+        for (const platform of platforms) {
+          let content = post.content;
+          if (includeAffiliate) {
+            const r = await applyAffiliates(content, `${keyword} ${post.title}`, { platform, limit: 2 });
+            content = r.content;
+            if (r.used.length) item.affiliates = r.used;
+          }
+
+          const job = {
+            id:          `bulk_${Date.now()}_${i}_${platform}`,
+            title:       post.title,
+            content,
+            tags:        post.tags,
+            imagePaths:  [],
+            platforms:   [platform],
+            accountId:   account.id,
+            keyword,
+            source:      'bulk_publish',
+            scheduledAt: scheduleMode === 'now'
+              ? new Date().toISOString()
+              : humanizePostTime(new Date(Date.now() + (i + 1) * intervalMinutes * 60 * 1000)).toISOString(),
+          };
+          enqueue(job);
+          item.platforms[platform] = '예약됨';
+        }
+
+        item.title  = post.title;
+        item.status = 'done';
+        console.log(`[Bulk] ${i + 1}/${list.length} "${keyword}" → ${platforms.join(',')} 예약`);
+      } catch (e) {
+        item.status = 'error';
+        item.error  = e.message;
+        console.error(`[Bulk] "${keyword}" 실패: ${e.message}`);
+      }
+
+      _bulkJobs.set(jobId, { status: 'running', total: list.length, done: i + 1, items });
+    }
+
+    const okCount = items.filter(x => x.status === 'done').length;
+    _bulkJobs.set(jobId, {
+      status: 'done', total: list.length, done: list.length, items,
+      success: okCount > 0, okCount,
+    });
+    console.log(`[Bulk] 완료 — ${okCount}/${list.length}개 성공`);
+    try {
+      await notifyPublished(`📦 일괄 발행 ${okCount}/${list.length}건`, {
+        bulk: { success: okCount > 0, summary: items.map(x => `${x.status === 'done' ? '✅' : '❌'} ${x.keyword}`).join(', ') },
+      });
+    } catch (_) {}
+  })().catch(e => _bulkJobs.set(jobId, { status: 'error', error: e.message }));
+
+  setTimeout(() => _bulkJobs.delete(jobId), 2 * 60 * 60 * 1000);
+});
+
+app.get('/api/bulk-publish-status/:jobId', auth, (req, res) => {
+  const job = _bulkJobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'job not found' });
+  res.json(job);
+});
+
+/** 주제에 맞는 제휴 추천 미리보기 */
+app.get('/api/affiliate-recommend', auth, async (req, res) => {
+  const { recommendAffiliates } = require('./affiliates/recommender');
+  const q = (req.query.q || '').trim();
+  const platform = req.query.platform || 'blogger';
+  try {
+    const list = await recommendAffiliates(q, { platform, limit: 3 });
+    res.json({ ok: true, platform, programs: list.map(p => ({
+      id: p.id, name: p.name, category: p.category, rate: p.commissionRate,
+      hotScore: p.hotScore, bestFor: p.bestFor, url: p.url,
+    })) });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 /** 한달치 자동발행 예약 */
@@ -1500,10 +1631,19 @@ app.listen(PORT, () => {
   console.log(`   Blogger 인증: http://localhost:${PORT}/oauth/blogger\n`);
   startScheduler(publishJob);
 
-  // 시작 직후 + 6시간마다 연결 점검 (만료를 발행 실패 전에 잡아냄)
+  /* 연결 유지 장치.
+   * 재배포·재시작마다 연결이 끊겨 매번 처음부터 다시 연결해야 했던 문제를 막는다.
+   *  - 시작 직후 점검하고, 끊겼으면 즉시 알린다
+   *  - 30분마다 점검해 만료를 발행 실패 전에 잡는다
+   *  - 살아있는 동안 주기적으로 토큰을 갱신해 '미사용 만료'를 막는다 */
   setTimeout(() => checkBloggerHealth(false).catch(() => {}), 8000);
-  cron.schedule('0 */6 * * *', () => { checkBloggerHealth(true).catch(() => {}); }, { timezone: 'Asia/Seoul' });
-  console.log('[Health] 연결 점검 크론 등록됨 (6시간 간격)');
+  cron.schedule('*/30 * * * *', () => { checkBloggerHealth(true).catch(() => {}); }, { timezone: 'Asia/Seoul' });
+  console.log('[Health] 연결 점검 크론 등록됨 (30분 간격)');
+
+  const store = tokens.storageInfo();
+  console.log(store.persistent
+    ? `[Health] 자격증명 영구 저장 활성 (${store.volumePath}) — 재배포해도 연결 유지`
+    : '[Health] 영구 저장 비활성 — 대시보드 사본으로 복구합니다');
 
   startDailyCron();
 

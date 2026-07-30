@@ -10,14 +10,52 @@
  * (컨테이너 자체가 새로 만들어지는 경우는 대시보드의 자동 복구가 메운다)
  */
 
-const fs   = require('fs');
-const path = require('path');
+const fs      = require('fs');
+const fsSync  = require('fs');
+const path    = require('path');
 
-// Railway에서 볼륨을 붙이면 이 경로가 자동으로 주입된다
-const VOLUME = process.env.RAILWAY_VOLUME_MOUNT_PATH
-  || process.env.PERSIST_DIR
-  || null;
+/* 저장 위치 자동 선택.
+ * Railway 볼륨이 붙어 있으면 그곳을 쓰고, 없으면 컨테이너에서 재배포 후에도
+ * 살아남을 가능성이 있는 경로를 순서대로 시도한다.
+ * 어디에도 못 쓰면 메모리로만 유지하고, 대시보드 사본이 복구를 맡는다. */
+/* 쓸 수 있다고 해서 재배포 후에도 남는 것은 아니다.
+ * 볼륨이 없는데 컨테이너 안에 폴더를 만들어 쓰면 쓰기는 되지만
+ * 재배포 때 같이 사라진다. 이를 '영구'라고 표시하면 거짓 안내가 된다.
+ * Railway는 볼륨을 붙이면 RAILWAY_VOLUME_MOUNT_PATH를 넣어주므로,
+ * 환경변수로 선언된 경로만 영구 저장으로 인정한다. */
+let volumeIsMount = false;
 
+function pickVolume() {
+  const declared = [process.env.RAILWAY_VOLUME_MOUNT_PATH, process.env.PERSIST_DIR].filter(Boolean);
+  const candidates = [...declared, '/data'];
+
+  for (const dir of candidates) {
+    // 특수 파일시스템은 건드리지 않는다 — 여기에 mkdir을 시도하면
+    // 호출이 멈춰 서버가 아예 기동하지 못하는 일이 생긴다
+    if (/^\/(proc|sys|dev)(\/|$)/.test(dir)) continue;
+
+    try {
+      // 이미 있으면 쓰기 가능한지만 확인 (생성 시도 자체를 피한다)
+      if (fsSync.existsSync(dir)) {
+        if (!fsSync.statSync(dir).isDirectory()) continue;
+        fsSync.accessSync(dir, fsSync.constants.W_OK);
+        volumeIsMount = declared.includes(dir);
+        return dir;
+      }
+      // 없으면 부모가 쓰기 가능할 때만 생성
+      const parent = path.dirname(dir);
+      if (!fsSync.existsSync(parent)) continue;
+      fsSync.accessSync(parent, fsSync.constants.W_OK);
+      fsSync.mkdirSync(dir, { recursive: true });
+      fsSync.accessSync(dir, fsSync.constants.W_OK);
+      volumeIsMount = declared.includes(dir);
+      return dir;
+    } catch { /* 다음 후보 */ }
+  }
+  return null;
+}
+
+const VOLUME      = pickVolume();
 const LOCAL_FILE  = path.join(__dirname, 'tokens.json');
 const VOLUME_FILE = VOLUME ? path.join(VOLUME, 'tokens.json') : null;
 
@@ -44,9 +82,13 @@ function writeJson(file, data) {
       if (typeof v === 'string' && v) mem.set(k, v);
     }
   }
-  console.log(VOLUME
-    ? `[TokenStore] 영구 저장소 사용: ${VOLUME} (재배포해도 유지됩니다)`
-    : '[TokenStore] 영구 저장소 없음 — Railway에 볼륨을 붙이면 재배포에도 연결이 유지됩니다');
+  if (VOLUME && volumeIsMount) {
+    console.log(`[TokenStore] 영구 저장소 사용: ${VOLUME} (재배포해도 유지됩니다)`);
+  } else if (VOLUME) {
+    console.log(`[TokenStore] 임시 저장 사용: ${VOLUME} — 볼륨이 아니라 재배포 시 사라집니다`);
+  } else {
+    console.log('[TokenStore] 영구 저장소 없음 — 대시보드 사본으로 복구합니다');
+  }
 })();
 
 function get(key) {
@@ -86,7 +128,7 @@ function sourceOf(key) {
 /** 저장 상태 (진단용 — 값은 노출하지 않음) */
 function storageInfo() {
   return {
-    persistent: !!VOLUME,
+    persistent: !!VOLUME && volumeIsMount,
     volumePath: VOLUME || null,
     volumeWritable: writable.volume,
     localWritable: writable.local,
