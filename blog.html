@@ -1695,12 +1695,16 @@ var bpAccounts = [];
 var bpTrending = [];
 var BP_SERVER        = localStorage.getItem('riri_bp_server') || (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:3000' : (location.origin || ''));
 var BP_PASSWORD      = localStorage.getItem('riri_bp_password') || '';
-var _ka = ['sk','ant','api03'].join('-') + '-';
-var _kb = '8A5QLMQ-GSjBGYWhHOBWjqNsl9mUtpPS';
-var _kc = '_LPNXNe3vfQghiyoJuw91Mxqnd39xfbo';
-var _kd = 'MEKGzPP4qLjmH5Da0ex02Q-M0aA5gAA';
-var BP_ANTHROPIC_KEY = localStorage.getItem('riri_anthropic_key') || (_ka+_kb+_kc+_kd);
-if (BP_ANTHROPIC_KEY && !localStorage.getItem('riri_anthropic_key')) { localStorage.setItem('riri_anthropic_key', BP_ANTHROPIC_KEY); }
+/* Claude API 키는 Railway 환경변수(ANTHROPIC_API_KEY)만 사용한다.
+   예전엔 여기 하드코딩된 키가 있었고, 그 죽은 키가 서버의 정상 키를
+   덮어써서 글 생성이 계속 실패했다. 공개 저장소에 키를 두면 즉시
+   무효화되므로 클라이언트에는 키를 두지 않는다. */
+var BP_ANTHROPIC_KEY = localStorage.getItem('riri_anthropic_key') || '';
+// 과거 하드코딩 키가 localStorage에 저장돼 있으면 제거 (오염 정리)
+if (BP_ANTHROPIC_KEY.indexOf('8A5QLMQ') !== -1) {
+  localStorage.removeItem('riri_anthropic_key');
+  BP_ANTHROPIC_KEY = '';
+}
 var bpSelectedPlatforms = []; // bpCheckServerStatus() 후 설정된 플랫폼으로 자동 채워짐
 var bpImageFiles = [];
 
@@ -2116,6 +2120,10 @@ async function draftDelete(id) {
   if (!confirm('이 글을 삭제할까요?')) return;
   try {
     await bpFetch('/api/drafts/' + id, { method: 'DELETE' });
+    /* 브라우저 캐시에서도 지운다 — 예전엔 서버에서만 지워져서
+       캐시 복원 로직이 지운 글을 서버로 되살려 보냈다 (삭제가 안 되던 원인) */
+    delete _draftsCache[id];
+    try { localStorage.setItem('riri_drafts_ls', JSON.stringify(Object.values(_draftsCache).slice(0, 200))); } catch {}
     var el = document.getElementById('draft-' + id);
     if (el) el.remove();
     bpToast('삭제됨', 'ok');

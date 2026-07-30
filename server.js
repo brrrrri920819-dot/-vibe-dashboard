@@ -157,7 +157,9 @@ async function publishJob(job) {
 /** 상태 체크 */
 app.get('/api/status', auth, (req, res) => {
   const clientKey = req.headers['x-anthropic-key'];
-  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
+  // Railway에 키가 있으면 클라이언트 키로 덮어쓰지 않는다
+  // (예전에 대시보드의 죽은 하드코딩 키가 정상 키를 덮어써 생성이 계속 실패했다)
+  if (clientKey && !process.env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = clientKey;
   res.json({
     ok: true,
     anthropicKey: !!process.env.ANTHROPIC_API_KEY,
@@ -476,7 +478,9 @@ app.post('/api/generate', auth, async (req, res) => {
   const { keyword, accountId } = req.body;
   if (!keyword) return res.status(400).json({ error: 'keyword 필수' });
   const clientKey = req.headers['x-anthropic-key'];
-  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
+  // Railway에 키가 있으면 클라이언트 키로 덮어쓰지 않는다
+  // (예전에 대시보드의 죽은 하드코딩 키가 정상 키를 덮어써 생성이 계속 실패했다)
+  if (clientKey && !process.env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = clientKey;
 
   const jobId = `gen_${Date.now()}`;
   _genJobs.set(jobId, { status: 'running', startedAt: new Date().toISOString() });
@@ -578,7 +582,9 @@ app.get('/api/income-report', auth, async (req, res) => {
   const today    = new Date().toISOString().slice(0, 10);
   const force    = req.query.refresh === '1';
   const clientKey = req.headers['x-anthropic-key'];
-  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
+  // Railway에 키가 있으면 클라이언트 키로 덮어쓰지 않는다
+  // (예전에 대시보드의 죽은 하드코딩 키가 정상 키를 덮어써 생성이 계속 실패했다)
+  if (clientKey && !process.env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = clientKey;
 
   // 캐시 유효하면 즉시 반환
   if (!force && incomeReportCache.data && incomeReportCache.date === today) {
@@ -625,7 +631,9 @@ app.post('/api/card-news', auth, async (req, res) => {
   const { title, content, tags } = req.body;
   if (!title || !content) return res.status(400).json({ error: 'title, content 필수' });
   const clientKey = req.headers['x-anthropic-key'];
-  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
+  // Railway에 키가 있으면 클라이언트 키로 덮어쓰지 않는다
+  // (예전에 대시보드의 죽은 하드코딩 키가 정상 키를 덮어써 생성이 계속 실패했다)
+  if (clientKey && !process.env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = clientKey;
   const jobId = `cn_${Date.now()}`;
   _cardNewsJobs.set(jobId, { status: 'running' });
   res.json({ success: true, jobId });
@@ -649,7 +657,9 @@ app.post('/api/shorts-script', auth, async (req, res) => {
   const { title, content, tags } = req.body;
   if (!title || !content) return res.status(400).json({ error: 'title, content 필수' });
   const clientKey = req.headers['x-anthropic-key'];
-  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
+  // Railway에 키가 있으면 클라이언트 키로 덮어쓰지 않는다
+  // (예전에 대시보드의 죽은 하드코딩 키가 정상 키를 덮어써 생성이 계속 실패했다)
+  if (clientKey && !process.env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = clientKey;
   const jobId = `sh_${Date.now()}`;
   _shortsJobs.set(jobId, { status: 'running' });
   res.json({ success: true, jobId });
@@ -692,7 +702,9 @@ app.get('/api/affiliates/stats', auth, async (req, res) => {
 app.post('/api/hustle-pipeline/:hustleId', auth, async (req, res) => {
   const { hustleId } = req.params;
   const clientKey = req.headers['x-anthropic-key'];
-  if (clientKey) process.env.ANTHROPIC_API_KEY = clientKey;
+  // Railway에 키가 있으면 클라이언트 키로 덮어쓰지 않는다
+  // (예전에 대시보드의 죽은 하드코딩 키가 정상 키를 덮어써 생성이 계속 실패했다)
+  if (clientKey && !process.env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = clientKey;
   try {
     const result = await executePipeline(hustleId);
     res.json({ success: true, ...result });
