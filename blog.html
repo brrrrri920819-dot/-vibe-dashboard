@@ -1311,6 +1311,17 @@ body{background:
       </div>
 
       <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">🤖 부업 자동 실행</div>
+        <div class="bp-humanize-tip" style="margin-bottom:10px">
+          매일 <b>오전 7시</b>에 자동으로 돕니다. 블로그 글이 나오면 <b>발행 큐에 자동 등록</b>되고,
+          숏츠 대본·앱테크·프리랜서 분석은 결과가 갱신됩니다.<br>
+          지금 바로 돌려보려면 아래 버튼을 누르세요 (2~5분 소요).
+        </div>
+        <button class="bp-pub-btn" style="max-width:200px" id="hustle-run-btn" onclick="runAllHustles()">▶ 지금 전부 실행</button>
+        <div id="hustle-run-result" style="margin-top:10px;font-size:13px;color:var(--t2)"></div>
+      </div>
+
+      <div class="section" style="margin-bottom:14px">
         <div class="bp-section-title">🏆 오늘의 부업 HOT 랭킹</div>
         <div class="hustle-grid" id="income-hustle-grid">
           <div style="text-align:center;padding:30px;color:var(--t3)"><span class="bp-spinner"></span> 데이터 로딩 중...</div>
@@ -2270,6 +2281,27 @@ async function saveBpServer() {
     status.textContent = '❌ 연결 실패: ' + e.message;
     status.style.color = 'var(--err)';
     bpToast('서버 연결 실패', 'err');
+  }
+}
+
+async function runAllHustles() {
+  var btn = document.getElementById('hustle-run-btn');
+  var out = document.getElementById('hustle-run-result');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="bp-spinner"></span>실행 중...';
+  out.textContent = '파이프라인을 순서대로 실행합니다. 2~5분 걸립니다...';
+  try {
+    var r = await bpFetch('/api/hustle-run-all', { method: 'POST' });
+    out.innerHTML = '✅ 실행 시작됨 — ' + (r.pipelines || []).join(', ')
+      + '<br><span style="color:var(--t3);font-size:12px">완료되면 스케줄 탭의 발행 큐와 이 화면 데이터가 갱신됩니다. 텔레그램으로도 결과가 옵니다.</span>';
+    bpToast('🤖 부업 자동 실행 시작', 'ok');
+    setTimeout(function(){ loadIncomeView && loadIncomeView(); bpLoadQueue && bpLoadQueue(); }, 90000);
+  } catch (e) {
+    out.textContent = '❌ ' + e.message;
+    bpToast('실행 실패: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ 지금 전부 실행';
   }
 }
 

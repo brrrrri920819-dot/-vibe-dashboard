@@ -727,6 +727,62 @@ app.get('/api/affiliates/stats', auth, async (req, res) => {
   }
 });
 
+/* 부업 파이프라인 일괄 실행.
+ * 글이 나오는 파이프라인(네이버 블로그)은 결과를 실제 발행 큐에 넣는다.
+ * 나머지는 분석·기획 산출물이라 캐시만 갱신하고 대시보드에서 보게 한다. */
+const HUSTLE_AUTO_ORDER = ['naver_blog', 'shorts', 'app_tech', 'ai_freelance', 'smart_store'];
+
+async function runHustlePipelines() {
+  const accounts = readAccounts().filter(a => a.enabled);
+  const account  = accounts[0];
+  const done = [];
+
+  for (const id of HUSTLE_AUTO_ORDER) {
+    try {
+      const r = await executePipeline(id);
+
+      // 발행 가능한 글이 나왔으면 큐에 실제로 넣는다
+      if (r.data && r.data.readyToPublish && r.data.title && r.data.content) {
+        const platforms = (account && account.platforms) || ['blogger'];
+        enqueue({
+          id:          `hustle_${id}_${Date.now()}`,
+          title:       r.data.title,
+          content:     r.data.content,
+          tags:        r.data.tags || [],
+          imagePaths:  [],
+          platforms,
+          scheduledAt: humanizePostTime(new Date(Date.now() + 5 * 60 * 1000)).toISOString(),
+          accountId:   account && account.id,
+          keyword:     r.data.keyword,
+          source:      `hustle_${id}`,
+        });
+        console.log(`[Hustle] ${id} → 발행 예약: "${r.data.title}"`);
+      }
+
+      done.push({ id, ok: !r.error, summary: r.summary });
+    } catch (e) {
+      console.error(`[Hustle] ${id} 실패:`, e.message);
+      done.push({ id, ok: false, summary: e.message });
+    }
+    await new Promise(r => setTimeout(r, 3000));   // 연속 호출 간격
+  }
+
+  const okCount = done.filter(d => d.ok).length;
+  console.log(`[Hustle] 자동 실행 완료 — ${okCount}/${done.length}개 성공`);
+  try {
+    await notifyPublished('🤖 부업 자동 실행 완료', {
+      hustle: { success: okCount > 0, summary: done.map(d => `${d.ok ? '✅' : '❌'} ${d.id}`).join(', ') },
+    });
+  } catch (_) {}
+  return done;
+}
+
+/** 부업 전체 자동 실행 — 지금 즉시 */
+app.post('/api/hustle-run-all', auth, (req, res) => {
+  res.json({ success: true, message: '부업 파이프라인 실행 시작 (2~5분 소요)', pipelines: HUSTLE_AUTO_ORDER });
+  runHustlePipelines().catch(e => console.error('[Hustle] 오류:', e.message));
+});
+
 // ── 부업 파이프라인 API ───────────────────────────────────
 app.post('/api/hustle-pipeline/:hustleId', auth, async (req, res) => {
   const { hustleId } = req.params;
@@ -1437,4 +1493,12 @@ app.listen(PORT, () => {
     }
   }, { timezone: 'Asia/Seoul' });
   console.log('[Income] 부업 리포트 크론 등록됨 (매일 09:00 KST)');
+
+  /* 부업 파이프라인 자동 실행 (매일 07:00 KST)
+   * 지금까지는 크론이 없어서 버튼을 눌러야만 돌았고,
+   * 글을 만들어도 '발행 큐 준비 완료'라고만 하고 실제로는 큐에 넣지 않아
+   * 자동으로는 아무것도 발행되지 않았다. */
+  cron.schedule('0 7 * * *', () => { runHustlePipelines().catch(e => console.error('[Hustle] 오류:', e.message)); },
+    { timezone: 'Asia/Seoul' });
+  console.log('[Hustle] 부업 파이프라인 크론 등록됨 (매일 07:00 KST)');
 });
