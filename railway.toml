@@ -3,8 +3,15 @@ builder = "dockerfile"
 
 [deploy]
 startCommand = "node server.js"
-restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 3
+
+# 앱이 죽어도 계속 되살린다.
+# 예전엔 재시도 3회 제한이라, 연속으로 몇 번 죽으면 Railway가 포기하고
+# 그대로 내려간 채 방치돼 "Application failed to respond"가 계속 떴다.
+restartPolicyType = "always"
+
+# 컨테이너가 떴는지만이 아니라 실제로 응답하는지로 판단
+healthcheckPath = "/api/health"
+healthcheckTimeout = 120
 
 [[services]]
 name = "blog-publisher"

@@ -31,6 +31,7 @@ const cron = require('node-cron');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
+const SERVER_STARTED_AT = Date.now();   // 재시작 판별·헬스체크용
 
 /* 백그라운드 작업(글 생성·발행·이미지 조회) 하나가 실패해도
  * 서버 전체가 내려가지 않게 한다.
@@ -49,6 +50,12 @@ process.on('uncaughtException', (err) => {
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+/** 헬스체크 — Railway가 컨테이너 생존을 판단하는 데 사용.
+ *  어떤 의존성에도 기대지 않아야 하므로 다른 미들웨어보다 먼저 둔다. */
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, uptimeSec: Math.round(process.uptime()), startedAt: new Date(SERVER_STARTED_AT).toISOString() });
+});
+
 // 루트로 들어오면 블로그 자동화 대시보드를 띄운다
 // (예전엔 index.html(프로젝트 트래커)이 떠서 대시보드를 못 찾는 문제가 있었다)
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'blog.html')));
@@ -489,7 +496,6 @@ app.patch('/api/drafts/:id', auth, (req, res) => {
 
 // 글 생성 비동기 잡 스토어 (Railway 30초 타임아웃 우회)
 const _genJobs = new Map();
-const SERVER_STARTED_AT = Date.now();   // 재시작 판별용
 
 /** AI 글 생성 — jobId 즉시 반환 후 백그라운드 생성 */
 app.post('/api/generate', auth, async (req, res) => {
