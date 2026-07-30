@@ -318,12 +318,38 @@ textarea.bp-inp{resize:vertical;min-height:220px;font-size:13px;line-height:1.7}
 .gen-step.active{color:var(--t1)}
 .gen-step-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
 .gen-preview-wrap{padding:24px}
-.gen-preview-title{color:#fff;font-size:18px;font-weight:700;line-height:1.4;margin-bottom:14px;letter-spacing:-.3px}
+/* 미리보기 — 실제 발행 모습에 가깝게, 읽히도록 */
+.gen-preview-title{color:#fff;font-size:21px;font-weight:700;line-height:1.45;margin-bottom:12px;
+  letter-spacing:-.4px;word-break:keep-all}
 .gen-preview-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
-.gen-preview-content{background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:16px;max-height:280px;overflow:auto;font-size:13px;line-height:1.8;color:var(--t2)}
-.gen-preview-content img{max-width:100%;border-radius:8px;margin:8px 0;display:block}
-.gen-preview-content h3{color:var(--t1);font-size:14px;font-weight:600;margin:12px 0 6px}
-.gen-preview-content p{margin-bottom:10px}
+.gen-preview-content{background:#fff;border:1px solid var(--bd2);border-radius:14px;padding:20px 18px;
+  max-height:420px;overflow:auto;font-size:15px;line-height:1.85;color:#2b2b2b;word-break:keep-all}
+/* 미리보기 안에서는 본문의 인라인 스타일보다 이 규칙이 이기게 한다
+   (발행용 서식은 글자가 커서 좁은 모달에서 읽기 어렵다) */
+.gen-preview-content *{max-width:100% !important}
+.gen-preview-content p{font-size:15px !important;line-height:1.85 !important;color:#333 !important;
+  margin:0 0 14px !important}
+.gen-preview-content h2{font-size:17px !important;line-height:1.5 !important;color:#111 !important;
+  font-weight:700 !important;margin:22px 0 10px !important;padding-left:11px !important;
+  border-left:4px solid #2563eb !important}
+.gen-preview-content h3{font-size:15.5px !important;color:#222 !important;font-weight:700 !important;
+  margin:16px 0 8px !important}
+.gen-preview-content ul,.gen-preview-content ol{margin:0 0 14px !important;padding-left:20px !important}
+.gen-preview-content li{font-size:14.5px !important;line-height:1.8 !important;color:#333 !important;
+  margin-bottom:6px !important}
+.gen-preview-content table{width:100% !important;border-collapse:collapse !important;font-size:13.5px !important;
+  margin:0 0 14px !important}
+.gen-preview-content th{background:#f1f5f9 !important;padding:9px 10px !important;
+  border:1px solid #dde3ea !important;color:#111 !important;text-align:left !important}
+.gen-preview-content td{padding:9px 10px !important;border:1px solid #dde3ea !important;color:#333 !important}
+.gen-preview-content strong,.gen-preview-content b{color:#2563eb !important}
+/* 사진 — 잘리지 않고 비율 유지, 캡션도 읽히게 */
+.gen-preview-content figure{margin:16px 0 !important;text-align:center}
+.gen-preview-content img{width:100% !important;height:auto !important;max-height:220px !important;
+  object-fit:cover !important;border-radius:10px !important;margin:0 !important;display:block;
+  background:#f1f5f9}
+.gen-preview-content figcaption{font-size:12px !important;color:#777 !important;margin-top:6px !important;
+  line-height:1.5 !important}
 .gen-preview-img-strip{display:flex;gap:8px;margin:14px 0;overflow-x:auto}
 .gen-preview-img-strip img{width:120px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--bd2);flex-shrink:0}
 .gen-actions-bar{display:flex;gap:10px;padding:16px 24px;border-top:1px solid var(--bd);flex-wrap:wrap}
@@ -1205,6 +1231,21 @@ body{background:
         <button class="add-btn" onclick="loadAffiliateView(true)">⟳ 새로고침</button>
       </div>
 
+      <!-- 쇼핑커넥트 수익 상위 상품 추천 -->
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">🛍 쇼핑커넥트 수익 상위 상품</div>
+        <div class="bp-humanize-tip" style="margin-bottom:12px">
+          주제를 입력하면 <b>수수료율 × 판매가</b>로 기대 수익이 높은 상품을 찾아 정렬합니다.
+          링크를 복사해서 바로 글에 넣거나, 네이버 발행 시 <b>자동으로 삽입</b>됩니다.
+        </div>
+        <div class="bp-row" style="flex-wrap:wrap">
+          <input class="bp-inp" id="sc-query" placeholder="주제 입력 (예: 다이어트, 캠핑, 유아용품)"
+            style="flex:1;min-width:200px;margin-bottom:0" onkeydown="if(event.key==='Enter')loadShoppingRecommend()">
+          <button class="bp-pub-btn" style="flex:0 0 auto;max-width:150px" onclick="loadShoppingRecommend()">🔍 상품 찾기</button>
+        </div>
+        <div id="sc-result" style="margin-top:14px"></div>
+      </div>
+
       <!-- 제휴 계정 로그인 대시보드 -->
       <div class="section" style="margin-bottom:14px">
         <div class="bp-section-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -1528,14 +1569,26 @@ body{background:
         <div style="color:var(--t3);font-size:11px;margin-bottom:8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase">본문 미리보기</div>
         <div class="gen-preview-content" id="gen-preview-content"></div>
       </div>
+      <div style="border-top:1px solid var(--bd);padding-top:14px;margin-top:14px">
+        <div style="color:var(--t2);font-size:11px;font-weight:700;letter-spacing:.5px;margin-bottom:8px">발행할 블로그 (복수 선택 가능)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <label class="bp-img-label" style="margin:0"><input type="checkbox" id="gen-p-blogger" checked style="margin-right:6px">🔵 블로그스팟</label>
+          <label class="bp-img-label" style="margin:0"><input type="checkbox" id="gen-p-tistory" style="margin-right:6px">🟠 티스토리</label>
+          <label class="bp-img-label" style="margin:0"><input type="checkbox" id="gen-p-naver" style="margin-right:6px">🟢 네이버</label>
+        </div>
+
+        <label style="display:flex;align-items:center;gap:8px;color:var(--t2);font-size:13px;cursor:pointer;margin-bottom:10px">
+          <input type="checkbox" id="gen-schedule-toggle" onchange="genToggleSchedule()" style="accent-color:var(--ac)">
+          예약 발행 — 시간을 정해서 올리기
+        </label>
+        <div id="gen-schedule-row" class="bp-datetime-row" style="display:none">
+          <input class="bp-inp" id="gen-schedule-date" type="date" style="margin-bottom:0">
+          <input class="bp-inp" id="gen-schedule-time" type="time" value="09:00" style="margin-bottom:0">
+        </div>
+      </div>
       <div class="gen-actions-bar">
-        <select class="bp-inp" id="gen-platform-select" style="max-width:160px;margin-bottom:0">
-          <option value="blogger">🔵 블로그스팟</option>
-          <option value="tistory">🟠 티스토리</option>
-          <option value="naver">🟢 네이버</option>
-        </select>
-        <button class="bp-pub-btn" onclick="publishGenerated()">🚀 지금 발행</button>
-        <button class="bp-sch-btn" onclick="scheduleGeneratedPost()">🕐 예약 발행</button>
+        <button class="bp-pub-btn" id="gen-pub-btn" onclick="publishGenerated()">🚀 지금 발행</button>
+        <button class="bp-sch-btn" id="gen-sch-btn" onclick="scheduleGeneratedPost()" style="display:none">🕐 예약 등록</button>
       </div>
     </div>
   </div>
@@ -1925,23 +1978,59 @@ function _autoSelectPlatforms(available) {
     else el.classList.remove('selected');
   });
 
-  // 2) 생성 모달 플랫폼 셀렉트 → 첫 번째 설정된 플랫폼으로
-  var sel = document.getElementById('gen-platform-select');
-  if (sel) {
-    // 설정된 플랫폼 옵션에 "✅" 표시, 없는 건 "(미설정)" 표시
-    Array.from(sel.options).forEach(function(opt) {
-      var p = opt.value;
-      if (available.includes(p)) {
-        opt.text = opt.text.replace(' (미설정)','');
-        opt.disabled = false;
-      } else {
-        if (!opt.text.includes('미설정')) opt.text += ' (미설정)';
-        opt.disabled = true;
-      }
-    });
-    // 현재 선택값이 미설정이면 첫 번째 설정된 플랫폼으로 전환
-    if (!available.includes(sel.value)) {
-      sel.value = available[0];
+  // 2) 미리보기 모달의 블로그 선택 — 연결 안 된 블로그는 끄고 표시
+  ['blogger','tistory','naver'].forEach(function(p) {
+    var cb = document.getElementById('gen-p-' + p);
+    if (!cb) return;
+    var on = available.includes(p);
+    cb.disabled = !on;
+    if (!on) cb.checked = false;
+    var lbl = cb.parentNode;
+    if (lbl) {
+      lbl.style.opacity = on ? '' : '.45';
+      lbl.title = on ? '' : '연결되지 않은 블로그입니다';
+    }
+  });
+  // 아무것도 안 켜져 있으면 연결된 첫 번째 블로그를 자동 선택
+  var anyOn = ['blogger','tistory','naver'].some(function(p) {
+    var cb = document.getElementById('gen-p-' + p); return cb && cb.checked;
+  });
+  if (!anyOn && available.length) {
+    var first = document.getElementById('gen-p-' + available[0]);
+    if (first) first.checked = true;
+  }
+
+  // 3) 일괄 발행 화면도 동일하게 처리
+  ['blogger','tistory','naver'].forEach(function(p) {
+    var cb = document.getElementById('bulk-p-' + p);
+    if (!cb) return;
+    var on = available.includes(p);
+    cb.disabled = !on;
+    if (!on) cb.checked = false;
+    if (cb.parentNode) cb.parentNode.style.opacity = on ? '' : '.45';
+  });
+}
+
+/** 미리보기 모달에서 선택된 블로그 목록 */
+function genSelectedPlatforms() {
+  var out = [];
+  ['blogger','tistory','naver'].forEach(function(p) {
+    var cb = document.getElementById('gen-p-' + p);
+    if (cb && cb.checked && !cb.disabled) out.push(p);
+  });
+  return out;
+}
+
+function genToggleSchedule() {
+  var on  = document.getElementById('gen-schedule-toggle').checked;
+  document.getElementById('gen-schedule-row').style.display = on ? '' : 'none';
+  document.getElementById('gen-pub-btn').style.display = on ? 'none' : '';
+  document.getElementById('gen-sch-btn').style.display = on ? '' : 'none';
+  if (on) {
+    var d = document.getElementById('gen-schedule-date');
+    if (d && !d.value) {
+      var t = new Date(); t.setDate(t.getDate() + 1);
+      d.value = t.toISOString().slice(0, 10);
     }
   }
 }
@@ -2081,7 +2170,9 @@ async function schedulePost() {
     });
     var data = await res.json();
     if (data.success) {
-      bpToast('🕐 예약 완료: ' + new Date(data.scheduledAt).toLocaleString('ko-KR'), 'ok');
+      var icons = { naver:'🟢', tistory:'🟠', blogger:'🔵' };
+      var pl = platforms.map(function(p){ return icons[p] || p; }).join(' ');
+      bpToast('🕐 ' + pl + ' 예약 완료: ' + new Date(data.scheduledAt).toLocaleString('ko-KR'), 'ok');
       bpResetForm(); bpLoadQueue();
     } else {
       bpToast('예약 실패: ' + (data.error || '알 수 없는 오류'), 'err');
@@ -2427,6 +2518,56 @@ async function saveKeys() {
     bpToast('저장 실패: ' + e.message, 'err');
   } finally {
     btn.disabled = false; btn.textContent = '💾 저장하고 확인';
+  }
+}
+
+// ── 쇼핑커넥트 상품 추천 ──────────────────────────────────
+async function loadShoppingRecommend() {
+  var wrap = document.getElementById('sc-result');
+  var q = (document.getElementById('sc-query').value || '').trim();
+  if (!q) { bpToast('주제를 입력해주세요', 'err'); return; }
+  wrap.innerHTML = '<div style="color:var(--t3);font-size:13px;padding:14px 0"><span class="bp-spinner"></span> 네이버 쇼핑에서 상품을 찾는 중...</div>';
+  try {
+    var r = await bpFetch('/api/shopping-recommend?q=' + encodeURIComponent(q) + '&limit=6');
+    if (!r.ok) {
+      wrap.innerHTML = '<div class="plat-test-row fail"><div class="ptr-head"><span class="ptr-icon">❌</span>'
+        + '<span class="ptr-name">상품을 찾지 못했습니다</span></div>'
+        + '<div class="ptr-msg">' + escHtml(r.reason || r.error || '알 수 없는 오류') + '</div></div>';
+      return;
+    }
+    wrap.innerHTML = '<div style="color:var(--t3);font-size:12px;margin-bottom:10px">'
+      + '검색어 <b style="color:var(--t2)">' + escHtml(r.query) + '</b> · 카테고리 '
+      + escHtml(r.category) + ' · 기대 수익 높은 순</div>'
+      + r.products.map(function(p, i) {
+        return '<div style="display:flex;gap:12px;align-items:center;background:var(--s2);border:1px solid var(--bd2);'
+          + 'border-radius:12px;padding:12px;margin-bottom:8px">'
+          + '<div style="flex-shrink:0;width:26px;text-align:center;font-size:13px;font-weight:700;color:'
+          + (i < 3 ? 'var(--ac)' : 'var(--t3)') + '">' + (i+1) + '</div>'
+          + (p.image ? '<img src="' + p.image + '" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0;background:var(--s3)">' : '')
+          + '<div style="min-width:0;flex:1">'
+          + '<div style="font-size:13px;color:var(--t1);line-height:1.5;margin-bottom:4px;word-break:keep-all">' + escHtml(p.title) + '</div>'
+          + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
+          + '<span style="font-size:13px;font-weight:700;color:#4ade80">' + (p.price ? p.price.toLocaleString('ko-KR') + '원' : '-') + '</span>'
+          + '<span style="font-size:11px;color:var(--t3)">수수료 ' + escHtml(p.commissionRate) + '</span>'
+          + '<span style="font-size:11px;color:var(--ac);font-weight:600">건당 약 ' + (p.expectedFee||0).toLocaleString('ko-KR') + '원</span>'
+          + '</div></div>'
+          + '<button onclick="scCopyLink(\'' + p.link + '\')" style="flex-shrink:0;background:var(--s3);border:1px solid var(--bd2);'
+          + 'color:var(--t2);border-radius:8px;padding:8px 11px;font-size:11px;cursor:pointer;font-family:inherit">링크복사</button>'
+          + '</div>';
+      }).join('');
+  } catch (e) {
+    wrap.innerHTML = '<div style="color:var(--err);font-size:13px">❌ ' + escHtml(e.message) + '</div>';
+  }
+}
+
+function scCopyLink(link) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).then(function(){ bpToast('🔗 링크 복사됨', 'ok'); })
+      .catch(function(){ bpToast('복사 실패', 'err'); });
+  } else {
+    var ta = document.createElement('textarea'); ta.value = link; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); bpToast('🔗 링크 복사됨', 'ok'); } catch(e) { bpToast('복사 실패', 'err'); }
+    document.body.removeChild(ta);
   }
 }
 
@@ -3130,15 +3271,16 @@ function closeGenModal() {
 
 async function publishGenerated() {
   if (!genPost) return;
-  var platform = document.getElementById('gen-platform-select').value;
-  var btn = document.querySelector('#gen-modal-bg .bp-pub-btn');
+  var platforms = genSelectedPlatforms();
+  if (!platforms.length) { bpToast('발행할 블로그를 선택해주세요', 'err'); return; }
+  var btn = document.getElementById('gen-pub-btn');
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>발행 중...'; }
   try {
     var fd = new FormData();
     fd.append('title',     genPost.title    || genKeyword);
     fd.append('content',   genPost.content  || '');
     fd.append('tags',      JSON.stringify(genPost.tags || []));
-    fd.append('platforms', JSON.stringify([platform]));
+    fd.append('platforms', JSON.stringify(platforms));
     var res = await fetch(BP_SERVER + '/api/publish', {
       method: 'POST',
       headers: { 'x-dashboard-password': BP_PASSWORD },
@@ -3186,14 +3328,23 @@ async function publishGenerated() {
 
 async function scheduleGeneratedPost() {
   if (!genPost) return;
-  var platform = document.getElementById('gen-platform-select').value;
-  var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-  var scheduledAt = tomorrow.toISOString().slice(0, 10) + 'T09:00:00';
+  var platforms = genSelectedPlatforms();
+  if (!platforms.length) { bpToast('예약할 블로그를 선택해주세요', 'err'); return; }
+
+  var d = (document.getElementById('gen-schedule-date') || {}).value;
+  var t = (document.getElementById('gen-schedule-time') || {}).value || '09:00';
+  if (!d) {
+    var tm = new Date(); tm.setDate(tm.getDate() + 1);
+    d = tm.toISOString().slice(0, 10);
+  }
+  var scheduledAt = d + 'T' + t + ':00';
+  if (new Date(scheduledAt) <= new Date()) { bpToast('예약 시각은 현재보다 뒤여야 합니다', 'err'); return; }
+
   var fd = new FormData();
   fd.append('title',       genPost.title || genKeyword);
   fd.append('content',     genPost.content || '');
   fd.append('tags',        JSON.stringify(genPost.tags || []));
-  fd.append('platforms',   JSON.stringify([platform]));
+  fd.append('platforms',   JSON.stringify(platforms));
   fd.append('scheduledAt', scheduledAt);
   try {
     var res = await fetch(BP_SERVER + '/api/schedule', {
@@ -3203,7 +3354,9 @@ async function scheduleGeneratedPost() {
     });
     var data = await res.json();
     if (data.success) {
-      bpToast('🕐 예약 완료: ' + new Date(data.scheduledAt).toLocaleString('ko-KR'), 'ok');
+      var icons = { naver:'🟢', tistory:'🟠', blogger:'🔵' };
+      var pl = platforms.map(function(p){ return icons[p] || p; }).join(' ');
+      bpToast('🕐 ' + pl + ' 예약 완료: ' + new Date(data.scheduledAt).toLocaleString('ko-KR'), 'ok');
       closeGenModal();
       bpLoadQueue();
     } else {

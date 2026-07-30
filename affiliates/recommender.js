@@ -103,12 +103,38 @@ function affiliateBlock(programs, topicText = '') {
  * @returns {{content:string, used:Array}}
  */
 async function applyAffiliates(content, topicText, opts = {}) {
+  const platform = opts.platform || 'blogger';
   const programs = await recommendAffiliates(topicText, opts);
-  if (!programs.length) return { content, used: [] };
 
-  const withBanner = disclosureBanner() + content + affiliateBlock(programs, topicText);
-  console.log(`[Affiliate] ${opts.platform || 'blogger'} — 적용: ${programs.map(p => p.name).join(', ')}`);
-  return { content: withBanner, used: programs.map(p => ({ id: p.id, name: p.name, rate: p.commissionRate })) };
+  /* 네이버는 쇼핑커넥트로 실제 상품을 걸 수 있으므로,
+     프로그램 안내만 넣지 말고 주제에 맞는 상품 링크까지 함께 넣는다. */
+  let productHtml = '';
+  let products = [];
+  if (platform === 'naver') {
+    try {
+      const { recommendProducts, productBlock } = require('./shopping-connect');
+      const rec = await recommendProducts(topicText, 3);
+      if (rec.ok) {
+        productHtml = productBlock(rec);
+        products = rec.products.map(p => ({ title: p.title, price: p.price, link: p.link, rate: p.commissionRate }));
+        console.log(`[ShoppingConnect] 상품 ${products.length}개 삽입 (${rec.category})`);
+      } else if (rec.reason) {
+        console.warn(`[ShoppingConnect] 상품 추천 생략 — ${rec.reason}`);
+      }
+    } catch (e) {
+      console.warn('[ShoppingConnect] 상품 추천 실패:', e.message);
+    }
+  }
+
+  if (!programs.length && !productHtml) return { content, used: [], products: [] };
+
+  const withBanner = disclosureBanner() + content + productHtml + affiliateBlock(programs, topicText);
+  if (programs.length) console.log(`[Affiliate] ${platform} — 적용: ${programs.map(p => p.name).join(', ')}`);
+  return {
+    content: withBanner,
+    used: programs.map(p => ({ id: p.id, name: p.name, rate: p.commissionRate })),
+    products,
+  };
 }
 
 module.exports = { recommendAffiliates, applyAffiliates, disclosureBanner, affiliateBlock };

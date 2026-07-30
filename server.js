@@ -672,6 +672,18 @@ app.get('/api/bulk-publish-status/:jobId', auth, (req, res) => {
   res.json(job);
 });
 
+/** 네이버 쇼핑커넥트 — 주제에 맞는 수익 좋은 상품 추천 (미리 보고 링크 걸기) */
+app.get('/api/shopping-recommend', auth, async (req, res) => {
+  const { recommendProducts } = require('./affiliates/shopping-connect');
+  const q = (req.query.q || '').trim();
+  try {
+    const rec = await recommendProducts(q, parseInt(req.query.limit, 10) || 6);
+    res.json(rec);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 /** 주제에 맞는 제휴 추천 미리보기 */
 app.get('/api/affiliate-recommend', auth, async (req, res) => {
   const { recommendAffiliates } = require('./affiliates/recommender');
