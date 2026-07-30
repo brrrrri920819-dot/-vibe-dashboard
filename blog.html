@@ -1032,9 +1032,30 @@ body{background:
         </div>
         <div id="keys-status" style="margin-bottom:14px"></div>
 
-        <div style="color:var(--t2);font-size:11px;font-weight:700;letter-spacing:.5px;margin:16px 0 8px">필수</div>
+        <div style="color:var(--t2);font-size:11px;font-weight:700;letter-spacing:.5px;margin:16px 0 8px">필수 — 글 생성 · 사진</div>
         <input class="bp-inp" id="key-ANTHROPIC_API_KEY" placeholder="ANTHROPIC_API_KEY — 글 생성 (console.anthropic.com)" autocapitalize="off" spellcheck="false">
         <input class="bp-inp" id="key-UNSPLASH_ACCESS_KEY" placeholder="UNSPLASH_ACCESS_KEY — 사진 (unsplash.com/developers)" autocapitalize="off" spellcheck="false">
+
+        <div style="color:var(--t2);font-size:11px;font-weight:700;letter-spacing:.5px;margin:16px 0 8px">네이버 검색 API — 실시간 키워드 · 쇼핑 상품 추천</div>
+        <div style="color:var(--t3);font-size:11.5px;line-height:1.7;margin-bottom:8px">
+          developers.naver.com → 애플리케이션 등록 → <b>검색</b> API 선택 (무료)
+        </div>
+        <div class="bp-row" style="flex-wrap:wrap">
+          <input class="bp-inp" id="key-NAVER_CLIENT_ID" placeholder="NAVER_CLIENT_ID" style="flex:1;min-width:150px" autocapitalize="off" spellcheck="false">
+          <input class="bp-inp" id="key-NAVER_CLIENT_SECRET" type="password" placeholder="NAVER_CLIENT_SECRET" style="flex:1;min-width:150px">
+        </div>
+
+        <div style="color:var(--t2);font-size:11px;font-weight:700;letter-spacing:.5px;margin:16px 0 8px">블로그 계정 (자동 발행용)</div>
+        <div class="bp-row" style="flex-wrap:wrap">
+          <input class="bp-inp" id="key-NAVER_ID" placeholder="네이버 아이디" style="flex:1;min-width:150px" autocapitalize="off">
+          <input class="bp-inp" id="key-NAVER_PW" type="password" placeholder="네이버 비밀번호" style="flex:1;min-width:150px">
+        </div>
+        <input class="bp-inp" id="key-NAVER_BLOG_ID" placeholder="네이버 블로그 주소 앞부분 (예: m_ingvely_)" autocapitalize="off" spellcheck="false">
+        <div class="bp-row" style="flex-wrap:wrap">
+          <input class="bp-inp" id="key-TISTORY_ID" placeholder="티스토리(카카오) 이메일" style="flex:1;min-width:150px" autocapitalize="off">
+          <input class="bp-inp" id="key-TISTORY_PW" type="password" placeholder="티스토리(카카오) 비밀번호" style="flex:1;min-width:150px">
+        </div>
+        <input class="bp-inp" id="key-TISTORY_BLOG_NAME" placeholder="티스토리 블로그 주소 (예: brbr819.tistory.com)" autocapitalize="off" spellcheck="false">
 
         <div style="color:var(--t2);font-size:11px;font-weight:700;letter-spacing:.5px;margin:16px 0 8px">제휴 (있는 것만)</div>
         <div class="bp-row" style="flex-wrap:wrap">
@@ -2462,8 +2483,9 @@ async function saveBpServer() {
 
 var KEY_LABELS = {
   ANTHROPIC_API_KEY:'글 생성', UNSPLASH_ACCESS_KEY:'사진 검색',
-  COUPANG_PARTNERS_ID:'쿠팡파트너스', LINKPRICE_ID:'링크프라이스', NAVER_SHOPPING_ID:'네이버 쇼핑파트너',
+  NAVER_CLIENT_ID:'네이버 검색 API (키워드·상품추천)',
   BLOGGER_REFRESH_TOKEN:'블로그스팟', NAVER_ID:'네이버 블로그', TISTORY_ID:'티스토리',
+  COUPANG_PARTNERS_ID:'쿠팡파트너스', LINKPRICE_ID:'링크프라이스', NAVER_SHOPPING_ID:'네이버 쇼핑파트너',
 };
 
 async function loadKeysStatus() {
@@ -2488,7 +2510,11 @@ async function loadKeysStatus() {
 async function saveKeys() {
   var btn = document.getElementById('keys-save-btn');
   var out = document.getElementById('keys-save-result');
-  var ids = ['ANTHROPIC_API_KEY','UNSPLASH_ACCESS_KEY','COUPANG_PARTNERS_ID','COUPANG_PARTNERS_PW',
+  var ids = ['ANTHROPIC_API_KEY','UNSPLASH_ACCESS_KEY',
+             'NAVER_CLIENT_ID','NAVER_CLIENT_SECRET',
+             'NAVER_ID','NAVER_PW','NAVER_BLOG_ID',
+             'TISTORY_ID','TISTORY_PW','TISTORY_BLOG_NAME',
+             'COUPANG_PARTNERS_ID','COUPANG_PARTNERS_PW',
              'LINKPRICE_ID','LINKPRICE_PW','NAVER_SHOPPING_ID','NAVER_SHOPPING_PW'];
   var payload = {};
   ids.forEach(function(k) {

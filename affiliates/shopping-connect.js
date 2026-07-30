@@ -40,6 +40,18 @@ const TOPIC_TO_QUERY = [
   { re: /식품|음식|간식|건강식|영양제/,          q: '건강 영양제',     cat: '식품' },
 ];
 
+/* 벽시계 타임아웃으로 감싼다.
+ * req.setTimeout은 소켓 비활성 타임아웃이라, 연결이 걸린 채 응답만
+ * 오지 않는 상황에서는 작동하지 않아 호출이 영원히 멈춘다.
+ * 발행 도중 여기서 멈추면 글이 올라가지 않으므로 반드시 끊어야 한다. */
+function withDeadline(promise, ms, label) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} 응답 시간 초과 (${ms / 1000}초)`)), ms);
+    promise.then(v => { clearTimeout(timer); resolve(v); },
+                 e => { clearTimeout(timer); reject(e); });
+  });
+}
+
 function fetchUrl(url) {
   return new Promise((resolve, reject) => {
     const req = https.request(url, {
@@ -75,7 +87,7 @@ async function searchNaverShopping(query, count = 20) {
   if (!id || !secret) return null;
 
   const url = `https://openapi.naver.com/v1/search/shop.json?query=${encodeURIComponent(query)}&display=${count}&sort=sim`;
-  const json = await new Promise((resolve, reject) => {
+  const json = await withDeadline(new Promise((resolve, reject) => {
     const req = https.request(url, {
       headers: { 'X-Naver-Client-Id': id, 'X-Naver-Client-Secret': secret },
     }, (res) => {
@@ -88,7 +100,7 @@ async function searchNaverShopping(query, count = 20) {
     req.setTimeout(10000, () => { req.destroy(new Error('timeout')); });
     req.on('error', reject);
     req.end();
-  });
+  }), 12000, '네이버 쇼핑 검색');
 
   if (json.errorMessage) throw new Error(json.errorMessage);
   return (json.items || []).map(it => ({
@@ -124,17 +136,29 @@ function scoreProduct(p, category) {
 async function recommendProducts(topicText = '', limit = 5) {
   const { query, category } = pickQuery(topicText);
 
+  // 키가 없는 것과 검색이 실패한 것을 구분해서 알려준다
+  // (원인이 다른데 같은 안내를 하면 엉뚱한 곳을 고치게 된다)
+  const hasKey = !!(process.env.NAVER_CLIENT_ID && process.env.NAVER_CLIENT_SECRET);
+  if (!hasKey) {
+    return {
+      ok: false, query, category, products: [],
+      reason: 'NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 미설정 — 설정 탭에서 입력하면 실제 상품을 추천합니다',
+    };
+  }
+
   let items = null;
+  let failReason = '';
   try {
     items = await searchNaverShopping(query, 20);
   } catch (e) {
+    failReason = e.message;
     console.warn('[ShoppingConnect] 검색 실패:', e.message);
   }
 
   if (!items) {
     return {
       ok: false, query, category, products: [],
-      reason: 'NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 미설정 — 설정 탭에서 입력하면 실제 상품을 추천합니다',
+      reason: `네이버 쇼핑 검색 실패 — ${failReason || '알 수 없는 오류'}`,
     };
   }
   if (!items.length) {

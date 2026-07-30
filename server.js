@@ -88,8 +88,8 @@ async function publishJob(job) {
     if (!account) throw new Error('계정 없음 — 계정·주제 관리에서 계정을 추가해주세요');
 
     const trending = await fetchAllTrending({
-      naverClientId:     process.env.NAVER_CLIENT_ID,
-      naverClientSecret: process.env.NAVER_CLIENT_SECRET,
+      naverClientId:     tokens.get('NAVER_CLIENT_ID'),
+      naverClientSecret: tokens.get('NAVER_CLIENT_SECRET'),
       seedKeywords:      account.topicSeeds || [],
     });
     const keyword = trending[0]?.keyword || '오늘의 트렌드';
@@ -440,8 +440,8 @@ app.get('/api/trending', auth, async (req, res) => {
   const accounts = readAccounts();
   const seeds = [...new Set(accounts.flatMap(a => a.topicSeeds || []))];
   const data = await fetchAllTrending({
-    naverClientId:     process.env.NAVER_CLIENT_ID,
-    naverClientSecret: process.env.NAVER_CLIENT_SECRET,
+    naverClientId:     tokens.get('NAVER_CLIENT_ID'),
+    naverClientSecret: tokens.get('NAVER_CLIENT_SECRET'),
     seedKeywords:      seeds,
   });
   trendingCache = { data, fetchedAt: now };
@@ -1282,6 +1282,7 @@ app.get('/api/blogger-diagnose', auth, async (req, res) => {
 const RESTORABLE = [
   'BLOGGER_CLIENT_ID', 'BLOGGER_CLIENT_SECRET', 'BLOGGER_REFRESH_TOKEN', 'BLOGGER_BLOG_ID',
   'ANTHROPIC_API_KEY', 'UNSPLASH_ACCESS_KEY',
+  'NAVER_CLIENT_ID', 'NAVER_CLIENT_SECRET',
   'LINKPRICE_ID', 'LINKPRICE_PW',
   'COUPANG_PARTNERS_ID', 'COUPANG_PARTNERS_PW',
   'NAVER_SHOPPING_ID', 'NAVER_SHOPPING_PW',
@@ -1532,6 +1533,17 @@ Railway 프로젝트 → 서비스 우클릭 → <b>Add Volume</b> → Mount pat
 <div class="result" id="cred-set-result"></div>
 </div>
 
+<div class="card"><div class="card-t">🔑 API 키</div>
+<div style="color:#7c85b0;font-size:12px;line-height:1.7;margin-bottom:14px">여기에 넣으면 Railway를 건드리지 않아도 됩니다. 저장하면 이 브라우저에도 보관돼 재배포 후 자동 복구됩니다.</div>
+<label for="k-anthropic">글 생성 (console.anthropic.com)</label><input id="k-anthropic" placeholder="ANTHROPIC_API_KEY" autocapitalize="off" spellcheck="false">
+<label for="k-unsplash">사진 (unsplash.com/developers)</label><input id="k-unsplash" placeholder="UNSPLASH_ACCESS_KEY" autocapitalize="off" spellcheck="false">
+<label for="k-nid">네이버 검색 API — 키워드·상품추천 (developers.naver.com)</label>
+<input id="k-nid" placeholder="NAVER_CLIENT_ID" autocapitalize="off" spellcheck="false">
+<input id="k-nsecret" placeholder="NAVER_CLIENT_SECRET" autocapitalize="off" spellcheck="false">
+<button class="btn-green" onclick="saveKeys()">💾 키 저장</button>
+<div class="result" id="keys-result"></div>
+</div>
+
 <a class="btn btn-pink" href="/oauth/blogger">🔑 구글 계정 연결 시작</a>
 </div><script>
 // 이 브라우저에 보관된 올바른 값으로 서버를 먼저 복구한 뒤 검증한다
@@ -1556,6 +1568,23 @@ fetch('/api/blogger-diagnose').then(function(r){return r.json();}).then(function
   else h+='<div style="margin-top:10px;font-size:12px;color:#86efac">✅ 모든 단계 정상 — 바로 발행 가능합니다</div>';
   document.getElementById('diag').innerHTML=h;
 }).catch(function(e){document.getElementById('diag').textContent='진단 실패: '+e.message;});
+function saveKeys(){
+  var r=document.getElementById('keys-result');
+  var map={ANTHROPIC_API_KEY:'k-anthropic',UNSPLASH_ACCESS_KEY:'k-unsplash',
+           NAVER_CLIENT_ID:'k-nid',NAVER_CLIENT_SECRET:'k-nsecret'};
+  var payload={};
+  Object.keys(map).forEach(function(k){var el=document.getElementById(map[k]);if(el&&el.value.trim())payload[k]=el.value.trim();});
+  if(!Object.keys(payload).length){r.textContent='입력한 값이 없습니다';r.style.color='#f87171';return;}
+  r.textContent='저장 중…';r.style.color='#7c85b0';
+  fetch('/api/keys',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(function(x){return x.json();}).then(function(d){
+      r.textContent='✅ '+d.saved.length+'개 저장됨 — '+d.saved.join(', ');r.style.color='#86efac';
+      try{var c={};try{c=JSON.parse(localStorage.getItem('riri_bp_creds')||'{}');}catch(e){}
+      Object.keys(payload).forEach(function(k){c[k]=payload[k];});
+      localStorage.setItem('riri_bp_creds',JSON.stringify(c));}catch(e){}
+      Object.keys(map).forEach(function(k){var el=document.getElementById(map[k]);if(el)el.value='';});
+    }).catch(function(e){r.textContent='오류: '+e.message;r.style.color='#f87171';});
+}
 function credSet(){var r=document.getElementById('cred-set-result');r.textContent='구글에 확인 중…';r.style.color='#7c85b0';
 var cid=(document.getElementById('in-cid').value||'').trim().replace(/^https?:\\/\\//,'');
 var sec=(document.getElementById('in-sec').value||'').trim();
