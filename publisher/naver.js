@@ -17,7 +17,12 @@ async function publishToNaver({ id, pw, blogId, title, content, tags = [], image
   const browser = await chromium.launch({
     headless: true,
     executablePath: execPath,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled'],
+    // Railway 컨테이너는 메모리가 작아 기본 설정으로는 크로미움이 컨테이너를
+    // 통째로 죽인다(OOM). 공유메모리·GPU·부가기능을 줄여 사용량을 낮춘다.
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled',
+           '--disable-dev-shm-usage', '--disable-gpu', '--single-process', '--no-zygote',
+           '--disable-extensions', '--disable-background-networking', '--mute-audio',
+           '--js-flags=--max-old-space-size=256'],
   });
 
   const context = await browser.newContext({

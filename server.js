@@ -32,6 +32,19 @@ const cron = require('node-cron');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+/* 백그라운드 작업(글 생성·발행·이미지 조회) 하나가 실패해도
+ * 서버 전체가 내려가지 않게 한다.
+ * 예전엔 처리되지 않은 오류 하나로 프로세스가 종료돼
+ * "Application failed to respond"가 뜨고, 진행 중이던 글 생성은
+ * 응답을 못 받아 무한 로딩으로 남았다. */
+process.on('unhandledRejection', (reason) => {
+  console.error('[치명] 처리되지 않은 Promise 오류:', reason && reason.stack ? reason.stack : reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[치명] 처리되지 않은 예외:', err && err.stack ? err.stack : err);
+  // 프로세스를 죽이지 않는다 — 서버는 계속 응답해야 한다
+});
+
 // ── 미들웨어 ────────────────────────────────────────────
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -472,6 +485,7 @@ app.patch('/api/drafts/:id', auth, (req, res) => {
 
 // 글 생성 비동기 잡 스토어 (Railway 30초 타임아웃 우회)
 const _genJobs = new Map();
+const SERVER_STARTED_AT = Date.now();   // 재시작 판별용
 
 /** AI 글 생성 — jobId 즉시 반환 후 백그라운드 생성 */
 app.post('/api/generate', auth, async (req, res) => {
@@ -515,11 +529,22 @@ app.post('/api/generate', auth, async (req, res) => {
   setTimeout(() => _genJobs.delete(jobId), 30 * 60 * 1000);
 });
 
-/** 생성 상태 폴링 */
+/** 생성 상태 폴링
+ *  서버가 재시작되면 진행 중이던 작업 정보가 사라진다.
+ *  이때 404만 돌려주면 대시보드가 계속 기다려 무한 로딩이 되므로,
+ *  서버가 그 사이 재시작됐음을 알려 즉시 오류로 끝내게 한다. */
 app.get('/api/generate-status/:jobId', auth, (req, res) => {
   const job = _genJobs.get(req.params.jobId);
-  if (!job) return res.status(404).json({ error: 'job not found' });
-  res.json(job);
+  if (job) return res.json(job);
+
+  const startedAt = Number((req.params.jobId.match(/gen_(\d+)/) || [])[1]);
+  if (startedAt && startedAt < SERVER_STARTED_AT) {
+    return res.status(410).json({
+      status: 'error',
+      error: '생성 도중 서버가 재시작되어 중단되었습니다. 다시 시도해주세요',
+    });
+  }
+  res.status(404).json({ error: 'job not found' });
 });
 
 /** 한달치 자동발행 예약 */

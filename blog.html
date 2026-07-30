@@ -2810,6 +2810,8 @@ async function generateFromKeyword(keyword) {
           if (s.status === 'done')  { clearInterval(_genPollTimer); resolve(s); }
           else if (s.status === 'error') { clearInterval(_genPollTimer); reject(new Error(s.error || '생성 실패')); }
         } catch(pe) {
+          // 서버 재시작으로 작업이 사라진 경우(410) 즉시 종료 — 무한 대기 방지
+          if (/재시작/.test(pe.message)) { clearInterval(_genPollTimer); reject(pe); return; }
           if (attempts > 15) { clearInterval(_genPollTimer); reject(pe); }
         }
       }, 2000);
