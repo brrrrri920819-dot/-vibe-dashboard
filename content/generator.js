@@ -12,7 +12,7 @@ const CLAUDE_TIMEOUT_MS = 100000; // 100초 — Claude API 최대 대기
 
 function callClaude(prompt, systemPrompt, maxTokens = 4096) {
   if (!process.env.ANTHROPIC_API_KEY) {
-    return Promise.reject(new Error('ANTHROPIC_API_KEY 미설정 — Railway Variables에 추가하세요'));
+    return Promise.reject(new Error('ANTHROPIC_API_KEY 미설정 — 설정 탭 > API 키·계정 연결에서 입력하세요'));
   }
 
   const body = JSON.stringify({

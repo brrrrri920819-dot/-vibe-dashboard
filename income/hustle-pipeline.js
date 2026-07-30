@@ -92,7 +92,7 @@ function fetchUrl(url, opts = {}) {
 
 function callClaude(prompt, system = '당신은 한국 부업·수익화 전문 컨설턴트입니다.', maxTokens = 2048) {
   if (!process.env.ANTHROPIC_API_KEY) {
-    return Promise.reject(new Error('ANTHROPIC_API_KEY 미설정 — Railway Variables에 추가하세요'));
+    return Promise.reject(new Error('ANTHROPIC_API_KEY 미설정 — 설정 탭 > API 키·계정 연결에서 입력하세요'));
   }
   const body = JSON.stringify({
     model: MODEL,
@@ -1075,7 +1075,11 @@ async function executePipeline(hustleId) {
   }
 
   const durationMs = Date.now() - t0;
-  const steps      = data?.steps || [];
+  /* 파이프라인이 도중에 던지면 data가 없어 steps가 빈 배열이 됐고,
+     화면에는 아무것도 안 뜨면서 "돌기만 하고 안 된다"로 보였다.
+     실패 사유를 단계로 만들어 항상 화면에 남긴다. */
+  const steps = data?.steps
+    || (error ? [{ key: 'error', label: '실행 실패', status: 'error', detail: error }] : []);
   const done       = steps.filter(s => s.status === 'done').length;
   const failed     = steps.filter(s => s.status === 'error').length;
 

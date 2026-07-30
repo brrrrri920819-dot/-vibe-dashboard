@@ -1130,7 +1130,44 @@ app.get('/api/blogger-diagnose', auth, async (req, res) => {
  * 사라진다. 그래서 코드를 고칠 때마다 Blogger 연결이 끊겼다.
  * 대시보드(같은 도메인)의 localStorage에 사본을 두고, 페이지가 열릴 때
  * 서버에 없는 값만 되돌려 넣어 스스로 복구되게 한다. */
-const RESTORABLE = ['BLOGGER_CLIENT_ID', 'BLOGGER_CLIENT_SECRET', 'BLOGGER_REFRESH_TOKEN', 'BLOGGER_BLOG_ID'];
+const RESTORABLE = [
+  'BLOGGER_CLIENT_ID', 'BLOGGER_CLIENT_SECRET', 'BLOGGER_REFRESH_TOKEN', 'BLOGGER_BLOG_ID',
+  'ANTHROPIC_API_KEY', 'UNSPLASH_ACCESS_KEY',
+  'LINKPRICE_ID', 'LINKPRICE_PW',
+  'COUPANG_PARTNERS_ID', 'COUPANG_PARTNERS_PW',
+  'NAVER_SHOPPING_ID', 'NAVER_SHOPPING_PW',
+];
+
+/* 대시보드에서 키를 직접 저장 — Railway를 거치지 않아도 되게.
+ * 저장된 값은 브라우저에도 사본이 남아 재배포 후 자동 복구된다. */
+const SETTABLE_KEYS = new Set([...RESTORABLE,
+  'NAVER_ID', 'NAVER_PW', 'NAVER_BLOG_ID',
+  'TISTORY_ID', 'TISTORY_PW', 'TISTORY_BLOG_NAME',
+  'KAKAO_MOMENT_ID', 'KAKAO_MOMENT_PW',
+]);
+
+app.post('/api/keys', auth, (req, res) => {
+  const saved = [], rejected = [];
+  for (const [k, v] of Object.entries(req.body || {})) {
+    if (!SETTABLE_KEYS.has(k)) { rejected.push(k); continue; }
+    if (typeof v !== 'string' || !v.trim()) continue;
+    tokens.set(k, v.trim());
+    saved.push(k);
+  }
+  if (saved.length) console.log(`[Keys] 저장됨: ${saved.join(', ')}`);
+  res.json({ ok: true, saved, rejected });
+});
+
+/** 어떤 키가 설정돼 있는지 (값은 절대 내려주지 않음) */
+app.get('/api/keys/status', auth, (req, res) => {
+  const out = {};
+  for (const k of SETTABLE_KEYS) {
+    const v = tokens.get(k);
+    out[k] = v ? { set: true, hint: v.length > 8 ? v.slice(0, 4) + '…' + v.slice(-3) : '설정됨', source: tokens.sourceOf(k) }
+                : { set: false };
+  }
+  res.json(out);
+});
 
 app.post('/api/credentials/restore', auth, (req, res) => {
   const incoming = req.body || {};

@@ -992,6 +992,37 @@ body{background:
       </div>
 
       <div class="section">
+        <div class="bp-section-title">🔑 API 키 · 계정 연결</div>
+        <div class="bp-humanize-tip" style="margin-bottom:12px">
+          여기에 넣으면 <b>Railway를 건드릴 필요가 없습니다.</b> 저장하면 이 브라우저에도 보관돼
+          서버가 재배포돼도 자동으로 다시 채워집니다.<br>
+          <span style="color:var(--t3)">비어 있는 항목 때문에 글 생성·이미지·제휴가 동작하지 않습니다.</span>
+        </div>
+        <div id="keys-status" style="margin-bottom:14px"></div>
+
+        <div style="color:var(--t2);font-size:11px;font-weight:700;letter-spacing:.5px;margin:16px 0 8px">필수</div>
+        <input class="bp-inp" id="key-ANTHROPIC_API_KEY" placeholder="ANTHROPIC_API_KEY — 글 생성 (console.anthropic.com)" autocapitalize="off" spellcheck="false">
+        <input class="bp-inp" id="key-UNSPLASH_ACCESS_KEY" placeholder="UNSPLASH_ACCESS_KEY — 사진 (unsplash.com/developers)" autocapitalize="off" spellcheck="false">
+
+        <div style="color:var(--t2);font-size:11px;font-weight:700;letter-spacing:.5px;margin:16px 0 8px">제휴 (있는 것만)</div>
+        <div class="bp-row" style="flex-wrap:wrap">
+          <input class="bp-inp" id="key-COUPANG_PARTNERS_ID" placeholder="쿠팡파트너스 아이디" style="flex:1;min-width:150px" autocapitalize="off">
+          <input class="bp-inp" id="key-COUPANG_PARTNERS_PW" type="password" placeholder="쿠팡파트너스 비밀번호" style="flex:1;min-width:150px">
+        </div>
+        <div class="bp-row" style="flex-wrap:wrap">
+          <input class="bp-inp" id="key-LINKPRICE_ID" placeholder="링크프라이스 아이디" style="flex:1;min-width:150px" autocapitalize="off">
+          <input class="bp-inp" id="key-LINKPRICE_PW" type="password" placeholder="링크프라이스 비밀번호" style="flex:1;min-width:150px">
+        </div>
+        <div class="bp-row" style="flex-wrap:wrap">
+          <input class="bp-inp" id="key-NAVER_SHOPPING_ID" placeholder="네이버 쇼핑파트너 아이디" style="flex:1;min-width:150px" autocapitalize="off">
+          <input class="bp-inp" id="key-NAVER_SHOPPING_PW" type="password" placeholder="네이버 쇼핑파트너 비밀번호" style="flex:1;min-width:150px">
+        </div>
+
+        <button class="bp-pub-btn" style="max-width:200px;margin-top:6px" id="keys-save-btn" onclick="saveKeys()">💾 저장하고 확인</button>
+        <div id="keys-save-result" style="margin-top:10px;font-size:13px"></div>
+      </div>
+
+      <div class="section">
         <div class="bp-section-title">📄 애드센스 필수 페이지</div>
         <div class="bp-humanize-tip" style="margin-bottom:10px">
           <b>소개 · 개인정보처리방침 · 문의하기</b> 3개가 없으면 글을 아무리 많이 써도
@@ -1621,7 +1652,7 @@ function showView(v) {
   if (v === 'cardnews')  { loadCardNewsView(); }
   if (v === 'shorts')    { loadShortsView(); }
   if (v === 'blog-log')  { loadBlogLog(); }
-  if (v === 'blog-setup'){ bpLoadServerSettings(); }
+  if (v === 'blog-setup'){ bpLoadServerSettings(); loadKeysStatus(); }
   if (v === 'drafts')    { loadDraftsView(); }
   if (v === 'blog-accounts') { bpLoadAccounts(); bpFetchTrending(); }
 
@@ -2281,6 +2312,67 @@ async function saveBpServer() {
     status.textContent = '❌ 연결 실패: ' + e.message;
     status.style.color = 'var(--err)';
     bpToast('서버 연결 실패', 'err');
+  }
+}
+
+var KEY_LABELS = {
+  ANTHROPIC_API_KEY:'글 생성', UNSPLASH_ACCESS_KEY:'사진 검색',
+  COUPANG_PARTNERS_ID:'쿠팡파트너스', LINKPRICE_ID:'링크프라이스', NAVER_SHOPPING_ID:'네이버 쇼핑파트너',
+  BLOGGER_REFRESH_TOKEN:'블로그스팟', NAVER_ID:'네이버 블로그', TISTORY_ID:'티스토리',
+};
+
+async function loadKeysStatus() {
+  var wrap = document.getElementById('keys-status');
+  if (!wrap) return;
+  try {
+    var st = await bpFetch('/api/keys/status');
+    wrap.innerHTML = Object.keys(KEY_LABELS).map(function(k) {
+      var s = st[k] || { set:false };
+      return '<div class="plat-test-row' + (s.set ? ' ok' : ' fail') + '" style="margin-bottom:6px">'
+        + '<div class="ptr-head"><span class="ptr-icon">' + (s.set ? '✅' : '❌') + '</span>'
+        + '<span class="ptr-name">' + KEY_LABELS[k] + '</span>'
+        + '<span class="ptr-pill">' + (s.set ? '설정됨' : '없음') + '</span></div>'
+        + (s.set ? '' : '<div class="ptr-msg">' + k + ' 미설정 — 이 기능은 동작하지 않습니다</div>')
+        + '</div>';
+    }).join('');
+  } catch (e) {
+    wrap.innerHTML = '<div style="color:var(--err);font-size:12px">상태 확인 실패: ' + escHtml(e.message) + '</div>';
+  }
+}
+
+async function saveKeys() {
+  var btn = document.getElementById('keys-save-btn');
+  var out = document.getElementById('keys-save-result');
+  var ids = ['ANTHROPIC_API_KEY','UNSPLASH_ACCESS_KEY','COUPANG_PARTNERS_ID','COUPANG_PARTNERS_PW',
+             'LINKPRICE_ID','LINKPRICE_PW','NAVER_SHOPPING_ID','NAVER_SHOPPING_PW'];
+  var payload = {};
+  ids.forEach(function(k) {
+    var el = document.getElementById('key-' + k);
+    if (el && el.value.trim()) payload[k] = el.value.trim();
+  });
+  if (!Object.keys(payload).length) { bpToast('입력한 값이 없습니다', 'err'); return; }
+
+  btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>저장 중...';
+  try {
+    var r = await bpFetch('/api/keys', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload),
+    });
+    // 브라우저에도 보관 → 재배포 후 자동 복구
+    try {
+      var c = {}; try { c = JSON.parse(localStorage.getItem('riri_bp_creds') || '{}'); } catch(e){}
+      Object.keys(payload).forEach(function(k){ c[k] = payload[k]; });
+      localStorage.setItem('riri_bp_creds', JSON.stringify(c));
+    } catch(e){}
+    out.innerHTML = '<span style="color:var(--ok)">✅ ' + r.saved.length + '개 저장됨 — ' + r.saved.join(', ') + '</span>';
+    ids.forEach(function(k){ var el=document.getElementById('key-'+k); if(el) el.value=''; });
+    bpToast('🔑 저장 완료', 'ok');
+    loadKeysStatus();
+    bpCheckServerStatus();
+  } catch (e) {
+    out.innerHTML = '<span style="color:var(--err)">❌ ' + escHtml(e.message) + '</span>';
+    bpToast('저장 실패: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 저장하고 확인';
   }
 }
 
