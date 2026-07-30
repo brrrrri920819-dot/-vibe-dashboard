@@ -49,6 +49,10 @@ process.on('uncaughtException', (err) => {
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// 루트로 들어오면 블로그 자동화 대시보드를 띄운다
+// (예전엔 index.html(프로젝트 트래커)이 떠서 대시보드를 못 찾는 문제가 있었다)
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'blog.html')));
+
 app.use(express.static(path.join(__dirname)));
 
 // 이미지 업로드 설정
