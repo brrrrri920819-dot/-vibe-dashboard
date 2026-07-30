@@ -191,6 +191,71 @@ async function fetchImage(keyword, index) {
   return { url: `https://picsum.photos/seed/${seed % 9999}/1200/630`, credit: '', source: 'picsum' };
 }
 
+/* 블로그 플랫폼은 <style> 태그를 대부분 제거하므로,
+ * 모든 서식을 인라인 style로 직접 넣어야 실제 글에서 유지된다.
+ * 이걸 안 하면 기본 서식으로 렌더링돼 줄간격이 좁고 표가 깨져
+ * 모바일에서 글자벽처럼 보인다. */
+const ACCENT = '#2563eb';
+
+function beautifyHtml(html) {
+  let h = html;
+
+  // 본문 문단 — 가독성의 핵심 (줄간격·글자크기·문단 간격)
+  h = h.replace(/<p(\s[^>]*)?>/gi,
+    '<p style="font-size:17px;line-height:1.9;color:#2b2b2b;margin:0 0 20px;word-break:keep-all">');
+
+  // 대제목 — 왼쪽 컬러바로 구간이 눈에 띄게
+  h = h.replace(/<h2(\s[^>]*)?>/gi,
+    `<h2 style="font-size:22px;line-height:1.5;font-weight:700;color:#111;margin:48px 0 18px;padding:2px 0 2px 14px;border-left:5px solid ${ACCENT};word-break:keep-all">`);
+  h = h.replace(/<h3(\s[^>]*)?>/gi,
+    '<h3 style="font-size:18.5px;line-height:1.5;font-weight:700;color:#222;margin:32px 0 14px;word-break:keep-all">');
+
+  // 목록 — 기본 여백이 너무 좁아 답답해 보임
+  h = h.replace(/<ul(\s[^>]*)?>/gi, '<ul style="margin:0 0 22px;padding-left:22px">');
+  h = h.replace(/<ol(\s[^>]*)?>/gi, '<ol style="margin:0 0 22px;padding-left:22px">');
+  h = h.replace(/<li(\s[^>]*)?>/gi,
+    '<li style="font-size:17px;line-height:1.85;color:#2b2b2b;margin-bottom:10px;word-break:keep-all">');
+
+  // 표 — 모바일에서 넘칠 때 가로 스크롤되게 감싼다
+  h = h.replace(/<table(\s[^>]*)?>/gi,
+    '<div style="overflow-x:auto;margin:0 0 26px;-webkit-overflow-scrolling:touch">'
+    + '<table style="width:100%;border-collapse:collapse;font-size:15.5px;min-width:320px">');
+  h = h.replace(/<\/table>/gi, '</table></div>');
+  h = h.replace(/<th(\s[^>]*)?>/gi,
+    '<th style="background:#f1f5f9;color:#111;font-weight:700;padding:13px 12px;border:1px solid #dde3ea;text-align:left;word-break:keep-all">');
+  h = h.replace(/<td(\s[^>]*)?>/gi,
+    '<td style="padding:13px 12px;border:1px solid #dde3ea;color:#2b2b2b;line-height:1.7;word-break:keep-all">');
+
+  // 강조 — 핵심어가 눈에 들어오게
+  h = h.replace(/<strong(\s[^>]*)?>/gi, `<strong style="color:${ACCENT};font-weight:700">`);
+  h = h.replace(/<b(\s[^>]*)?>/gi, `<b style="color:${ACCENT};font-weight:700">`);
+
+  h = h.replace(/<blockquote(\s[^>]*)?>/gi,
+    '<blockquote style="margin:0 0 24px;padding:16px 18px;background:#f8fafc;border-left:4px solid #cbd5e1;color:#374151;font-size:16px;line-height:1.8;border-radius:0 8px 8px 0">');
+
+  return h;
+}
+
+/** 소제목으로 목차를 만들어 글 맨 앞에 붙인다 (긴 글의 이탈 방지) */
+function buildToc(html) {
+  const titles = [...html.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)]
+    .map(m => m[1].replace(/<[^>]+>/g, '').trim())
+    .filter(Boolean);
+  if (titles.length < 3) return html;
+
+  const items = titles.map(t =>
+    `<li style="font-size:15.5px;line-height:1.8;color:#374151;margin-bottom:7px;word-break:keep-all">${t}</li>`).join('');
+
+  const toc = `<div style="background:#f8fafc;border:1px solid #e5e9f0;border-radius:12px;padding:20px 22px;margin:0 0 32px">`
+    + `<div style="font-size:15px;font-weight:700;color:#111;margin-bottom:12px">📌 이 글에서 다루는 내용</div>`
+    + `<ul style="margin:0;padding-left:20px">${items}</ul></div>`;
+
+  // 첫 문단 뒤(도입부 다음)에 넣어 글이 목차부터 시작하지 않게 한다
+  const firstEnd = html.indexOf('</p>');
+  if (firstEnd === -1) return toc + html;
+  return html.slice(0, firstEnd + 4) + toc + html.slice(firstEnd + 4);
+}
+
 // 이미지 HTML 태그 생성
 function imageTag(img, alt) {
   const caption = img.credit ? `${alt} · ${img.credit}` : alt;
@@ -343,7 +408,15 @@ JSON만 출력 (설명 문장 없이):
     }
   }
 
-  console.log(`[Generator] 생성 완료: "${json.title}" (이미지 ${urlIdx}개)`);
+  /* 서식 입히기 — 이미지 삽입까지 끝난 뒤에 적용한다.
+     (figure/img는 이미 인라인 스타일을 갖고 있어 영향받지 않음) */
+  content = beautifyHtml(content);
+  content = buildToc(content);
+  // 글 전체를 감싸 폰트와 최대 너비를 고정 (플랫폼 기본 서식에 휘둘리지 않게)
+  content = `<div style="font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;`
+    + `max-width:760px;margin:0 auto;color:#2b2b2b">${content}</div>`;
+
+  console.log(`[Generator] 생성 완료: "${json.title}" (이미지 ${urlIdx}개, 서식 적용)`);
   return { title: json.title, content, tags: json.tags || [keyword] };
 }
 
