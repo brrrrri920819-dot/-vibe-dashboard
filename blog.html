@@ -1121,6 +1121,20 @@ body{background:
         <button class="bp-pub-btn" style="max-width:220px" id="pub-test-btn" onclick="runPublishTest()">🚀 테스트 글 발행해보기</button>
         <div id="pub-test-result" style="margin-top:12px;display:none"></div>
       </div>
+
+      <div class="section">
+        <div class="bp-section-title">🧾 서버가 겪은 오류</div>
+        <div class="bp-humanize-tip" style="margin-bottom:10px">
+          서버에서 실제로 난 오류가 최신순으로 쌓입니다. 뭔가 안 될 때 여기만 보면 됩니다.
+          비밀번호·토큰 같은 값은 지운 채로만 보여줍니다.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="bp-pub-btn" style="max-width:150px" id="err-load-btn" onclick="loadServerErrors()">🔄 불러오기</button>
+          <button class="bp-pub-btn" style="max-width:150px;background:var(--bg3)" onclick="copyServerErrors()">📋 전체 복사</button>
+        </div>
+        <div id="err-meta" style="margin-top:10px;font-size:12px;color:var(--t3)"></div>
+        <div id="err-list" style="margin-top:10px"></div>
+      </div>
     </div>
 
     <!-- 🔥 키워드 발행 -->
@@ -2881,6 +2895,51 @@ async function testPlatformConnections() {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '🔌 연결 테스트'; }
   }
+}
+
+/* 서버가 겪은 오류를 화면에서 바로 본다.
+   Railway 로그를 열어보지 않아도 원인을 확인할 수 있게 하기 위한 것. */
+var _serverErrors = [];
+async function loadServerErrors() {
+  var btn  = document.getElementById('err-load-btn');
+  var list = document.getElementById('err-list');
+  var meta = document.getElementById('err-meta');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>불러오는 중'; }
+  try {
+    var d = await bpFetch('/api/errors?limit=60');
+    _serverErrors = d.entries || [];
+    var up = Math.floor((d.uptimeSec || 0) / 60);
+    meta.textContent = '서버 가동 ' + (up >= 60 ? Math.floor(up / 60) + '시간 ' + (up % 60) + '분' : up + '분')
+      + ' · 기록된 오류 ' + (d.total || 0) + '건'
+      + (up < 5 ? ' · ⚠️ 방금 재시작됨 (배포했거나 서버가 죽었다 살아난 것)' : '');
+    if (!_serverErrors.length) {
+      list.innerHTML = '<div style="color:var(--ok);font-size:13px">✅ 기록된 오류가 없습니다</div>';
+      return;
+    }
+    list.innerHTML = _serverErrors.map(function(e) {
+      var t = new Date(e.ts).toLocaleString('ko-KR', { hour12: false });
+      var color = e.level === 'error' ? 'var(--err)' : 'var(--warn, #f59e0b)';
+      return '<div style="border-left:3px solid ' + color + ';background:var(--bg2);border-radius:8px;'
+        + 'padding:9px 12px;margin-bottom:7px">'
+        + '<div style="font-size:11px;color:var(--t3);margin-bottom:3px">' + escHtml(t) + '</div>'
+        + '<div style="font-size:12.5px;line-height:1.6;color:var(--t1);white-space:pre-wrap;word-break:break-all">'
+        + escHtml(e.msg) + '</div></div>';
+    }).join('');
+  } catch (e) {
+    list.innerHTML = '<div style="color:var(--err);font-size:13px">❌ ' + escHtml(e.message) + '</div>';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 불러오기'; }
+  }
+}
+
+function copyServerErrors() {
+  if (!_serverErrors.length) { bpToast('먼저 불러오기를 눌러주세요', 'err'); return; }
+  var text = _serverErrors.map(function(e) {
+    return '[' + new Date(e.ts).toLocaleString('ko-KR', { hour12: false }) + '] ' + e.level + ': ' + e.msg;
+  }).join('\n');
+  navigator.clipboard.writeText(text)
+    .then(function(){ bpToast('📋 오류 ' + _serverErrors.length + '건 복사됨', 'ok'); })
+    .catch(function(){ bpToast('복사 실패 — 화면에서 직접 선택해주세요', 'err'); });
 }
 
 /* 짧은 글 하나를 실제로 올려보고, 블로그별 결과를 그대로 보여준다.

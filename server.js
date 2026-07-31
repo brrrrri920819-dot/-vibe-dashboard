@@ -38,6 +38,40 @@ const SERVER_STARTED_AT = Date.now();   // 재시작 판별·헬스체크용
  * 예전엔 처리되지 않은 오류 하나로 프로세스가 종료돼
  * "Application failed to respond"가 뜨고, 진행 중이던 글 생성은
  * 응답을 못 받아 무한 로딩으로 남았다. */
+/* ── 오류 기록기 ───────────────────────────────────────────
+ * Railway 로그를 열어봐야만 원인을 알 수 있으면, 뭐가 잘못됐는지
+ * 매번 물어보고 답을 기다리는 왕복이 생긴다.
+ * 서버가 자기 오류를 기억해 대시보드에서 바로 보이게 한다.
+ * 값(토큰·비밀번호)은 절대 남기지 않는다. */
+const ERROR_LOG = [];
+const ERROR_LOG_MAX = 200;
+
+/** 로그에 섞여 들어갈 수 있는 비밀값을 지운다 */
+function redact(text) {
+  return String(text)
+    .replace(/GOCSPX-[\w-]+/g, 'GOCSPX-***')
+    .replace(/sk-ant-[\w-]{10,}/g, 'sk-ant-***')
+    .replace(/1\/\/[\w-]{20,}/g, '1//***')
+    .replace(/ya29\.[\w.-]{20,}/g, 'ya29.***')
+    .replace(/[\w-]{24,}\.apps\.googleusercontent\.com/g, '***.apps.googleusercontent.com')
+    .replace(/("?(?:password|pw|secret|token|key)"?\s*[:=]\s*")([^"]{4,})(")/gi, '$1***$3');
+}
+
+function recordError(level, parts) {
+  const msg = redact(parts.map(p => {
+    if (p instanceof Error) return p.stack || p.message;
+    if (typeof p === 'object') { try { return JSON.stringify(p); } catch { return String(p); } }
+    return String(p);
+  }).join(' ')).slice(0, 1200);
+  ERROR_LOG.push({ ts: new Date().toISOString(), level, msg });
+  if (ERROR_LOG.length > ERROR_LOG_MAX) ERROR_LOG.shift();
+}
+
+const _origError = console.error.bind(console);
+const _origWarn  = console.warn.bind(console);
+console.error = (...a) => { try { recordError('error', a); } catch (_) {} _origError(...a); };
+console.warn  = (...a) => { try { recordError('warn',  a); } catch (_) {} _origWarn(...a); };
+
 process.on('unhandledRejection', (reason) => {
   console.error('[치명] 처리되지 않은 Promise 오류:', reason && reason.stack ? reason.stack : reason);
 });
@@ -54,6 +88,18 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
  *  어떤 의존성에도 기대지 않아야 하므로 다른 미들웨어보다 먼저 둔다. */
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, uptimeSec: Math.round(process.uptime()), startedAt: new Date(SERVER_STARTED_AT).toISOString() });
+});
+
+/** 서버가 겪은 오류 목록 — 로그를 열지 않고 대시보드에서 바로 보게 한다.
+ *  값(토큰·비밀번호)은 지운 채로만 내려간다. */
+app.get('/api/errors', (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 50, ERROR_LOG_MAX);
+  res.json({
+    startedAt: new Date(SERVER_STARTED_AT).toISOString(),
+    uptimeSec: Math.round(process.uptime()),
+    total: ERROR_LOG.length,
+    entries: ERROR_LOG.slice(-limit).reverse(),
+  });
 });
 
 // 루트로 들어오면 블로그 자동화 대시보드를 띄운다
@@ -191,6 +237,10 @@ async function publishJob(job) {
       }
     }
 
+     // 결과로 돌아온 실패도 기록에 남긴다 — 나중에 원인을 되짚을 수 있게
+     if (results[platform] && !results[platform].success) {
+       console.error(`[Publish] ${platform} 실패: ${results[platform].error}`);
+     }
    } catch (err) {
      // 예외도 '이 플랫폼만 실패'로 기록하고 다음 플랫폼으로 넘어간다
      const msg = err && err.message ? err.message : String(err);
