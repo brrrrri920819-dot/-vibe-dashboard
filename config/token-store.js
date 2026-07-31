@@ -56,7 +56,8 @@ function pickVolume() {
 }
 
 const VOLUME      = pickVolume();
-const LOCAL_FILE  = path.join(__dirname, 'tokens.json');
+// TOKENS_FILE 은 테스트가 실제 저장 파일을 건드리지 않도록 경로를 바꿔 끼우기 위한 것
+const LOCAL_FILE  = process.env.TOKENS_FILE || path.join(__dirname, 'tokens.json');
 const VOLUME_FILE = VOLUME ? path.join(VOLUME, 'tokens.json') : null;
 
 const mem = new Map();

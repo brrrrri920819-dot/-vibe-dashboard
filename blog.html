@@ -731,6 +731,7 @@ body{background:
 
 <!-- App -->
 <div id="app">
+  <div id="bp-reauth-bar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9000;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:11px 16px;font-size:13.5px;font-weight:600;align-items:center;gap:12px;box-shadow:0 4px 18px rgba(0,0,0,.35)"></div>
   <div class="sidebar" id="sidebar">
     <div class="s-header">
       <div class="s-logo">
@@ -1690,15 +1691,46 @@ async function bpRestoreCredentials() {
         console.log('[Restore] 복구됨:', r.restored.join(', '));
         bpToast('🔄 블로그 연결을 자동으로 복구했습니다', 'ok');
       }
+      /* 구글이 거부한 토큰은 사본에서 지운다.
+         안 지우면 열 때마다 "복구됨"만 뜨고 발행은 계속 실패해서 원인을 못 찾는다. */
+      if (r && r.needsReauth) {
+        try {
+          var c0 = JSON.parse(localStorage.getItem('riri_bp_creds') || '{}');
+          delete c0.BLOGGER_REFRESH_TOKEN; delete c0.BLOGGER_TOKEN_ISSUED_AT;
+          localStorage.setItem('riri_bp_creds', JSON.stringify(c0));
+        } catch (e) {}
+      }
     }
-    // 서버의 최신 값을 다시 사본으로 보관 (다음 재배포 대비)
+    /* 서버의 최신 값을 사본에 '합쳐서' 보관 (다음 재배포 대비).
+       통째로 바꾸면 이번에 서버가 못 가진 키가 사본에서 사라져 영영 복구되지 않는다. */
     var backup = await bpFetch('/api/credentials/backup');
     if (backup && Object.keys(backup).length) {
-      localStorage.setItem('riri_bp_creds', JSON.stringify(backup));
+      var c = {};
+      try { c = JSON.parse(localStorage.getItem('riri_bp_creds') || '{}') || {}; } catch (e) {}
+      Object.keys(backup).forEach(function(k){ if (backup[k]) c[k] = backup[k]; });
+      localStorage.setItem('riri_bp_creds', JSON.stringify(c));
     }
   } catch (e) {
     console.warn('[Restore] 실패:', e.message);
   }
+  bpCheckBloggerReauth();
+}
+
+/* 구글 연결이 죽었으면 화면 맨 위에 눈에 띄게 알리고 재연결 버튼을 준다.
+   발행을 눌러본 뒤에야 끊긴 걸 아는 상황을 없앤다. */
+async function bpCheckBloggerReauth() {
+  var bar = document.getElementById('bp-reauth-bar');
+  if (!bar) return;
+  try {
+    var h = await bpFetch('/api/health/blogger');
+    if (h && h.needsReauth) {
+      bar.innerHTML = '<span style="flex:1;min-width:0">🔌 구글 블로그 연결이 끊겼습니다 — ' + escHtml(h.detail || '재연결 필요') + '</span>'
+        + '<a href="/setup" target="_blank" style="background:#fff;color:#b91c1c;font-weight:700;padding:7px 13px;border-radius:8px;text-decoration:none;font-size:13px;white-space:nowrap">지금 재연결</a>';
+      bar.style.display = 'flex';
+    } else {
+      bar.style.display = 'none';
+    }
+  } catch (e) { /* 서버가 안 뜬 상태면 조용히 넘어간다 */ }
 }
 
 function enterApp() {
@@ -4163,6 +4195,11 @@ async function loadDailyReport(force) {
 
 // ── INIT ─────────────────────────────────────────────────
 if (!new URLSearchParams(window.location.search).has('public')) initLock();
+
+/* 잠금화면에서도 서버 복구는 먼저 돌린다.
+   비밀번호를 풀어야만 복구되면, 재배포 직후 예약 발행이 먼저 도는 동안
+   서버에 자격증명이 비어 있어서 그 글이 통째로 실패한다. */
+bpRestoreCredentials();
 </script>
 
 </body>

@@ -163,6 +163,15 @@ async function publishJob(job) {
         if (results.blogger.success && results.blogger.blogId && !blogId) {
           tokens.set('BLOGGER_BLOG_ID', results.blogger.blogId);
         }
+        /* 발행이 토큰 만료로 실패했으면 그 자리에서 '재연결 필요'로 표시한다.
+           30분 뒤 헬스체크를 기다리지 않고 대시보드 상단 배너가 바로 뜬다. */
+        if (!results.blogger.success && /만료|invalid_grant|재인증|재연결/.test(results.blogger.error || '')) {
+          _deadRefreshTokens.add(refreshToken);
+          _bloggerHealth = {
+            checkedAt: new Date().toISOString(), ok: false, needsReauth: true,
+            detail: results.blogger.error,
+          };
+        }
       } else {
         // Playwright 폴백 (BLOGGER_EMAIL/PW 있을 때)
         const bloggerEmail = tokens.get('BLOGGER_EMAIL');
@@ -1216,18 +1225,37 @@ app.post('/api/blogger-cred-set', async (req, res) => {
  * 끊겼으면 즉시 알림을 보내 발행 실패 전에 손 쓸 수 있게 한다. */
 let _bloggerHealth = { checkedAt: null, ok: null, detail: '아직 확인 안 함' };
 
+/* 구글이 거부한(만료·취소된) 리프레시 토큰 목록.
+   브라우저 사본이 죽은 토큰을 계속 되돌려 넣으면
+   "복구됨"이라고 뜨는데 실제로는 발행이 안 되는 상태가 영원히 반복된다.
+   한 번 거부당한 토큰은 다시 받지 않고, 브라우저 사본에서도 지우게 알린다. */
+const _deadRefreshTokens = new Set();
+
+/** 토큰 발급 후 며칠 지났는지 — 테스트 모드(7일 만료) 판별용 */
+function bloggerTokenAgeDays() {
+  const iso = tokens.get('BLOGGER_TOKEN_ISSUED_AT');
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return null;
+  return Math.floor((Date.now() - t) / 86400000);
+}
+
 async function checkBloggerHealth(notify = true) {
   const cid = tokens.get('BLOGGER_CLIENT_ID');
   const sec = tokens.get('BLOGGER_CLIENT_SECRET');
   const ref = tokens.get('BLOGGER_REFRESH_TOKEN');
   if (!cid || !sec || !ref) {
-    _bloggerHealth = { checkedAt: new Date().toISOString(), ok: false, detail: '자격증명 없음 — 구글 계정 연결 필요' };
+    _bloggerHealth = {
+      checkedAt: new Date().toISOString(), ok: false,
+      detail: '자격증명 없음 — 구글 계정 연결 필요',
+      needsReauth: !!(cid && sec),   // ID/시크릿은 있는데 토큰만 없으면 재인증 한 번이면 끝
+    };
     return _bloggerHealth;
   }
   try {
     const blogs = await getBloggerBlogId(cid, sec, ref);
     if (!tokens.get('BLOGGER_BLOG_ID') && blogs[0]) tokens.set('BLOGGER_BLOG_ID', blogs[0].id);
-    _bloggerHealth = { checkedAt: new Date().toISOString(), ok: true, detail: blogs[0] ? blogs[0].name : '연결됨' };
+    _bloggerHealth = { checkedAt: new Date().toISOString(), ok: true, detail: blogs[0] ? blogs[0].name : '연결됨', needsReauth: false };
     console.log(`[Health] Blogger 정상 — ${_bloggerHealth.detail}`);
   } catch (e) {
     const g = e.response?.data || {};
@@ -1235,10 +1263,15 @@ async function checkBloggerHealth(notify = true) {
     if (e.response?.status === 403) {
       detail = 'Blogger API 비활성 — 구글 콘솔 API 라이브러리에서 Blogger API를 「사용」으로 켜세요';
     }
+    let needsReauth = false;
     if (g.error === 'invalid_grant') {
-      detail = '토큰 만료 — 재연결 필요. OAuth 앱이 "테스트" 상태면 7일마다 만료되니 "프로덕션"으로 전환하세요';
+      const age = bloggerTokenAgeDays();
+      needsReauth = true;
+      if (ref) _deadRefreshTokens.add(ref);
+      detail = '토큰 만료 — 재연결 필요. OAuth 앱이 "테스트" 상태면 7일마다 만료되니 "프로덕션"으로 전환하세요'
+             + (age !== null ? ` (발급 후 ${age}일 경과)` : '');
     }
-    _bloggerHealth = { checkedAt: new Date().toISOString(), ok: false, detail };
+    _bloggerHealth = { checkedAt: new Date().toISOString(), ok: false, detail, needsReauth };
     console.error(`[Health] Blogger 끊김 — ${detail}`);
     if (notify) {
       try {
@@ -1268,7 +1301,12 @@ app.get('/api/blogger-diagnose', auth, async (req, res) => {
 
   steps.push({ step: '1. 클라이언트 ID', ok: !!cid, detail: (cid ? cid.slice(0, 22) + '…' : '없음') + where('BLOGGER_CLIENT_ID') });
   steps.push({ step: '2. 클라이언트 시크릿', ok: !!sec, detail: (sec ? `${sec.slice(0, 7)}… (${sec.length}자)` : '없음') + where('BLOGGER_CLIENT_SECRET') });
-  steps.push({ step: '3. 리프레시 토큰', ok: !!ref, detail: (ref ? `저장됨 (${ref.length}자)` : '없음 — 구글 계정 연결 필요') + where('BLOGGER_REFRESH_TOKEN') });
+  const age = bloggerTokenAgeDays();
+  const ageNote = age === null ? ''
+    : age >= 7 ? ` · 발급 ${age}일 전 ⚠️ 테스트 모드면 이미 만료`
+    : age >= 5 ? ` · 발급 ${age}일 전 ⚠️ 테스트 모드면 곧 만료`
+    : ` · 발급 ${age}일 전`;
+  steps.push({ step: '3. 리프레시 토큰', ok: !!ref, detail: (ref ? `저장됨 (${ref.length}자)${ageNote}` : '없음 — 구글 계정 연결 필요') + where('BLOGGER_REFRESH_TOKEN') });
 
   if (cid && sec && ref) {
     try {
@@ -1305,8 +1343,13 @@ app.get('/api/blogger-diagnose', auth, async (req, res) => {
  * 서버에 없는 값만 되돌려 넣어 스스로 복구되게 한다. */
 const RESTORABLE = [
   'BLOGGER_CLIENT_ID', 'BLOGGER_CLIENT_SECRET', 'BLOGGER_REFRESH_TOKEN', 'BLOGGER_BLOG_ID',
+  'BLOGGER_TOKEN_ISSUED_AT',
   'ANTHROPIC_API_KEY', 'UNSPLASH_ACCESS_KEY',
   'NAVER_CLIENT_ID', 'NAVER_CLIENT_SECRET',
+  // 네이버·티스토리 로그인 정보도 재배포하면 함께 사라진다 —
+  // 블로그스팟만 복구하고 나머지를 빼두면 결국 또 "연결이 끊겼다"가 된다
+  'NAVER_ID', 'NAVER_PW', 'NAVER_BLOG_ID',
+  'TISTORY_ID', 'TISTORY_PW', 'TISTORY_BLOG_NAME',
   'LINKPRICE_ID', 'LINKPRICE_PW',
   'COUPANG_PARTNERS_ID', 'COUPANG_PARTNERS_PW',
   'NAVER_SHOPPING_ID', 'NAVER_SHOPPING_PW',
@@ -1315,8 +1358,6 @@ const RESTORABLE = [
 /* 대시보드에서 키를 직접 저장 — Railway를 거치지 않아도 되게.
  * 저장된 값은 브라우저에도 사본이 남아 재배포 후 자동 복구된다. */
 const SETTABLE_KEYS = new Set([...RESTORABLE,
-  'NAVER_ID', 'NAVER_PW', 'NAVER_BLOG_ID',
-  'TISTORY_ID', 'TISTORY_PW', 'TISTORY_BLOG_NAME',
   'KAKAO_MOMENT_ID', 'KAKAO_MOMENT_PW',
 ]);
 
@@ -1346,9 +1387,14 @@ app.get('/api/keys/status', auth, (req, res) => {
 app.post('/api/credentials/restore', auth, (req, res) => {
   const incoming = req.body || {};
   const restored = [];
+  const dead = [];
   for (const key of RESTORABLE) {
     const val = typeof incoming[key] === 'string' ? incoming[key].trim() : '';
     if (!val) continue;
+    /* 구글이 이미 거부한 토큰이면 되돌려 넣지 않는다.
+       넣어봐야 발행 때 또 invalid_grant 가 나는데,
+       화면에는 "복구됨"으로 보여서 원인을 못 찾게 된다. */
+    if (key === 'BLOGGER_REFRESH_TOKEN' && _deadRefreshTokens.has(val)) { dead.push(key); continue; }
     /* 이 프로세스에서 직접 저장된 값('saved')만 보호한다.
        환경변수('env')는 틀린 값이 들어있을 수 있으므로 브라우저 사본으로 덮어쓴다.
        — 예전엔 "값이 있으면 건너뛰기"여서 Railway의 잘못된 시크릿이
@@ -1359,7 +1405,8 @@ app.post('/api/credentials/restore', auth, (req, res) => {
     restored.push(key);
   }
   if (restored.length) console.log(`[Restore] 자격증명 복구됨: ${restored.join(', ')}`);
-  res.json({ ok: true, restored });
+  if (dead.length) console.warn(`[Restore] 만료된 값 무시: ${dead.join(', ')} — 구글 재연결 필요`);
+  res.json({ ok: true, restored, dead, needsReauth: dead.includes('BLOGGER_REFRESH_TOKEN') });
 });
 
 /** 대시보드가 보관할 자격증명 사본 (복구용)
@@ -1546,6 +1593,9 @@ ${store.persistent ? '' : `<div class="note"><b>🔌 연결이 계속 끊기지 
 Railway 프로젝트 → 서비스 우클릭 → <b>Add Volume</b> → Mount path 에 <b>/data</b> 입력 → 저장.<br>
 이걸 붙이면 재배포해도 토큰이 남아 다시는 끊기지 않습니다.</div>`}
 <div class="note"><b>⚠️ 구글 콘솔 → 승인된 리디렉션 URI 에 등록 필요</b>아래 주소를 그대로 복사해서 추가하세요.<div class="mono-box">${baseUrl}/oauth/blogger/callback</div></div>
+<div class="note"><b>🔁 7일마다 연결이 끊긴다면 (원인 1위)</b>
+OAuth 앱이 <b>테스트</b> 상태면 구글이 7일마다 토큰을 강제로 만료시킵니다. 여기서 한 번만 바꾸면 다시는 안 끊깁니다.<div class="mono-box">console.cloud.google.com/auth/audience</div>
+→ 대상(Audience) 화면에서 <b>앱 게시 → 프로덕션으로 전환</b> 누르기.</div>
 </div>
 
 <div class="card"><div class="card-t">📋 자격증명 직접 입력</div>
@@ -1575,8 +1625,21 @@ Railway 프로젝트 → 서비스 우클릭 → <b>Add Volume</b> → Mount pat
 var _boot=Promise.resolve();
 try{
   var _saved=localStorage.getItem('riri_bp_creds');
-  if(_saved){_boot=fetch('/api/credentials/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:_saved}).then(function(r){return r.json();}).then(function(d){if(d.restored&&d.restored.length){console.log('복구:',d.restored.join(','));}}).catch(function(){});}
+  if(_saved){_boot=fetch('/api/credentials/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:_saved}).then(function(r){return r.json();}).then(function(d){
+    if(d.restored&&d.restored.length){console.log('복구:',d.restored.join(','));}
+    // 구글이 거부한 토큰이면 사본에서 지운다 — 안 지우면 매번 "복구됨"만 뜨고 발행은 계속 실패한다
+    if(d.needsReauth){try{var _c=JSON.parse(localStorage.getItem('riri_bp_creds')||'{}');delete _c.BLOGGER_REFRESH_TOKEN;delete _c.BLOGGER_TOKEN_ISSUED_AT;localStorage.setItem('riri_bp_creds',JSON.stringify(_c));}catch(e){}}
+  }).catch(function(){});}
 }catch(e){}
+// 서버의 최신 값을 사본으로 되받아 둔다 (다음 재배포 때 이 사본으로 복구된다)
+_boot.then(function(){
+  return fetch('/api/credentials/backup').then(function(r){return r.json();}).then(function(b){
+    if(!b||!Object.keys(b).length) return;
+    var c={}; try{c=JSON.parse(localStorage.getItem('riri_bp_creds')||'{}')||{};}catch(e){}
+    Object.keys(b).forEach(function(k){ if(b[k]) c[k]=b[k]; });
+    localStorage.setItem('riri_bp_creds',JSON.stringify(c));
+  }).catch(function(){});
+});
 _boot.then(function(){
 fetch('/api/blogger-cred-test').then(function(r){return r.json();}).then(function(d){var el=document.getElementById('cred-test');el.textContent=d.verdict;el.style.color=d.ok?'#86efac':'#f87171';}).catch(function(){var el=document.getElementById('cred-test');el.textContent='테스트 실패';el.style.color='#f87171';});
 });
@@ -1649,6 +1712,9 @@ app.get('/oauth/blogger/callback', async (req, res) => {
     );
     // 토큰 자동저장 — Railway 재시작 후에도 유지
     tokens.set('BLOGGER_REFRESH_TOKEN', refreshToken);
+    tokens.set('BLOGGER_TOKEN_ISSUED_AT', new Date().toISOString());
+    _deadRefreshTokens.delete(refreshToken);   // 새로 받은 토큰은 다시 유효
+    _bloggerHealth = { checkedAt: new Date().toISOString(), ok: true, detail: '방금 재연결됨', needsReauth: false };
     console.log('[Blogger] 리프레시 토큰 자동저장 완료');
 
     // 블로그 ID도 자동 조회 후 저장
@@ -1667,10 +1733,16 @@ app.get('/oauth/blogger/callback', async (req, res) => {
 
     res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:sans-serif;background:#0f0f0f;color:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}.card{background:#1a1a2e;border:1px solid #333;border-radius:16px;padding:32px;max-width:480px;width:100%;text-align:center}h2{color:#22c55e;margin-top:0}p{color:#aaa;font-size:14px;line-height:1.6}.ok{font-size:64px;margin:16px 0}.btn{display:block;background:#333;border:none;color:#fff;padding:14px;border-radius:8px;font-size:15px;cursor:pointer;width:100%;margin-top:16px;text-decoration:none;font-family:inherit}</style></head><body><div class="card"><div class="ok">✅</div><h2>블로그스팟 인증 완료!</h2><p>토큰이 서버에 저장되었습니다. 바로 발행 가능합니다.</p><div id="saved" style="color:#86efac;font-size:13px;margin-top:16px">이 브라우저에 보관 중…</div><div style="text-align:left;background:#0f0f0f;border:1px solid #444;border-radius:10px;padding:14px;margin-top:16px"><div style="color:#fbbf24;font-size:12px;font-weight:bold;margin-bottom:8px">🔒 다시는 안 끊기게 하려면 (1회면 끝)</div><div style="color:#aaa;font-size:12px;line-height:1.6;margin-bottom:10px">아래 버튼으로 복사한 뒤 Railway → Variables 에 <b style="color:#eee">BLOGGER_REFRESH_TOKEN</b> 이름으로 붙여넣으세요. 환경변수는 재배포해도 지워지지 않습니다.</div><button id="copyBtn" style="background:#22c55e;border:none;color:#fff;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;width:100%;font-family:inherit">📋 토큰 복사하기</button><div id="copied" style="color:#86efac;font-size:12px;margin-top:8px;text-align:center;min-height:16px"></div></div><a class="btn" href="javascript:window.close()">창 닫기</a></div><script>
 try{
-  var c={BLOGGER_CLIENT_ID:${JSON.stringify(tokens.get('BLOGGER_CLIENT_ID') || '')},
+  /* 기존 사본에 덮어쓰지 말고 합친다 —
+     예전엔 통째로 바꿔서 인증할 때마다 API 키(글 생성·사진·네이버)가 같이 날아갔고,
+     다음 재배포 때 그 키들이 복구되지 못했다. */
+  var c={}; try{ c=JSON.parse(localStorage.getItem('riri_bp_creds')||'{}')||{}; }catch(e){ c={}; }
+  var _new={BLOGGER_CLIENT_ID:${JSON.stringify(tokens.get('BLOGGER_CLIENT_ID') || '')},
          BLOGGER_CLIENT_SECRET:${JSON.stringify(tokens.get('BLOGGER_CLIENT_SECRET') || '')},
          BLOGGER_REFRESH_TOKEN:${JSON.stringify(refreshToken || '')},
-         BLOGGER_BLOG_ID:${JSON.stringify(tokens.get('BLOGGER_BLOG_ID') || '')}};
+         BLOGGER_BLOG_ID:${JSON.stringify(tokens.get('BLOGGER_BLOG_ID') || '')},
+         BLOGGER_TOKEN_ISSUED_AT:${JSON.stringify(tokens.get('BLOGGER_TOKEN_ISSUED_AT') || '')}};
+  Object.keys(_new).forEach(function(k){ if(_new[k]) c[k]=_new[k]; });
   localStorage.setItem('riri_bp_creds', JSON.stringify(c));
   document.getElementById('saved').textContent='✅ 보관 완료 — 대시보드를 열면 자동으로 다시 연결됩니다';
   document.getElementById('copyBtn').onclick=function(){
