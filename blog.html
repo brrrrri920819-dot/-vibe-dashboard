@@ -1105,6 +1105,22 @@ body{background:
         <button class="bp-pub-btn" style="max-width:180px" id="plat-test-btn" onclick="testPlatformConnections()">🔌 연결 테스트</button>
         <div id="plat-test-result" style="margin-top:12px;display:none"></div>
       </div>
+
+      <div class="section">
+        <div class="bp-section-title">🚀 진짜 발행 테스트</div>
+        <div class="bp-humanize-tip" style="margin-bottom:10px">
+          짧은 테스트 글 하나를 <b>실제로</b> 올려봅니다. 글 생성(AI)은 건너뛰기 때문에,
+          "글이 안 올라간다"의 원인이 생성인지 발행인지 바로 갈립니다.
+          블로그별로 성공 여부와 오류 메시지를 그대로 보여줍니다. (최대 2분)
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="pt-blogger" checked> 🔵 블로그스팟</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="pt-naver" checked> 🟢 네이버</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="pt-tistory" checked> 🟠 티스토리</label>
+        </div>
+        <button class="bp-pub-btn" style="max-width:220px" id="pub-test-btn" onclick="runPublishTest()">🚀 테스트 글 발행해보기</button>
+        <div id="pub-test-result" style="margin-top:12px;display:none"></div>
+      </div>
     </div>
 
     <!-- 🔥 키워드 발행 -->
@@ -2864,6 +2880,72 @@ async function testPlatformConnections() {
     bpToast('테스트 실패: ' + e.message, 'err');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '🔌 연결 테스트'; }
+  }
+}
+
+/* 짧은 글 하나를 실제로 올려보고, 블로그별 결과를 그대로 보여준다.
+   "설정은 다 됐다는데 왜 안 올라가지"를 추측 없이 끝내기 위한 것. */
+async function runPublishTest() {
+  var btn  = document.getElementById('pub-test-btn');
+  var wrap = document.getElementById('pub-test-result');
+  var platforms = [];
+  if (document.getElementById('pt-blogger').checked) platforms.push('blogger');
+  if (document.getElementById('pt-naver').checked)   platforms.push('naver');
+  if (document.getElementById('pt-tistory').checked) platforms.push('tistory');
+  if (!platforms.length) { bpToast('블로그를 하나 이상 선택하세요', 'err'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="bp-spinner"></span>발행 중...';
+  wrap.style.display = 'block';
+  wrap.innerHTML = '<div style="color:var(--t3);font-size:13px">실제로 글을 올리는 중입니다 — 네이버·티스토리는 1분 정도 걸립니다</div>';
+
+  var names = { blogger: '🔵 블로그스팟', naver: '🟢 네이버', tistory: '🟠 티스토리' };
+  try {
+    var start = await bpFetch('/api/publish-test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platforms: platforms }),
+    });
+
+    // 폴링 — Railway는 30초 넘는 요청을 끊기 때문에 결과는 따로 받아온다
+    var job = null;
+    for (var i = 0; i < 90; i++) {
+      await new Promise(function(r){ setTimeout(r, 2000); });
+      try {
+        job = await bpFetch('/api/publish-test-status/' + start.jobId);
+      } catch (e) {
+        wrap.innerHTML = '<div style="color:var(--err);font-size:13px">❌ ' + escHtml(e.message) + '</div>';
+        return;
+      }
+      if (job.status !== 'running') break;
+    }
+    if (!job || job.status === 'running') {
+      wrap.innerHTML = '<div style="color:var(--err);font-size:13px">⏱ 3분이 지나도 끝나지 않았습니다 — 서버 로그를 확인해주세요</div>';
+      return;
+    }
+    if (job.status === 'error') {
+      wrap.innerHTML = '<div style="color:var(--err);font-size:13px">❌ ' + escHtml(job.error || '실패') + '</div>';
+      bpToast('발행 테스트 실패', 'err');
+      return;
+    }
+
+    wrap.innerHTML = platforms.map(function(p) {
+      var r = (job.results && job.results[p]) || { success: false, error: '결과 없음' };
+      return '<div class="plat-test-row' + (r.success ? ' ok' : ' fail') + '">'
+        + '<div class="ptr-head"><span class="ptr-icon">' + (r.success ? '✅' : '❌') + '</span>'
+        + '<span class="ptr-name">' + names[p] + '</span>'
+        + '<span class="ptr-pill">' + (r.success ? '올라감' : '실패') + '</span></div>'
+        + '<div class="ptr-msg">' + (r.success
+            ? (r.url ? '<a href="' + escHtml(r.url) + '" target="_blank" style="color:var(--ok)">' + escHtml(r.url) + '</a>' : '발행 완료')
+            : escHtml(r.error || '알 수 없는 오류')) + '</div></div>';
+    }).join('');
+    bpToast(job.anySuccess ? '✅ 발행 성공 — 블로그에서 확인하세요' : '❌ 전부 실패 — 오류 메시지 확인', job.anySuccess ? 'ok' : 'err');
+  } catch (e) {
+    wrap.innerHTML = '<div style="color:var(--err);font-size:13px">❌ ' + escHtml(e.message) + '</div>';
+    bpToast('발행 테스트 실패: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🚀 테스트 글 발행해보기';
   }
 }
 

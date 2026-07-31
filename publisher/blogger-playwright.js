@@ -74,7 +74,13 @@ async function launchBrowser() {
 }
 
 async function publishToBloggerPlaywright({ email, pw, blogId, title, content, tags = [] }) {
-  const browser = await launchBrowser();
+  /* 브라우저 실행 실패를 예외로 던지면 다른 블로그 발행까지 중단된다 */
+  let browser;
+  try {
+    browser = await launchBrowser();
+  } catch (err) {
+    return { success: false, error: `브라우저 실행 실패: ${err.message}`, platform: 'blogger' };
+  }
 
   const context = await browser.newContext({
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',

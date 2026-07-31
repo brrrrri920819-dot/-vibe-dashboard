@@ -10,8 +10,12 @@ function delay(min, max) {
 }
 
 async function publishToTistoryPlaywright({ id, pw, blogName, title, content, tags = [] }) {
+  /* 브라우저 실행 실패가 예외로 튀면 다른 블로그 발행까지 함께 중단된다.
+     결과값으로 바꿔 돌려줘, 이 블로그만 실패로 남게 한다. */
+  let browser, context, page;
+  try {
   const execPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
-  const browser = await chromium.launch({
+  browser = await chromium.launch({
     headless: true,
     executablePath: execPath,
     // Railway 컨테이너는 메모리가 작아 기본 설정으로는 크로미움이 컨테이너를
@@ -22,7 +26,7 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
            '--js-flags=--max-old-space-size=256'],
   });
 
-  const context = await browser.newContext({
+  context = await browser.newContext({
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
     viewport: { width: 1280, height: 900 },
     locale: 'ko-KR',
@@ -33,7 +37,14 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
     window.chrome = { runtime: {} };
   });
 
-  const page = await context.newPage();
+  page = await context.newPage();
+  } catch (err) {
+    if (browser) await browser.close().catch(() => {});
+    const m = /Executable doesn't exist|ENOENT/.test(err.message)
+      ? '브라우저(Chromium)가 서버에 없습니다 — 배포 이미지 확인 필요'
+      : `브라우저 실행 실패: ${err.message}`;
+    return { success: false, error: m, platform: 'tistory' };
+  }
 
   try {
     // ── 1. 티스토리 로그인 (카카오 계정) ─────────────────

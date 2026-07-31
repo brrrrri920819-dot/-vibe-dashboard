@@ -12,9 +12,16 @@ const NAVER_LOGIN_URL = 'https://nid.naver.com/nidlogin.login';
 const BLOG_WRITE_URL  = 'https://blog.naver.com/ArticleWrite.naver';
 
 async function publishToNaver({ id, pw, blogId, title, content, tags = [], imagePaths = [], category = '' }) {
+  if (!id || !pw) {
+    return { success: false, error: '네이버 아이디/비밀번호 미설정 — 설정에서 입력하세요', platform: 'naver' };
+  }
+  /* 브라우저 실행부터 예외로 터지면 호출한 쪽이 통째로 죽어
+     다른 블로그 발행까지 못 하게 된다. 여기서 결과값으로 바꿔 돌려준다. */
+  let browser, context, page;
+  try {
   // Docker 환경: PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH 또는 시스템 chromium 사용
   const execPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
-  const browser = await chromium.launch({
+  browser = await chromium.launch({
     headless: true,
     executablePath: execPath,
     // Railway 컨테이너는 메모리가 작아 기본 설정으로는 크로미움이 컨테이너를
@@ -25,7 +32,7 @@ async function publishToNaver({ id, pw, blogId, title, content, tags = [], image
            '--js-flags=--max-old-space-size=256'],
   });
 
-  const context = await browser.newContext({
+  context = await browser.newContext({
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
     viewport: { width: 1280, height: 800 },
     locale: 'ko-KR',
@@ -37,7 +44,14 @@ async function publishToNaver({ id, pw, blogId, title, content, tags = [], image
     window.chrome = { runtime: {} };
   });
 
-  const page = await context.newPage();
+  page = await context.newPage();
+  } catch (err) {
+    if (browser) await browser.close().catch(() => {});
+    const m = /Executable doesn't exist|ENOENT/.test(err.message)
+      ? '브라우저(Chromium)가 서버에 없습니다 — 배포 이미지 확인 필요'
+      : `브라우저 실행 실패: ${err.message}`;
+    return { success: false, error: m, platform: 'naver' };
+  }
 
   try {
     // ── 1. 로그인 ─────────────────────────────────
@@ -125,7 +139,8 @@ async function publishToNaver({ id, pw, blogId, title, content, tags = [], image
     console.error('[Naver] 발행 실패:', err.message);
     return { success: false, error: err.message, platform: 'naver' };
   } finally {
-    await browser.close();
+    // 닫기 실패가 발행 결과를 덮어쓰지 않게 한다
+    if (browser) await browser.close().catch(() => {});
   }
 }
 

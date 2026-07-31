@@ -105,13 +105,17 @@ async function publishJob(job) {
   const { title, content, tags, imagePaths = [], platforms } = job;
 
   for (const platform of platforms) {
+   /* 한 블로그가 터져도 나머지는 반드시 올라가야 한다.
+      예전엔 크로미움 실행 실패 같은 예외가 이 반복문을 통째로 중단시켜,
+      네이버 하나 때문에 블로그스팟·티스토리까지 한 글도 안 올라갔다. */
+   try {
     // 플랫폼마다 약간 다른 버전 사용
     let variantContent = variantForPlatform(humanizeHtml(content), platform);
     const variantTitle = humanizeTitle(title);
 
     /* 네이버 글은 항상 제휴 구조를 포함한다 (요청 사항).
        이미 제휴 블록이 붙어 있으면(일괄 발행 경로) 중복으로 넣지 않는다. */
-    if (platform === 'naver' && !/함께 보면 좋은 제휴 서비스/.test(variantContent)) {
+    if (platform === 'naver' && !job.skipAffiliate && !/함께 보면 좋은 제휴 서비스/.test(variantContent)) {
       try {
         const { applyAffiliates } = require('./affiliates/recommender');
         const r = await applyAffiliates(variantContent, `${job.keyword || ''} ${title}`, { platform: 'naver', limit: 2 });
@@ -186,6 +190,13 @@ async function publishJob(job) {
         }
       }
     }
+
+   } catch (err) {
+     // 예외도 '이 플랫폼만 실패'로 기록하고 다음 플랫폼으로 넘어간다
+     const msg = err && err.message ? err.message : String(err);
+     console.error(`[Publish] ${platform} 실패(다음 플랫폼 계속): ${msg}`);
+     results[platform] = { success: false, error: msg, platform };
+   }
 
     // 플랫폼 간 자연스러운 딜레이 (3~8초)
     if (platforms.indexOf(platform) < platforms.length - 1) {
@@ -298,31 +309,91 @@ app.get('/api/test-platforms', auth, async (req, res) => {
     results.blogger = { ok: false, error: '설정 > 구글 계정 연결 버튼으로 인증 필요' };
   }
 
-  // Naver: 브라우저 설치 여부만 확인 (실제 로그인은 시간이 오래 걸림)
-  if (process.env.NAVER_ID && process.env.NAVER_PW && process.env.NAVER_BLOG_ID) {
+  /* Naver: 브라우저를 실제로 띄워본다.
+     경로만 확인하면 "설정 정상"으로 보이는데 정작 발행 때 크로미움이
+     메모리 부족으로 죽어 글이 안 올라가는 일이 생긴다. 여기서 미리 잡는다. */
+  const nId = tokens.get('NAVER_ID'), nPw = tokens.get('NAVER_PW'), nBlog = tokens.get('NAVER_BLOG_ID');
+  if (nId && nPw && nBlog) {
+    let browser = null;
     try {
       const { chromium } = require('playwright');
-      // executablePath 체크만 (실제 launch 안 함)
-      const execPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
-      if (execPath) {
-        const fs = require('fs');
-        results.naver = fs.existsSync(execPath)
-          ? { ok: true, message: `커스텀 Chromium: ${execPath}` }
-          : { ok: false, error: `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH 경로 없음: ${execPath}` };
-      } else {
-        // playwright 기본 Chromium 경로 확인
-        const path = require('path');
-        const { executablePath } = require('playwright-core');
-        results.naver = { ok: true, message: '자격증명 설정됨 (Chromium 사용 가능)' };
-      }
+      const execPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
+      browser = await chromium.launch({
+        headless: true, executablePath: execPath,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
+               '--disable-gpu', '--single-process', '--no-zygote', '--disable-extensions'],
+      });
+      const v = browser.version();
+      results.naver = { ok: true, message: `브라우저 정상 실행됨 (Chromium ${v}) — 발행 준비 완료` };
     } catch (e) {
-      results.naver = { ok: false, error: `Playwright 오류: ${e.message}` };
+      results.naver = /Executable doesn't exist|ENOENT/.test(e.message)
+        ? { ok: false, error: '브라우저(Chromium)가 서버에 없습니다 — 배포 이미지 확인 필요' }
+        : { ok: false, error: `브라우저 실행 실패: ${e.message}` };
+    } finally {
+      if (browser) await browser.close().catch(() => {});
     }
   } else {
-    results.naver = { ok: false, error: 'NAVER_ID / NAVER_PW / NAVER_BLOG_ID 미설정' };
+    const missing = [!nId && 'NAVER_ID', !nPw && 'NAVER_PW', !nBlog && 'NAVER_BLOG_ID'].filter(Boolean);
+    results.naver = { ok: false, error: `${missing.join(' / ')} 미설정` };
   }
 
   res.json(results);
+});
+
+/* ── 진짜 발행 테스트 ──────────────────────────────────────
+ * "설정은 다 됐다는데 글이 하나도 안 올라간다"를 끝내기 위한 것.
+ * 글 생성(Claude)을 건너뛰고 짧은 글 하나를 실제로 올려본 뒤,
+ * 블로그별로 성공했는지·무슨 오류가 났는지 그대로 보여준다.
+ * 어디서 막혔는지 추측하지 않고 눈으로 확인할 수 있다. */
+const _testPubJobs = new Map();
+
+app.post('/api/publish-test', auth, (req, res) => {
+  const asked = Array.isArray(req.body?.platforms) ? req.body.platforms : [];
+  const platforms = asked.length ? asked : ['blogger', 'naver', 'tistory'];
+  const jobId = `test_${Date.now()}`;
+  _testPubJobs.set(jobId, { status: 'running', platforms, startedAt: new Date().toISOString() });
+  res.json({ success: true, jobId, platforms });
+
+  (async () => {
+    const stamp = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+    const results = await publishJob({
+      title: `연결 테스트 (${stamp})`,
+      content: '<p style="font-size:17px;line-height:1.9">발행 연결이 정상인지 확인하려고 올린 테스트 글입니다. '
+             + '확인하셨으면 삭제하셔도 됩니다.</p>',
+      tags: ['연결테스트'],
+      platforms,
+      skipAffiliate: true,
+    });
+    const summary = {};
+    for (const p of platforms) {
+      const r = results[p] || { success: false, error: '결과 없음 — 해당 플랫폼 처리기가 실행되지 않았습니다' };
+      summary[p] = { success: !!r.success, url: r.url || null, error: r.error || null };
+    }
+    _testPubJobs.set(jobId, {
+      status: 'done',
+      platforms,
+      results: summary,
+      anySuccess: Object.values(summary).some(r => r.success),
+      startedAt: _testPubJobs.get(jobId)?.startedAt,
+      finishedAt: new Date().toISOString(),
+    });
+  })().catch(err => {
+    _testPubJobs.set(jobId, {
+      status: 'error', platforms, error: err.message,
+      startedAt: _testPubJobs.get(jobId)?.startedAt,
+    });
+  });
+
+  setTimeout(() => _testPubJobs.delete(jobId), 60 * 60 * 1000);
+});
+
+app.get('/api/publish-test-status/:jobId', auth, (req, res) => {
+  const job = _testPubJobs.get(req.params.jobId);
+  if (!job) {
+    // 재배포로 서버가 새로 떴으면 잡이 사라진다 — 무한 대기 대신 분명히 알린다
+    return res.status(410).json({ error: '서버가 재시작되어 결과를 잃었습니다 — 다시 눌러주세요' });
+  }
+  res.json(job);
 });
 
 // 발행 비동기 잡 스토어 (Railway 30초 타임아웃 우회 — Naver Playwright 30-60초 소요)
