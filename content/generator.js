@@ -346,8 +346,14 @@ JSON만 출력 (설명 문장 없이):
 
   let json;
   for (let attempt = 1; attempt <= 3; attempt++) {
-    const raw     = await callClaude(prompt, SYSTEM_PROMPT, 8192);
-    const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
+    const raw = await callClaude(prompt, SYSTEM_PROMPT, 8192);
+    /* 응답 앞뒤에 설명 문장이 붙어 오는 경우가 있다.
+       예전엔 그대로 파싱해 실패했으므로 JSON 덩어리만 잘라낸다. */
+    let cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
+    const firstBrace = cleaned.search(/[[{]/);
+    if (firstBrace > 0) cleaned = cleaned.slice(firstBrace);
+    const lastBrace = Math.max(cleaned.lastIndexOf('}'), cleaned.lastIndexOf(']'));
+    if (lastBrace > 0) cleaned = cleaned.slice(0, lastBrace + 1);
     let parsed = null;
     try { parsed = JSON.parse(cleaned); } catch (e) {
       if (attempt === 3) throw new Error(`JSON 파싱 실패: ${e.message}`);

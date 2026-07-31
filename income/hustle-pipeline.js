@@ -128,8 +128,41 @@ function callClaude(prompt, system = '당신은 한국 부업·수익화 전문 
   });
 }
 
+/* Claude가 돌려주는 JSON은 요청한 형태와 조금씩 다를 수 있다.
+ * 코드펜스가 붙거나, 배열을 기대했는데 객체로 감싸서 오거나,
+ * 설명 문장이 앞뒤에 섞여 오기도 한다.
+ * 예전엔 그럴 때마다 파이프라인 전체가 죽거나 화면에 undefined가 찍혔다.
+ * 여기서 형태 차이를 흡수해 실사용에서 깨지지 않게 한다. */
 function parseJson(raw) {
-  return JSON.parse(raw.replace(/```json\n?|\n?```/g, '').trim());
+  let t = String(raw || '').replace(/```json\n?|\n?```/g, '').trim();
+
+  try { return JSON.parse(t); } catch (_) { /* 아래에서 복구 시도 */ }
+
+  // 설명 문장이 섞인 경우: 가장 바깥 JSON 덩어리만 잘라낸다
+  const firstBrace = t.search(/[[{]/);
+  if (firstBrace > 0) t = t.slice(firstBrace);
+  const lastBrace = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
+  if (lastBrace > 0) t = t.slice(0, lastBrace + 1);
+
+  try { return JSON.parse(t); } catch (e) {
+    throw new Error(`JSON 파싱 실패 — 응답 형태가 예상과 다릅니다 (${String(raw).slice(0, 80)}…)`);
+  }
+}
+
+/* 배열을 기대하는 자리에서 쓰는 헬퍼.
+ * Claude가 {items:[...]} 처럼 감싸서 주더라도 안쪽 배열을 찾아 꺼낸다.
+ * 못 찾으면 빈 배열 — 호출부가 .slice/.map을 바로 써도 죽지 않는다. */
+function asArray(parsed, ...keys) {
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && typeof parsed === 'object') {
+    for (const k of keys) {
+      if (Array.isArray(parsed[k])) return parsed[k];
+    }
+    // 키를 특정하지 못했으면 값 중 첫 번째 배열을 사용
+    const found = Object.values(parsed).find(v => Array.isArray(v));
+    if (found) return found;
+  }
+  return [];
 }
 
 // ── 단계 헬퍼 ────────────────────────────────────────────────────────────────
@@ -292,7 +325,7 @@ JSON만 응답 (마크다운 없이):
   }
 ]`);
     const parsed = parseJson(text);
-    opportunities = Array.isArray(parsed) ? parsed.slice(0, 3) : [];
+    opportunities = asArray(parsed, 'opportunities', 'services', 'items').slice(0, 3);
     return { opportunityCount: opportunities.length };
   });
 
@@ -515,7 +548,7 @@ JSON만 응답:
     "sourcingTip": "소싱처 및 검색 키워드"
   }
 ]`);
-    selectedProducts = parseJson(text).slice(0, 3);
+    selectedProducts = asArray(parseJson(text), 'products', 'items').slice(0, 3);
     return { products: selectedProducts.map(p => p.name) };
   });
 
@@ -848,8 +881,15 @@ JSON만 응답:
   "prerequisites": "수강 전 필요 사전 지식 (없으면 '없음')",
   "outcomes": ["수강 후 할 수 있는 것1", "할 수 있는 것2", "할 수 있는 것3"]
 }`, '당신은 온라인 강의 기획 및 Class101 크리에이터 전문가입니다.', 3000);
-    courseOutline = parseJson(text);
-    return { courseTitle: courseOutline.courseTitle, lessons: courseOutline.lessons?.length };
+    courseOutline = parseJson(text) || {};
+    // 필드명이 달라도 제목을 찾고, 그래도 없으면 주제를 제목으로 쓴다
+    // (예전엔 undefined가 그대로 요약문에 노출됐다)
+    courseOutline.courseTitle = courseOutline.courseTitle || courseOutline.title
+      || courseOutline.courseName || `${(scrapedCategories || '온라인').split(',')[0].trim()} 온라인 강의`;
+    if (!Array.isArray(courseOutline.lessons)) {
+      courseOutline.lessons = asArray(courseOutline, 'lessons', 'curriculum', 'outline');
+    }
+    return { courseTitle: courseOutline.courseTitle, lessons: courseOutline.lessons.length };
   });
 
   // Step 3: 홍보 카피 + 가격 전략
@@ -971,6 +1011,17 @@ JSON만 응답:
   // Step 2: 수익 계산
   await runStep(steps[1], async () => {
     totalMonthlyPotential = apps.reduce((sum, a) => sum + (Number(a.monthlyPotential) || 0), 0);
+    /* 앱은 왔는데 수익 필드가 비어 '월 0원'으로 보고되던 문제.
+       화면에 0원이 뜨면 기능이 고장난 것처럼 보이므로,
+       일 보상 문구에서 숫자를 뽑아 월 환산으로 채운다. */
+    if (totalMonthlyPotential === 0 && apps.length > 0) {
+      apps.forEach(a => {
+        const daily = String(a.dailyReward || a.reward || '').replace(/,/g, '');
+        const num = (daily.match(/(\d+)/) || [])[1];
+        if (num) a.monthlyPotential = Number(num) * 30;
+      });
+      totalMonthlyPotential = apps.reduce((sum, a) => sum + (Number(a.monthlyPotential) || 0), 0);
+    }
     const byCategory = {};
     apps.forEach(a => {
       byCategory[a.category] = (byCategory[a.category] || 0) + (Number(a.monthlyPotential) || 0);

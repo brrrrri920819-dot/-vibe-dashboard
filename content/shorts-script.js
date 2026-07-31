@@ -155,24 +155,47 @@ ${tagStr}
   "tips": ["편집 팁1", "촬영 팁2", "업로드 최적 시간"]
 }`;
 
+  /* 대본이 담기는 키 이름이 매번 같지 않다 (script / segments / scenes …).
+     예전엔 'script'만 찾아서, 내용은 멀쩡한데 통째로 실패 처리됐다.
+     쓸 수 있는 배열을 찾아 script로 정규화한다. */
+  function pickScript(obj) {
+    if (!obj || typeof obj !== 'object') return null;
+    for (const k of ['script', 'segments', 'scenes', 'parts', 'sections']) {
+      if (Array.isArray(obj[k]) && obj[k].length) return obj[k];
+    }
+    const found = Object.values(obj).find(v => Array.isArray(v) && v.length && typeof v[0] === 'object');
+    return found || null;
+  }
+
   let result;
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
     const raw     = await callClaude(prompt, SYSTEM_PROMPT, 2048);
-    const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
+    let cleaned   = raw.replace(/```json\n?|\n?```/g, '').trim();
+    // 설명 문장이 섞여 와도 JSON 덩어리만 잘라낸다
+    const first = cleaned.search(/[[{]/);
+    if (first > 0) cleaned = cleaned.slice(first);
+    const last = Math.max(cleaned.lastIndexOf('}'), cleaned.lastIndexOf(']'));
+    if (last > 0) cleaned = cleaned.slice(0, last + 1);
+
     try {
       result = JSON.parse(cleaned);
     } catch (e) {
-      if (attempt === 2) throw new Error(`숏츠 대본 JSON 파싱 실패: ${e.message}`);
+      if (attempt === 3) throw new Error(`숏츠 대본 JSON 파싱 실패: ${e.message}`);
       console.warn('[ShortsScript] JSON 파싱 실패, 재시도 중...');
       continue;
     }
-    if (result.script && Array.isArray(result.script) && result.script.length > 0) break;
-    if (attempt === 2) throw new Error('숏츠 대본 생성 결과 불완전 — script 배열이 없습니다');
+    // 배열만 돌아온 경우도 받아들인다
+    if (Array.isArray(result)) result = { script: result };
+
+    const picked = pickScript(result);
+    if (picked) { result.script = picked; break; }
+
+    if (attempt === 3) throw new Error('숏츠 대본 생성 결과 불완전 — 대본 내용을 찾지 못했습니다');
     console.warn('[ShortsScript] 결과 불완전, 재시도 중...');
   }
 
-  if (!result.script || !Array.isArray(result.script) || result.script.length === 0) {
-    throw new Error('숏츠 대본 생성 결과 불완전 — script 배열이 없습니다');
+  if (!result || !Array.isArray(result.script) || result.script.length === 0) {
+    throw new Error('숏츠 대본 생성 결과 불완전 — 대본 내용을 찾지 못했습니다');
   }
 
   console.log(`[ShortsScript] 대본 생성 완료: "${result.title}" | ${result.totalDuration} | 세그먼트 ${result.script.length}개`);

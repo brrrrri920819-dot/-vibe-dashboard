@@ -933,18 +933,42 @@ app.post('/api/hustle-run-all', auth, (req, res) => {
 });
 
 // ── 부업 파이프라인 API ───────────────────────────────────
-app.post('/api/hustle-pipeline/:hustleId', auth, async (req, res) => {
+/* 파이프라인은 2~5분이 걸린다.
+ * 예전엔 응답을 그대로 기다렸는데, Railway가 30초쯤에서 요청을 끊기 때문에
+ * 버튼을 눌러도 항상 실패했다. jobId를 즉시 돌려주고 뒤에서 실행한다. */
+const _pipelineJobs = new Map();
+
+app.post('/api/hustle-pipeline/:hustleId', auth, (req, res) => {
   const { hustleId } = req.params;
   const clientKey = req.headers['x-anthropic-key'];
   // Railway에 키가 있으면 클라이언트 키로 덮어쓰지 않는다
   // (예전에 대시보드의 죽은 하드코딩 키가 정상 키를 덮어써 생성이 계속 실패했다)
   if (clientKey && !process.env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = clientKey;
-  try {
-    const result = await executePipeline(hustleId);
-    res.json({ success: true, ...result });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+
+  const jobId = `pipe_${hustleId}_${Date.now()}`;
+  _pipelineJobs.set(jobId, { status: 'running', hustleId, startedAt: new Date().toISOString() });
+  res.json({ success: true, jobId, hustleId });
+
+  executePipeline(hustleId)
+    .then(result => {
+      _pipelineJobs.set(jobId, { status: 'done', success: !result.error, ...result });
+    })
+    .catch(err => {
+      _pipelineJobs.set(jobId, { status: 'error', success: false, error: err.message, hustleId });
+    });
+
+  setTimeout(() => _pipelineJobs.delete(jobId), 60 * 60 * 1000);
+});
+
+app.get('/api/hustle-pipeline-status/:jobId', auth, (req, res) => {
+  const job = _pipelineJobs.get(req.params.jobId);
+  if (job) return res.json(job);
+  // 서버 재시작으로 사라진 작업이면 무한 대기하지 않도록 알려준다
+  const startedAt = Number((req.params.jobId.match(/_(\d+)$/) || [])[1]);
+  if (startedAt && startedAt < SERVER_STARTED_AT) {
+    return res.status(410).json({ status: 'error', error: '실행 도중 서버가 재시작되어 중단되었습니다. 다시 시도해주세요' });
   }
+  res.status(404).json({ error: 'job not found' });
 });
 
 app.get('/api/hustle-pipeline/:hustleId', auth, async (req, res) => {

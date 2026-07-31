@@ -3694,7 +3694,28 @@ async function runHustlePipeline(hustleId) {
   pipelineRunning = true;
 
   try {
-    var data = await bpFetch('/api/hustle-pipeline/' + hustleId, { method: 'POST' });
+    /* 파이프라인은 2~5분 걸린다. 응답을 그대로 기다리면 서버가 요청을 끊어
+       항상 실패했으므로, jobId를 받고 진행 상황을 폴링한다. */
+    var init = await bpFetch('/api/hustle-pipeline/' + hustleId, { method: 'POST' });
+    if (!init.jobId) throw new Error(init.error || '실행 요청 실패');
+
+    var attempts = 0;
+    var data = await new Promise(function(resolve, reject) {
+      var t = setInterval(async function() {
+        attempts++;
+        if (attempts > 200) { clearInterval(t); reject(new Error('시간 초과 (10분)')); return; }
+        try {
+          var s = await bpFetch('/api/hustle-pipeline-status/' + init.jobId);
+          if (s.status === 'done')  { clearInterval(t); resolve(s); }
+          if (s.status === 'error') { clearInterval(t); reject(new Error(s.error || '실행 실패')); }
+        } catch (pe) {
+          if (/재시작/.test(pe.message)) { clearInterval(t); reject(pe); return; }
+          if (attempts > 12) { clearInterval(t); reject(pe); }
+        }
+      }, 3000);
+    });
+
+    if (data.error) throw new Error(data.error);
     var steps = data.steps || [];
     steps.forEach(function(step, i) {
       var dot = document.getElementById('psd-' + i);
