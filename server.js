@@ -1522,6 +1522,7 @@ app.post('/api/credentials/restore', auth, (req, res) => {
          올바른 값의 복구를 계속 막았다. 이게 invalid_client 반복의 원인. */
     if (tokens.sourceOf(key) === 'saved' && tokens.get(key) === val) continue;
     if (tokens.sourceOf(key) === 'saved' && key === 'BLOGGER_REFRESH_TOKEN') continue; // 방금 발급된 토큰이 최신
+    if (tokens.sourceOf(key) === 'blob' && tokens.get(key) === val) continue;          // 블롭 값과 같으면 그대로 둔다
     tokens.set(key, val);
     restored.push(key);
   }
@@ -1540,6 +1541,27 @@ app.get('/api/credentials/backup', auth, (req, res) => {
     out[key] = tokens.get(key);
   }
   res.json(out);
+});
+
+/* 지금 연결된 값 전부를 환경변수 한 줄로 묶어준다.
+   Railway Variables 에 CREDENTIALS_BLOB 으로 한 번만 붙여넣으면
+   재배포하든 서버가 죽었다 살아나든 연결이 그대로 유지된다.
+   볼륨을 붙일 필요도, 매번 다시 인증할 필요도 없어진다. */
+app.get('/api/credentials/blob', auth, (req, res) => {
+  const included = RESTORABLE.filter(k => {
+    const s = tokens.sourceOf(k);
+    return (s === 'saved' || s === 'blob') && !!tokens.get(k);
+  });
+  if (!included.length) {
+    return res.json({ ok: false, error: '아직 저장된 자격증명이 없습니다 — 먼저 연결부터 하세요', keys: [] });
+  }
+  res.json({
+    ok: true,
+    name: 'CREDENTIALS_BLOB',
+    value: tokens.makeBlob(included),
+    keys: included,
+    storage: tokens.storageInfo(),
+  });
 });
 
 // ── 애드센스 필수 페이지 3종 발행 ──
@@ -1709,10 +1731,14 @@ button:active,.btn:active{transform:translateY(1px) scale(.99)}
 <div class="row"><span class="k">BLOG ID</span><span class="v ${blogIdVal ? '' : 'off'}">${dot(!!blogIdVal)}${blogIdVal || '인증 시 자동설정'}</span></div>
 <div class="row"><span class="k">자격증명 검증</span><span class="v" id="cred-test">확인 중…</span></div>
 <div id="diag" style="margin-top:14px"></div>
-<div class="row"><span class="k">영구 저장</span><span class="v ${store.persistent ? '' : 'off'}">${dot(store.persistent)}${store.persistent ? '켜짐 — 재배포해도 유지' : '꺼짐 — 재배포 시 재연결 필요'}</span></div>
+<div class="row"><span class="k">영구 저장</span><span class="v ${store.persistent ? '' : 'off'}">${dot(store.persistent)}${
+  store.mode === 'volume' ? '켜짐 (볼륨) — 재배포해도 유지'
+: store.mode === 'blob'   ? '켜짐 (환경변수) — 재배포해도 유지'
+: '꺼짐 — 재배포 시 재연결 필요'}</span></div>
 ${store.persistent ? '' : `<div class="note"><b>🔌 연결이 계속 끊기지 않게 하려면 (1회, 30초)</b>
-Railway 프로젝트 → 서비스 우클릭 → <b>Add Volume</b> → Mount path 에 <b>/data</b> 입력 → 저장.<br>
-이걸 붙이면 재배포해도 토큰이 남아 다시는 끊기지 않습니다.</div>`}
+아래 <b>복구값</b>을 복사해서 Railway → Variables 에 <b>CREDENTIALS_BLOB</b> 이름으로 붙여넣으세요.<br>
+환경변수는 재배포해도 지워지지 않아, 한 번만 하면 다시는 안 끊깁니다.
+<div style="margin-top:8px">(볼륨을 붙이는 방법도 있습니다: 서비스 우클릭 → Add Volume → Mount path <b>/data</b>)</div></div>`}
 <div class="note"><b>⚠️ 구글 콘솔 → 승인된 리디렉션 URI 에 등록 필요</b>아래 주소를 그대로 복사해서 추가하세요.<div class="mono-box">${baseUrl}/oauth/blogger/callback</div></div>
 <div class="note"><b>🔁 7일마다 연결이 끊긴다면 (원인 1위)</b>
 OAuth 앱이 <b>테스트</b> 상태면 구글이 7일마다 토큰을 강제로 만료시킵니다. 여기서 한 번만 바꾸면 다시는 안 끊깁니다.<div class="mono-box">console.cloud.google.com/auth/audience</div>
@@ -1739,8 +1765,40 @@ OAuth 앱이 <b>테스트</b> 상태면 구글이 7일마다 토큰을 강제로
 <div class="result" id="keys-result"></div>
 </div>
 
+<div class="card"><div class="card-t">🔒 다시는 안 끊기게 (1회만)</div>
+<div style="color:#7c85b0;font-size:12px;line-height:1.7;margin-bottom:14px">
+지금 연결된 정보를 값 하나로 묶어드립니다. Railway → Variables → New Variable →
+이름 <b style="color:#eef0ff">CREDENTIALS_BLOB</b> 에 붙여넣고 저장하면 끝입니다.
+</div>
+<button class="btn-green" onclick="makeBlob()">🔑 복구값 만들기</button>
+<div class="result" id="blob-result"></div>
+<div id="blob-box" style="display:none"><div class="mono-box" id="blob-value"></div>
+<button class="btn-green" style="margin-top:10px" onclick="copyBlob()">📋 복사하기</button>
+<div class="result" id="blob-copied"></div></div>
+</div>
+
 <a class="btn btn-pink" href="/oauth/blogger">🔑 구글 계정 연결 시작</a>
 </div><script>
+var _blobValue='';
+function makeBlob(){
+  var r=document.getElementById('blob-result');
+  r.textContent='만드는 중…';r.style.color='#7c85b0';
+  fetch('/api/credentials/blob').then(function(x){return x.json();}).then(function(d){
+    if(!d.ok){r.textContent='❌ '+d.error;r.style.color='#f87171';return;}
+    _blobValue=d.value;
+    r.textContent='✅ '+d.keys.length+'개 항목 포함됨';r.style.color='#86efac';
+    document.getElementById('blob-value').textContent=d.value;
+    document.getElementById('blob-box').style.display='block';
+  }).catch(function(e){r.textContent='오류: '+e.message;r.style.color='#f87171';});
+}
+function copyBlob(){
+  var n=document.getElementById('blob-copied');
+  function done(){n.textContent='✅ 복사됨 — Railway Variables 에 CREDENTIALS_BLOB 으로 붙여넣으세요';n.style.color='#86efac';}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(_blobValue).then(done).catch(fb);}else{fb();}
+  function fb(){var ta=document.createElement('textarea');ta.value=_blobValue;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');done();}catch(e){n.textContent='복사 실패 — 위 상자를 길게 눌러 직접 복사하세요';n.style.color='#f87171';}
+    document.body.removeChild(ta);}
+}
 // 이 브라우저에 보관된 올바른 값으로 서버를 먼저 복구한 뒤 검증한다
 // (Railway 환경변수에 틀린 값이 있어도 여기서 덮어써져 자가치유됨)
 var _boot=Promise.resolve();

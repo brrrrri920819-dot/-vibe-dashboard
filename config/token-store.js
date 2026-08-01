@@ -72,16 +72,58 @@ function writeJson(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
 }
 
-// 시작 시: 영구 저장소 → 로컬 파일 순으로 메모리에 올림 (영구 저장소가 우선)
+/* CREDENTIALS_BLOB — 자격증명 전부를 담은 환경변수 하나.
+ * 볼륨도 없고 파일도 사라지는 환경(Railway 재배포)에서 연결이 끊기지 않게,
+ * 값들을 한 덩어리로 묶어 환경변수에 넣어둘 수 있게 한다.
+ * 환경변수는 재배포해도 지워지지 않으므로 한 번 붙여넣으면 끝난다.
+ * 출처를 'blob'으로 따로 표시해, 나중에 새로 인증한 값이 이걸 덮어쓸 수 있게 한다. */
+const blobKeys = new Set();
+
+function readBlob() {
+  const raw = process.env.CREDENTIALS_BLOB;
+  if (!raw || !raw.trim()) return {};
+  try {
+    const json = JSON.parse(Buffer.from(raw.trim(), 'base64').toString('utf8'));
+    if (!json || typeof json !== 'object') return {};
+    const out = {};
+    for (const [k, v] of Object.entries(json)) {
+      if (typeof v === 'string' && v) { out[k] = v; blobKeys.add(k); }
+    }
+    return out;
+  } catch (e) {
+    console.warn('[TokenStore] CREDENTIALS_BLOB 해석 실패 — 값을 다시 복사해 넣어주세요:', e.message);
+    return {};
+  }
+}
+
+/** 지금 저장된 값들을 환경변수 한 줄로 묶어 준다 (Railway에 붙여넣기용) */
+function makeBlob(keys) {
+  const obj = {};
+  for (const k of keys) {
+    const v = mem.get(k);
+    if (typeof v === 'string' && v) obj[k] = v;
+  }
+  return Buffer.from(JSON.stringify(obj), 'utf8').toString('base64');
+}
+
+// 시작 시: 블롭 → 영구 저장소 → 로컬 파일 순으로 메모리에 올림 (나중 것이 우선)
 (function bootstrap() {
   const sources = [];
   if (VOLUME_FILE) sources.push(readJson(VOLUME_FILE));
   sources.push(readJson(LOCAL_FILE));
-  // 뒤쪽(로컬)을 먼저 깔고 앞쪽(볼륨)으로 덮어써서 볼륨 값이 이기게 한다
+  sources.push(readBlob());   // 가장 낮은 우선순위 — 파일에 더 새 값이 있으면 그게 이긴다
+  // 뒤쪽(블롭)을 먼저 깔고 앞쪽(볼륨)으로 덮어써서 최신 값이 이기게 한다
   for (const src of sources.reverse()) {
     for (const [k, v] of Object.entries(src)) {
-      if (typeof v === 'string' && v) mem.set(k, v);
+      if (typeof v === 'string' && v) {
+        // 파일에 더 새로운 값이 있으면 블롭 표시를 뗀다 (덮어쓰기 보호 대상에서 제외)
+        if (blobKeys.has(k) && mem.get(k) !== undefined && mem.get(k) !== v) blobKeys.delete(k);
+        mem.set(k, v);
+      }
     }
+  }
+  if (blobKeys.size) {
+    console.log(`[TokenStore] CREDENTIALS_BLOB 에서 ${blobKeys.size}개 불러옴 — 재배포해도 유지됩니다`);
   }
   if (VOLUME && volumeIsMount) {
     console.log(`[TokenStore] 영구 저장소 사용: ${VOLUME} (재배포해도 유지됩니다)`);
@@ -103,6 +145,7 @@ function set(key, value) {
 
   mem.set(key, val);
   process.env[key] = val;
+  blobKeys.delete(key);   // 새로 저장된 값이므로 더 이상 '블롭에서 온 값'이 아니다
 
   const snapshot = Object.fromEntries(mem);
   if (VOLUME_FILE && writable.volume) {
@@ -121,6 +164,7 @@ function keys() { return [...mem.keys()]; }
 /** 값의 출처 — 'saved'(저장소) | 'env'(Railway 환경변수) | null
  *  둘이 다를 때 어느 쪽이 쓰이는지 헷갈려 생기는 문제를 잡기 위한 것 */
 function sourceOf(key) {
+  if (blobKeys.has(key)) return 'blob';   // 환경변수 블롭에서 온 값 — 새 값으로 덮어쓸 수 있다
   if (mem.has(key)) return 'saved';
   if (process.env[key]) return 'env';
   return null;
@@ -129,7 +173,9 @@ function sourceOf(key) {
 /** 저장 상태 (진단용 — 값은 노출하지 않음) */
 function storageInfo() {
   return {
-    persistent: !!VOLUME && volumeIsMount,
+    persistent: (!!VOLUME && volumeIsMount) || blobKeys.size > 0,
+    mode: (!!VOLUME && volumeIsMount) ? 'volume' : (blobKeys.size > 0 ? 'blob' : 'none'),
+    blobKeyCount: blobKeys.size,
     volumePath: VOLUME || null,
     volumeWritable: writable.volume,
     localWritable: writable.local,
@@ -137,4 +183,4 @@ function storageInfo() {
   };
 }
 
-module.exports = { get, set, keys, sourceOf, storageInfo, read: () => Object.fromEntries(mem) };
+module.exports = { get, set, keys, sourceOf, storageInfo, makeBlob, read: () => Object.fromEntries(mem) };

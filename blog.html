@@ -2,10 +2,19 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<!-- viewport-fit=cover 가 있어야 아이폰 노치·홈바 여백(safe-area)이 실제로 적용된다.
+     maximum-scale 은 넣지 않는다 — 확대를 막으면 접근성이 나빠진다. -->
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>리리의 시크릿 대시보드</title>
+<!-- 홈화면에 추가하면 주소창 없는 앱처럼 뜬다 -->
 <meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="리리 대시보드"/>
 <meta name="theme-color" content="#080b14"/>
+<link rel="manifest" href="/manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="/icons/icon-180.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -704,6 +713,50 @@ body{background:
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* ══ 아이폰 최적화 ═══════════════════════════════════════════
+   홈화면에 추가해 앱처럼 쓸 때를 기준으로 맞춘다. */
+
+/* 1. 노치·홈바 여백.
+      viewport-fit=cover 를 쓰면 화면 끝까지 그려지므로,
+      직접 안전영역만큼 띄워야 글자가 노치에 가리지 않는다. */
+@supports(padding:max(0px)){
+  .main{
+    padding-left:max(14px,env(safe-area-inset-left));
+    padding-right:max(14px,env(safe-area-inset-right));
+  }
+  #bp-reauth-bar{padding-top:max(11px,calc(env(safe-area-inset-top) + 6px))}
+  #lock{padding-top:max(0px,env(safe-area-inset-top));padding-bottom:max(0px,env(safe-area-inset-bottom))}
+}
+
+/* 2. 입력창을 누르면 화면이 확대되는 문제.
+      iOS는 글자 크기가 16px 미만인 입력창에 초점이 가면 자동으로 확대한다.
+      한번 확대되면 되돌아오지 않아 조작이 불편해진다. */
+@media(max-width:820px){
+  input,select,textarea,.bp-inp,.form-inp,.lock-inp,.acc-seed-input{font-size:16px !important}
+  textarea.bp-inp{font-size:15px !important;line-height:1.7}
+}
+
+/* 3. 손가락으로 누를 수 있는 크기 확보 (애플 권장 44pt) */
+@media(max-width:820px){
+  .bp-pub-btn,.bp-sch-btn,.add-btn,.footer-btn,.lock-action{min-height:46px}
+  .mob-nav-item{min-height:58px}
+  .tag,.kw-chip{padding:7px 12px}
+}
+
+/* 4. 스크롤 감촉·오작동 방지 */
+@media(max-width:820px){
+  body{-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
+  /* 표·코드처럼 넓은 것만 가로로 스크롤되고, 화면 자체는 절대 안 밀리게 */
+  .main,.section{max-width:100%;overflow-x:hidden}
+  table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+
+/* 5. 홈화면 앱으로 열었을 때(주소창 없음) 아래 여백을 조금 더 준다 */
+@media(display-mode:standalone){
+  .main{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  .bp-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+}
 </style>
 </head>
 <body>
@@ -1120,6 +1173,17 @@ body{background:
         </div>
         <button class="bp-pub-btn" style="max-width:220px" id="pub-test-btn" onclick="runPublishTest()">🚀 테스트 글 발행해보기</button>
         <div id="pub-test-result" style="margin-top:12px;display:none"></div>
+      </div>
+
+      <div class="section">
+        <div class="bp-section-title">🔒 다시는 안 끊기게 (1회만)</div>
+        <div class="bp-humanize-tip" style="margin-bottom:10px">
+          지금 연결된 정보를 <b>값 하나</b>로 묶어드립니다. Railway → Variables 에
+          <b>CREDENTIALS_BLOB</b> 이름으로 한 번만 붙여넣으면, 재배포하든 서버가
+          죽었다 살아나든 연결이 그대로 유지됩니다. 볼륨도 필요 없습니다.
+        </div>
+        <button class="bp-pub-btn" style="max-width:220px" id="blob-btn" onclick="makeCredentialsBlob()">🔑 복구값 만들기</button>
+        <div id="blob-result" style="margin-top:12px;display:none"></div>
       </div>
 
       <div class="section">
@@ -2897,6 +2961,49 @@ async function testPlatformConnections() {
   }
 }
 
+/* 자격증명 전부를 환경변수 한 줄로 묶어준다.
+   Railway 에 한 번만 넣으면 재배포해도 연결이 안 끊긴다. */
+async function makeCredentialsBlob() {
+  var btn  = document.getElementById('blob-btn');
+  var wrap = document.getElementById('blob-result');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="bp-spinner"></span>만드는 중';
+  wrap.style.display = 'block';
+  try {
+    var d = await bpFetch('/api/credentials/blob');
+    if (!d.ok) {
+      wrap.innerHTML = '<div style="color:var(--err);font-size:13px">❌ ' + escHtml(d.error) + '</div>';
+      return;
+    }
+    wrap.innerHTML =
+        '<div style="font-size:12.5px;color:var(--t2);margin-bottom:8px">포함된 항목 ' + d.keys.length + '개: '
+      + escHtml(d.keys.join(', ')) + '</div>'
+      + '<div style="font-size:12px;color:var(--t2);line-height:1.7;margin-bottom:8px">'
+      + '① 아래 버튼으로 복사 → ② Railway → Variables → New Variable<br>'
+      + '③ 이름 <b style="color:var(--t1)">CREDENTIALS_BLOB</b>, 값에 붙여넣기 → 저장. 끝입니다.</div>'
+      + '<div id="blob-value" style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--t2);'
+      + 'background:var(--s1);border:1px solid var(--bd);border-radius:9px;padding:10px;'
+      + 'max-height:110px;overflow:auto;word-break:break-all;user-select:all">' + escHtml(d.value) + '</div>'
+      + '<button class="bp-pub-btn" style="max-width:200px;margin-top:10px" onclick="copyBlobValue()">📋 복사하기</button>'
+      + '<div id="blob-copied" style="font-size:12px;color:var(--ok);margin-top:6px;min-height:16px"></div>';
+    window._blobValue = d.value;
+  } catch (e) {
+    wrap.innerHTML = '<div style="color:var(--err);font-size:13px">❌ ' + escHtml(e.message) + '</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔑 복구값 만들기';
+  }
+}
+
+function copyBlobValue() {
+  var v = window._blobValue || '';
+  if (!v) return;
+  var note = document.getElementById('blob-copied');
+  navigator.clipboard.writeText(v)
+    .then(function(){ note.textContent = '✅ 복사됨 — Railway Variables 에 CREDENTIALS_BLOB 으로 붙여넣으세요'; })
+    .catch(function(){ note.textContent = '복사 실패 — 위 상자를 길게 눌러 직접 복사하세요'; });
+}
+
 /* 서버가 겪은 오류를 화면에서 바로 본다.
    Railway 로그를 열어보지 않아도 원인을 확인할 수 있게 하기 위한 것. */
 var _serverErrors = [];
@@ -4336,6 +4443,17 @@ async function loadDailyReport(force) {
 
 // ── INIT ─────────────────────────────────────────────────
 if (!new URLSearchParams(window.location.search).has('public')) initLock();
+
+/* 홈화면 앱으로 쓸 수 있게 서비스워커 등록.
+   화면은 네트워크 우선이라 배포하면 바로 최신이 뜨고,
+   신호가 약한 곳에서도 앱이 열린다. API 응답은 캐시하지 않는다. */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').catch(function(e) {
+      console.warn('[PWA] 서비스워커 등록 실패:', e.message);
+    });
+  });
+}
 
 /* 잠금화면에서도 서버 복구는 먼저 돌린다.
    비밀번호를 풀어야만 복구되면, 재배포 직후 예약 발행이 먼저 도는 동안
