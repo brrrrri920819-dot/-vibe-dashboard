@@ -856,6 +856,10 @@ body{background:
         <button class="add-btn" onclick="bpRunNow()">▶ 지금 실행</button>
       </div>
 
+      <!-- 지금 괜찮은가 — 열자마자 2초 안에 답이 나와야 하는 자리 -->
+      <div id="status-card" style="display:none;border-radius:14px;padding:16px 18px;margin-bottom:14px;
+           border:1px solid var(--bd);background:var(--s1)"></div>
+
       <!-- 오늘 통계 -->
       <div class="stat-grid" style="margin-bottom:14px">
         <div class="stat-card accent-pink">
@@ -1842,6 +1846,7 @@ function enterApp() {
   }
   bpLoadQueue();
   loadHeroStats();
+  loadStatusCard();
   bpFetch('/api/drafts').then(function(ds){ updateDraftBadge(ds.filter(function(d){return d.status==='draft';}).length); }).catch(function(){});
 }
 
@@ -1898,7 +1903,7 @@ function showView(v) {
     if (mob) mob.classList.toggle('active', id === v);
   });
 
-  if (v === 'blog')      { bpCheckServerStatus(); bpLoadQueue(); loadHeroStats(); }
+  if (v === 'blog')      { bpCheckServerStatus(); bpLoadQueue(); loadHeroStats(); loadStatusCard(); }
   if (v === 'keywords')  { loadKeywordsView(); bulkUpdateCount(); bulkToggleInterval(); }
   if (v === 'month')     { loadMonthView(); }
   if (v === 'affiliate') { loadAffiliateView(false); }
@@ -2958,6 +2963,51 @@ async function testPlatformConnections() {
     bpToast('테스트 실패: ' + e.message, 'err');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '🔌 연결 테스트'; }
+  }
+}
+
+/* 열자마자 "지금 괜찮은가"에 답하는 카드.
+   문제가 없으면 초록 한 줄로 끝내고, 있으면 할 일을 바로 눌러 갈 수 있게 한다.
+   뭘 뒤져보지 않아도 되게 하려는 것. */
+async function loadStatusCard() {
+  var card = document.getElementById('status-card');
+  if (!card) return;
+  try {
+    var s = await bpFetch('/api/self-check');
+    card.style.display = 'block';
+
+    if (s.ok) {
+      var line = s.today.published > 0
+        ? '오늘 ' + s.today.published + '건 발행됐습니다'
+        : (s.pending > 0 ? '예약 ' + s.pending + '건 대기 중입니다' : '예정된 작업이 없습니다');
+      card.style.borderColor = 'rgba(34,197,94,.35)';
+      card.style.background  = 'rgba(34,197,94,.06)';
+      card.innerHTML =
+          '<div style="display:flex;align-items:center;gap:11px">'
+        + '<span style="font-size:22px">✅</span>'
+        + '<div style="min-width:0"><div style="font-size:15px;font-weight:700;color:var(--t1)">다 정상입니다</div>'
+        + '<div style="font-size:12.5px;color:var(--t2);margin-top:2px">' + escHtml(line)
+        + ' · 신경 쓰실 것 없습니다</div></div></div>';
+      return;
+    }
+
+    var high = s.problems.filter(function(p){ return p.severity === 'high'; }).length;
+    card.style.borderColor = high ? 'rgba(239,68,68,.4)' : 'rgba(245,158,11,.4)';
+    card.style.background  = high ? 'rgba(239,68,68,.07)' : 'rgba(245,158,11,.07)';
+    card.innerHTML =
+        '<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">'
+      + '<span style="font-size:22px">' + (high ? '🔴' : '🟡') + '</span>'
+      + '<div><div style="font-size:15px;font-weight:700;color:var(--t1)">'
+      + '손봐야 할 게 ' + s.problems.length + '개 있습니다</div>'
+      + '<div style="font-size:12.5px;color:var(--t2);margin-top:2px">아래만 하면 됩니다</div></div></div>'
+      + s.problems.map(function(p) {
+          return '<div style="border-top:1px solid var(--bd);padding:10px 0 2px">'
+            + '<div style="font-size:13.5px;font-weight:600;color:var(--t1)">' + escHtml(p.title) + '</div>'
+            + '<div style="font-size:12.5px;color:var(--t2);line-height:1.6;margin:3px 0 6px">' + escHtml(p.detail) + '</div>'
+            + '<div style="font-size:12.5px;color:var(--ac);font-weight:600">👉 ' + escHtml(p.action) + '</div></div>';
+        }).join('');
+  } catch (e) {
+    card.style.display = 'none';   // 서버가 안 뜬 상태면 굳이 겁주지 않는다
   }
 }
 

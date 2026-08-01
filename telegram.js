@@ -59,4 +59,4 @@ async function notifyPublished(title, results) {
   console.log('[Telegram] 알림 전송 완료');
 }
 
-module.exports = { notifyPublished };
+module.exports = { notifyPublished, sendTelegram };

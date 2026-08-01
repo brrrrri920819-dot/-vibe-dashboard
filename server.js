@@ -1410,6 +1410,53 @@ app.get('/api/health/blogger', auth, async (req, res) => {
   res.json({ ..._bloggerHealth, storage: tokens.storageInfo() });
 });
 
+/* ── 자가 점검 ─────────────────────────────────────────────
+ * 스스로 확인하고, 고칠 수 있으면 조용히 고치고,
+ * 사람이 손대야 하는 것만 하루 한 번까지만 알린다.
+ * "잘 돌고 있나?"를 매번 확인하지 않아도 되게 하기 위한 것. */
+const selfCheck = require('./health/self-check');
+const { sendTelegram } = require('./telegram');
+
+function currentState() {
+  return selfCheck.assess({
+    tokens,
+    readLog,
+    readQueue,
+    bloggerHealth: _bloggerHealth,
+    serverStartedAt: SERVER_STARTED_AT,
+  });
+}
+
+async function notifyText(text) {
+  const token  = tokens.get('TELEGRAM_BOT_TOKEN');
+  const chatId = tokens.get('TELEGRAM_CHAT_ID');
+  if (!token || !chatId) return false;
+  await sendTelegram(token, chatId, text);
+  return true;
+}
+
+async function runSelfCheck({ notify = true } = {}) {
+  // 고칠 수 있는 건 먼저 고친다 — 알리기 전에
+  try { await checkBloggerHealth(false); } catch (_) {}
+
+  const state = currentState();
+  if (notify && state.problems.length) {
+    const fresh = selfCheck.pickNewProblems(state.problems);
+    if (fresh.length) {
+      const sent = await notifyText(selfCheck.formatProblems(fresh)).catch(() => false);
+      console.warn(`[SelfCheck] 손봐야 할 것 ${fresh.length}건${sent ? ' — 알림 전송함' : ' (알림 미설정)'}`);
+      for (const p of fresh) console.warn(`[SelfCheck]  · ${p.title} → ${p.action}`);
+    }
+  }
+  return state;
+}
+
+/** 지금 괜찮은지 한 줄로 — 대시보드 상단 카드가 이걸 쓴다 */
+app.get('/api/self-check', auth, async (req, res) => {
+  if (req.query.refresh === '1') return res.json(await runSelfCheck({ notify: false }));
+  res.json(currentState());
+});
+
 /** Blogger 연결 진단 — 어느 단계에서 막혔는지 한 번에 알려준다 */
 app.get('/api/blogger-diagnose', auth, async (req, res) => {
   const steps = [];
@@ -1471,6 +1518,8 @@ const RESTORABLE = [
   // 블로그스팟만 복구하고 나머지를 빼두면 결국 또 "연결이 끊겼다"가 된다
   'NAVER_ID', 'NAVER_PW', 'NAVER_BLOG_ID',
   'TISTORY_ID', 'TISTORY_PW', 'TISTORY_BLOG_NAME',
+  // 알림 채널 — 이것도 재배포 때 사라지면 조용히 알림이 끊긴다
+  'TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID',
   'LINKPRICE_ID', 'LINKPRICE_PW',
   'COUPANG_PARTNERS_ID', 'COUPANG_PARTNERS_PW',
   'NAVER_SHOPPING_ID', 'NAVER_SHOPPING_PW',
@@ -1761,6 +1810,12 @@ OAuth 앱이 <b>테스트</b> 상태면 구글이 7일마다 토큰을 강제로
 <label for="k-nid">네이버 검색 API — 키워드·상품추천 (developers.naver.com)</label>
 <input id="k-nid" placeholder="NAVER_CLIENT_ID" autocapitalize="off" spellcheck="false">
 <input id="k-nsecret" placeholder="NAVER_CLIENT_SECRET" autocapitalize="off" spellcheck="false">
+<label for="k-tgtoken">폰 알림 — 문제 생길 때만 알려줍니다 (선택)</label>
+<div style="color:#7c85b0;font-size:11.5px;line-height:1.6;margin:-3px 0 6px">
+텔레그램 @BotFather 에서 봇 만들고 토큰, @userinfobot 에서 내 ID 확인해 넣으세요.
+넣으면 대시보드를 안 열어봐도 됩니다.</div>
+<input id="k-tgtoken" placeholder="TELEGRAM_BOT_TOKEN" autocapitalize="off" spellcheck="false">
+<input id="k-tgchat" placeholder="TELEGRAM_CHAT_ID" autocapitalize="off" spellcheck="false">
 <button class="btn-green" onclick="saveKeys()">💾 키 저장</button>
 <div class="result" id="keys-result"></div>
 </div>
@@ -1837,7 +1892,8 @@ fetch('/api/blogger-diagnose').then(function(r){return r.json();}).then(function
 function saveKeys(){
   var r=document.getElementById('keys-result');
   var map={ANTHROPIC_API_KEY:'k-anthropic',UNSPLASH_ACCESS_KEY:'k-unsplash',
-           NAVER_CLIENT_ID:'k-nid',NAVER_CLIENT_SECRET:'k-nsecret'};
+           NAVER_CLIENT_ID:'k-nid',NAVER_CLIENT_SECRET:'k-nsecret',
+           TELEGRAM_BOT_TOKEN:'k-tgtoken',TELEGRAM_CHAT_ID:'k-tgchat'};
   var payload={};
   Object.keys(map).forEach(function(k){var el=document.getElementById(map[k]);if(el&&el.value.trim())payload[k]=el.value.trim();});
   if(!Object.keys(payload).length){r.textContent='입력한 값이 없습니다';r.style.color='#f87171';return;}
@@ -1955,6 +2011,22 @@ app.listen(PORT, () => {
   setTimeout(() => checkBloggerHealth(false).catch(() => {}), 8000);
   cron.schedule('*/30 * * * *', () => { checkBloggerHealth(true).catch(() => {}); }, { timezone: 'Asia/Seoul' });
   console.log('[Health] 연결 점검 크론 등록됨 (30분 간격)');
+
+  /* 자가 점검 — 스스로 확인하고 사람이 손댈 것만 알린다.
+   *  · 매시간 점검하되, 같은 문제로는 하루 한 번까지만 알린다 (알림이 잦으면 안 보게 된다)
+   *  · 매일 21시 요약 한 통 — 문제 없으면 "신경 쓸 것 없습니다"로 끝난다
+   * 기동 직후 점검은 조용히 한다. 배포 직후엔 아직 복구가 안 끝났을 수 있어서
+   * 그 상태로 알리면 멀쩡한데 문제라고 알리는 꼴이 된다. */
+  setTimeout(() => { runSelfCheck({ notify: false }).catch(() => {}); }, 20000);
+  cron.schedule('7 * * * *', () => { runSelfCheck({ notify: true }).catch(() => {}); }, { timezone: 'Asia/Seoul' });
+  cron.schedule('0 21 * * *', async () => {
+    try {
+      const state = await runSelfCheck({ notify: false });
+      await notifyText(selfCheck.formatDaily(state));
+      console.log('[SelfCheck] 하루 요약 전송');
+    } catch (e) { console.warn('[SelfCheck] 하루 요약 실패:', e.message); }
+  }, { timezone: 'Asia/Seoul' });
+  console.log('[SelfCheck] 자가 점검 등록됨 (매시간 + 매일 21:00 요약)');
 
   const store = tokens.storageInfo();
   console.log(store.persistent
