@@ -125,6 +125,45 @@ const upload = multer({
 function auth(req, res, next) { next(); }
 
 // ── 메인 발행 함수 ────────────────────────────────────────
+/* 일시적인 실패는 조용히 한 번 더 해본다.
+ * 크로미움이 메모리 부족으로 못 뜨거나, 네트워크가 잠깐 끊기거나,
+ * 상대 서버가 502를 뱉는 경우는 다시 하면 되는 일이다.
+ * 이런 걸 한 번에 실패로 끝내면 "또 안 되네"가 반복된다.
+ * 반대로 비밀번호가 틀렸거나 토큰이 만료된 건 다시 해도 똑같으므로 재시도하지 않는다. */
+const TRANSIENT = /브라우저 실행 실패|Executable doesn't exist|Target (page|browser)?\s*closed|Navigation timeout|timeout|시간 초과|ETIMEDOUT|ECONNRESET|ECONNREFUSED|socket hang up|EAI_AGAIN|ENOTFOUND|out of memory|Protocol error|crashed|\b50[234]\b/i;
+const PERMANENT = /invalid_grant|invalid_client|만료|비밀번호|미설정|설정 필요|권한|403/i;
+
+function isTransient(msg) {
+  const m = String(msg || '');
+  if (PERMANENT.test(m)) return false;
+  return TRANSIENT.test(m);
+}
+
+/** 실패하면 잠깐 쉬었다가 한 번 더 — 결과는 항상 값으로 돌려준다 */
+async function withRetry(platform, run, { tries = 2, waitMs = Number(process.env.RETRY_WAIT_MS) || 8000 } = {}) {
+  let last = null;
+  for (let i = 1; i <= tries; i++) {
+    let r;
+    try {
+      r = await run();
+    } catch (err) {
+      r = { success: false, error: err && err.message ? err.message : String(err), platform };
+    }
+    if (r && r.success) {
+      if (i > 1) console.log(`[Publish] ${platform} 재시도 ${i}번째에 성공`);
+      return r;
+    }
+    last = r;
+    if (i < tries && isTransient(r && r.error)) {
+      console.warn(`[Publish] ${platform} 일시적 실패 — ${Math.round(waitMs / 1000)}초 뒤 다시 시도: ${r && r.error}`);
+      await new Promise(res => setTimeout(res, waitMs));
+      continue;
+    }
+    break;
+  }
+  return last;
+}
+
 async function publishJob(job) {
   // 한달 예약 자동생성: 발행 시점에 최신 트렌딩 키워드로 글 생성
   if (job.autoGenerate && !job.content) {
@@ -172,7 +211,7 @@ async function publishJob(job) {
     }
 
     if (platform === 'naver') {
-      results.naver = await publishToNaver({
+      results.naver = await withRetry('naver', () => publishToNaver({
         id:       tokens.get('NAVER_ID'),
         pw:       tokens.get('NAVER_PW'),
         blogId:   tokens.get('NAVER_BLOG_ID'),
@@ -180,7 +219,7 @@ async function publishJob(job) {
         content:  variantContent,
         tags,
         imagePaths,
-      });
+      }));
 
     } else if (platform === 'tistory') {
       const tistoryId = tokens.get('TISTORY_ID');
@@ -189,10 +228,10 @@ async function publishJob(job) {
       const rawBlogName = tokens.get('TISTORY_BLOG_NAME') || '';
       const blogName = rawBlogName.replace(/\.tistory\.com.*$/, '').replace(/https?:\/\//, '').trim();
       if (tistoryId && tistoryPw && blogName) {
-        results.tistory = await publishToTistoryPlaywright({
+        results.tistory = await withRetry('tistory', () => publishToTistoryPlaywright({
           id: tistoryId, pw: tistoryPw, blogName,
           title: variantTitle, content: variantContent, tags,
-        });
+        }));
       } else {
         results.tistory = { success: false, error: 'Railway에 TISTORY_ID / TISTORY_PW / TISTORY_BLOG_NAME 설정 필요', platform: 'tistory' };
       }
@@ -205,10 +244,10 @@ async function publishJob(job) {
 
       if (clientId && clientSecret && refreshToken) {
         // OAuth 방식 (가장 안정적 — 자동 갱신)
-        results.blogger = await publishToBlogger({
+        results.blogger = await withRetry('blogger', () => publishToBlogger({
           clientId, clientSecret, refreshToken, blogId,
           title: variantTitle, content: variantContent, tags,
-        });
+        }));
         // 토큰 갱신 후 blogId 자동저장
         if (results.blogger.success && results.blogger.blogId && !blogId) {
           tokens.set('BLOGGER_BLOG_ID', results.blogger.blogId);
