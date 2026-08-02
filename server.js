@@ -498,6 +498,147 @@ app.get('/api/test-platforms', auth, async (req, res) => {
   res.json(results);
 });
 
+/* ── 전체 점검 (한 방) ─────────────────────────────────────
+ * "지금 글이 올라가냐"에 처음부터 끝까지 실제로 해보고 답한다.
+ * 잔액 확인 → 글 생성 → 진짜 발행까지 한 번에 돌려서,
+ * 되면 글 주소를, 안 되면 '어디서 왜' 막혔는지 하나만 남긴다.
+ * 버튼 세 개를 순서대로 누르며 원인을 좁히지 않아도 되게 하려는 것. */
+const _fullCheckJobs = new Map();
+
+app.post('/api/full-check', auth, (req, res) => {
+  const asked = Array.isArray(req.body?.platforms) ? req.body.platforms : [];
+  const keyword = (req.body?.keyword || '').trim() || '아침 루틴 만들기';
+  const jobId = `full_${Date.now()}`;
+
+  const set = (patch) => _fullCheckJobs.set(jobId, { ...(_fullCheckJobs.get(jobId) || {}), ...patch });
+  set({ status: 'running', steps: [], startedAt: new Date().toISOString(), keyword });
+  res.json({ success: true, jobId });
+
+  (async () => {
+    const steps = [];
+    const push = (s) => { steps.push(s); set({ steps: [...steps] }); };
+    const fail = (verdict) => set({ status: 'done', ok: false, steps: [...steps], verdict });
+
+    // ── 1. 연결된 블로그가 있는가 ────────────────────────────
+    const ready = {
+      blogger: !!(tokens.get('BLOGGER_CLIENT_ID') && tokens.get('BLOGGER_CLIENT_SECRET') && tokens.get('BLOGGER_REFRESH_TOKEN')),
+      naver:   !!(tokens.get('NAVER_ID') && tokens.get('NAVER_PW') && tokens.get('NAVER_BLOG_ID')),
+      tistory: !!(tokens.get('TISTORY_ID') && tokens.get('TISTORY_PW') && tokens.get('TISTORY_BLOG_NAME')),
+    };
+    const connected = Object.keys(ready).filter(k => ready[k]);
+    push({ step: '1. 블로그 연결', ok: connected.length > 0,
+           detail: connected.length ? `${connected.length}곳 설정됨 — ${connected.join(', ')}` : '연결된 블로그가 없습니다' });
+    if (!connected.length) return fail('연결된 블로그가 없어서 글이 올라갈 수 없습니다. /setup 에서 먼저 연결하세요.');
+
+    // ── 2. 구글이 실제로 받아주는가 (설정만 있고 죽어 있는 경우가 많다) ──
+    if (ready.blogger) {
+      try {
+        const blogs = await getBloggerBlogId(
+          tokens.get('BLOGGER_CLIENT_ID'), tokens.get('BLOGGER_CLIENT_SECRET'), tokens.get('BLOGGER_REFRESH_TOKEN'));
+        if (blogs && blogs[0]) {
+          if (!tokens.get('BLOGGER_BLOG_ID')) tokens.set('BLOGGER_BLOG_ID', blogs[0].id);
+          push({ step: '2. 구글 블로그', ok: true, detail: `연결 확인됨 — ${blogs[0].name}` });
+        } else {
+          ready.blogger = false;
+          push({ step: '2. 구글 블로그', ok: false, detail: '인증은 됐으나 소유한 블로그가 없습니다' });
+        }
+      } catch (e) {
+        ready.blogger = false;
+        const g = e.response?.data || {};
+        let why = g.error_description || e.message;
+        if (g.error === 'invalid_grant') why = '토큰 만료 — /setup 에서 구글 재연결이 필요합니다';
+        if (e.response?.status === 403) why = 'Blogger API 가 꺼져 있습니다 — 구글 콘솔에서 켜세요';
+        push({ step: '2. 구글 블로그', ok: false, detail: why });
+      }
+    } else {
+      push({ step: '2. 구글 블로그', ok: false, detail: '설정되지 않음 (다른 블로그로 진행합니다)' });
+    }
+
+    // ── 3. 글을 만들 수 있는가 (잔액 포함) ───────────────────
+    const key = tokens.get('ANTHROPIC_API_KEY');
+    if (!key) {
+      push({ step: '3. 글 생성 준비', ok: false, detail: 'ANTHROPIC_API_KEY 미설정 — 글을 만들 수 없습니다' });
+      return fail('글 생성 키가 없어서 글이 만들어지지 않습니다. 설정에서 키를 넣으세요.');
+    }
+    try {
+      await probeClaudeKey(key);
+      push({ step: '3. 글 생성 준비', ok: true, detail: '키·잔액 정상' });
+    } catch (e) {
+      push({ step: '3. 글 생성 준비', ok: false, detail: e.message });
+      return fail(/잔액/.test(e.message)
+        ? '잔액이 없어서 글이 만들어지지 않습니다. console.anthropic.com 에서 충전하면 해결됩니다.'
+        : `글 생성 키 문제로 막혔습니다 — ${e.message}`);
+    }
+
+    // ── 4. 진짜 글 만들기 ────────────────────────────────────
+    let post;
+    try {
+      const account = readAccounts()[0] || {};
+      post = await generatePost(keyword, {
+        topic:    account.topic    || '라이프스타일',
+        tone:     account.tone     || '친근한',
+        platform: (account.platforms || ['blogger'])[0],
+      });
+      const chars = String(post.content || '').replace(/<[^>]+>/g, '').length;
+      push({ step: '4. 글 만들기', ok: true, detail: `완성 — "${post.title}" (${chars.toLocaleString('ko-KR')}자)` });
+    } catch (e) {
+      push({ step: '4. 글 만들기', ok: false, detail: e.message });
+      return fail(`글은 만들어지지 않았습니다 — ${e.message}`);
+    }
+
+    // ── 5. 진짜 올리기 ───────────────────────────────────────
+    const targets = (asked.length ? asked : Object.keys(ready)).filter(p => ready[p]);
+    if (!targets.length) {
+      push({ step: '5. 발행', ok: false, detail: '올릴 수 있는 블로그가 없습니다' });
+      return fail('글은 만들어졌지만 올릴 수 있는 블로그가 없습니다. 연결부터 고치세요.');
+    }
+
+    let results;
+    try {
+      results = await publishJob({
+        title: post.title, content: post.content, tags: post.tags,
+        platforms: targets, keyword,
+      });
+    } catch (e) {
+      push({ step: '5. 발행', ok: false, detail: e.message });
+      return fail(`발행 중 오류로 막혔습니다 — ${e.message}`);
+    }
+
+    const summary = {};
+    const okList = [], failList = [];
+    for (const p of targets) {
+      const r = results[p] || { success: false, error: '결과 없음' };
+      summary[p] = { success: !!r.success, url: r.url || null, error: r.error || null };
+      (r.success ? okList : failList).push(p);
+    }
+    push({ step: '5. 발행', ok: okList.length > 0,
+           detail: okList.length ? `${okList.join(', ')} 에 올라감` : '모두 실패' });
+
+    const NAMES = { blogger: '구글 블로그', naver: '네이버', tistory: '티스토리' };
+    set({
+      status: 'done',
+      ok: okList.length > 0,
+      steps: [...steps],
+      title: post.title,
+      published: summary,
+      verdict: okList.length
+        ? `글이 실제로 올라갔습니다 — ${okList.map(p => NAMES[p] || p).join(', ')}`
+        : `글은 만들어졌는데 올라가지 않았습니다 — ${failList.map(p => `${NAMES[p] || p}: ${summary[p].error}`).join(' / ')}`,
+      finishedAt: new Date().toISOString(),
+    });
+  })().catch(err => {
+    set({ status: 'error', ok: false, verdict: `점검 중 오류 — ${err.message}` });
+  });
+
+  setTimeout(() => _fullCheckJobs.delete(jobId), 60 * 60 * 1000);
+});
+
+app.get('/api/full-check-status/:jobId', auth, (req, res) => {
+  const job = _fullCheckJobs.get(req.params.jobId);
+  if (!job) return res.status(410).json({ error: '서버가 재시작되어 결과를 잃었습니다 — 다시 눌러주세요' });
+  res.json(job);
+});
+
 /* ── 글 생성 테스트 ────────────────────────────────────────
  * "글이 안 써진다"의 원인을 한 번에 가른다.
  * 실제로 글 하나를 만들어보고, 성공하면 무엇이 나왔는지,

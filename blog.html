@@ -860,6 +860,18 @@ body{background:
       <div id="status-card" style="display:none;border-radius:14px;padding:16px 18px;margin-bottom:14px;
            border:1px solid var(--bd);background:var(--s1)"></div>
 
+      <!-- 처음부터 끝까지 실제로 해보고 "올라가냐"에 답하는 자리 -->
+      <div class="section" style="margin-bottom:14px">
+        <div class="bp-section-title">🔎 지금 글이 올라가는지 확인</div>
+        <div class="bp-humanize-tip" style="margin-bottom:10px">
+          잔액 확인 → 글 만들기 → <b>진짜 발행</b>까지 한 번에 해봅니다.
+          되면 올라간 글 주소가 나오고, 안 되면 <b>어디서 왜 막혔는지</b> 딱 하나만 남습니다. (2~4분)
+          <br><span style="color:var(--warn)">※ 진짜 글이 블로그에 올라갑니다. 마음에 안 들면 지우시면 됩니다.</span>
+        </div>
+        <button class="bp-pub-btn" style="max-width:240px" id="full-check-btn" onclick="runFullCheck()">🔎 처음부터 끝까지 해보기</button>
+        <div id="full-check-result" style="margin-top:12px;display:none"></div>
+      </div>
+
       <!-- 오늘 통계 -->
       <div class="stat-grid" style="margin-bottom:14px">
         <div class="stat-card accent-pink">
@@ -3118,6 +3130,90 @@ function copyServerErrors() {
   navigator.clipboard.writeText(text)
     .then(function(){ bpToast('📋 오류 ' + _serverErrors.length + '건 복사됨', 'ok'); })
     .catch(function(){ bpToast('복사 실패 — 화면에서 직접 선택해주세요', 'err'); });
+}
+
+/* "지금 글이 올라가냐"에 처음부터 끝까지 실제로 해보고 답한다.
+   진행 상황을 실시간으로 보여줘서, 어디까지 갔는지 알 수 있게 한다. */
+async function runFullCheck() {
+  var btn  = document.getElementById('full-check-btn');
+  var wrap = document.getElementById('full-check-result');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="bp-spinner"></span>확인 중...';
+  wrap.style.display = 'block';
+  wrap.innerHTML = '<div style="color:var(--t3);font-size:13px">시작하는 중...</div>';
+
+  function drawSteps(steps) {
+    return (steps || []).map(function(s) {
+      return '<div style="display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--bd)">'
+        + '<span style="flex-shrink:0">' + (s.ok ? '✅' : '❌') + '</span>'
+        + '<span style="flex-shrink:0;font-size:12.5px;color:var(--t1);min-width:104px">' + escHtml(s.step) + '</span>'
+        + '<span style="font-size:12.5px;color:' + (s.ok ? 'var(--ok)' : 'var(--err)') + ';word-break:break-all">'
+        + escHtml(s.detail) + '</span></div>';
+    }).join('');
+  }
+
+  try {
+    var start = await bpFetch('/api/full-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    var job = null;
+    for (var i = 0; i < 150; i++) {
+      await new Promise(function(r){ setTimeout(r, 2000); });
+      try {
+        job = await bpFetch('/api/full-check-status/' + start.jobId);
+      } catch (e) {
+        wrap.innerHTML = '<div style="color:var(--err);font-size:13px">❌ ' + escHtml(e.message) + '</div>';
+        return;
+      }
+      // 진행 상황을 그때그때 보여준다 — 멈춘 건지 도는 건지 알 수 있게
+      if (job.status === 'running') {
+        wrap.innerHTML = drawSteps(job.steps)
+          + '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;color:var(--t3);font-size:12.5px">'
+          + '<span class="bp-spinner"></span>진행 중...</div>';
+      } else break;
+    }
+    if (!job || job.status === 'running') {
+      wrap.innerHTML = drawSteps(job && job.steps) +
+        '<div style="color:var(--err);font-size:13px;margin-top:10px">⏱ 5분이 지나도 안 끝났습니다 — 설정의 오류 목록을 확인해주세요</div>';
+      return;
+    }
+
+    var NAMES = { blogger: '🔵 구글 블로그', naver: '🟢 네이버', tistory: '🟠 티스토리' };
+    var html = drawSteps(job.steps);
+
+    html += '<div style="margin-top:14px;border-radius:12px;padding:14px 16px;border:1px solid '
+      + (job.ok ? 'rgba(34,197,94,.4);background:rgba(34,197,94,.07)' : 'rgba(239,68,68,.4);background:rgba(239,68,68,.07)')
+      + '"><div style="display:flex;align-items:flex-start;gap:10px">'
+      + '<span style="font-size:20px">' + (job.ok ? '✅' : '❌') + '</span>'
+      + '<div style="min-width:0"><div style="font-size:14.5px;font-weight:700;color:var(--t1);line-height:1.5">'
+      + escHtml(job.verdict || '') + '</div>';
+
+    if (job.published) {
+      html += '<div style="margin-top:9px">' + Object.keys(job.published).map(function(p) {
+        var r = job.published[p];
+        return '<div style="font-size:12.5px;padding:4px 0;color:var(--t2)">'
+          + (r.success ? '✅ ' : '❌ ') + (NAMES[p] || p) + ' — '
+          + (r.success
+              ? (r.url ? '<a href="' + escHtml(r.url) + '" target="_blank" style="color:var(--ok)">' + escHtml(r.url) + '</a>' : '올라감')
+              : '<span style="color:var(--err)">' + escHtml(r.error || '실패') + '</span>')
+          + '</div>';
+      }).join('') + '</div>';
+    }
+    html += '</div></div></div>';
+
+    wrap.innerHTML = html;
+    bpToast(job.ok ? '✅ 글이 올라갔습니다' : '❌ ' + (job.verdict || '실패'), job.ok ? 'ok' : 'err');
+    loadStatusCard();
+  } catch (e) {
+    wrap.innerHTML = '<div style="color:var(--err);font-size:13px">❌ ' + escHtml(e.message) + '</div>';
+    bpToast('점검 실패: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔎 처음부터 끝까지 해보기';
+  }
 }
 
 /* 글 생성에 쓸 수 있는 상태인지 + 돈을 얼마나 썼는지.
