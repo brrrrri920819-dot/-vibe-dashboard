@@ -384,6 +384,51 @@ app.get('/api/test-claude', auth, async (req, res) => {
   }
 });
 
+/* ── 글 생성 비용·잔액 ──────────────────────────────────────
+ * 앤트로픽은 '남은 잔액'을 알려주는 API가 없다. 그래서 두 갈래로 답한다.
+ *   1) 쓸 수 있는 상태인가 — 실제로 아주 짧은 호출을 해보고 판단한다.
+ *      잔액이 바닥나면 여기서 바로 걸린다 (이게 가장 확실한 신호다)
+ *   2) 얼마나 썼나 — 관리자 키가 있으면 이번 달 지출을 가져온다.
+ *      관리자 키는 조직 계정에만 발급되므로 없을 수 있다. 없으면 없다고 말한다. */
+app.get('/api/anthropic-usage', auth, async (req, res) => {
+  const { fetchSpend, formatUsd } = require('./income/anthropic-usage');
+
+  const out = { checkedAt: new Date().toISOString() };
+
+  // 1) 지금 글을 쓸 수 있는 상태인가
+  const key = tokens.get('ANTHROPIC_API_KEY');
+  if (!key) {
+    out.usable = { ok: false, reason: 'no_key', message: 'ANTHROPIC_API_KEY 미설정 — 설정에서 넣어주세요' };
+  } else {
+    try {
+      await probeClaudeKey(key);
+      out.usable = { ok: true, message: '정상 — 지금 글을 만들 수 있습니다' };
+    } catch (e) {
+      out.usable = {
+        ok: false,
+        reason: /잔액/.test(e.message) ? 'no_credit' : 'error',
+        message: e.message,
+      };
+    }
+  }
+
+  // 2) 얼마나 썼나 (관리자 키가 있을 때만)
+  const spend = await fetchSpend(tokens.get('ANTHROPIC_ADMIN_KEY')).catch(e => ({
+    ok: false, reason: 'failed', message: e.message,
+  }));
+  out.spend = spend.ok
+    ? {
+        ok: true,
+        month: formatUsd(spend.monthCents),
+        today: formatUsd(spend.todayCents),
+        days: spend.days.slice(0, 14).map(d => ({ date: d.date, amount: formatUsd(d.cents) })),
+        note: spend.note,
+      }
+    : spend;
+
+  res.json(out);
+});
+
 /** 플랫폼별 실제 연결 테스트 (자격증명 실제 검증) */
 app.get('/api/test-platforms', auth, async (req, res) => {
   const results = {};
@@ -1674,6 +1719,8 @@ const RESTORABLE = [
   'BLOGGER_CLIENT_ID', 'BLOGGER_CLIENT_SECRET', 'BLOGGER_REFRESH_TOKEN', 'BLOGGER_BLOG_ID',
   'BLOGGER_TOKEN_ISSUED_AT',
   'ANTHROPIC_API_KEY', 'UNSPLASH_ACCESS_KEY',
+  // 사용 금액 조회용 관리자 키 (조직 계정에만 발급됨 — 없어도 동작한다)
+  'ANTHROPIC_ADMIN_KEY',
   'NAVER_CLIENT_ID', 'NAVER_CLIENT_SECRET',
   // 네이버·티스토리 로그인 정보도 재배포하면 함께 사라진다 —
   // 블로그스팟만 복구하고 나머지를 빼두면 결국 또 "연결이 끊겼다"가 된다
@@ -1968,6 +2015,11 @@ OAuth 앱이 <b>테스트</b> 상태면 구글이 7일마다 토큰을 강제로
 <div style="color:#7c85b0;font-size:12px;line-height:1.7;margin-bottom:14px">여기에 넣으면 Railway를 건드리지 않아도 됩니다. 저장하면 이 브라우저에도 보관돼 재배포 후 자동 복구됩니다.</div>
 <label for="k-anthropic">글 생성 (console.anthropic.com)</label><input id="k-anthropic" placeholder="ANTHROPIC_API_KEY" autocapitalize="off" spellcheck="false">
 <label for="k-unsplash">사진 (unsplash.com/developers)</label><input id="k-unsplash" placeholder="UNSPLASH_ACCESS_KEY" autocapitalize="off" spellcheck="false">
+<label for="k-admin">사용 금액 조회 — 선택 (조직 계정만 발급 가능)</label>
+<div style="color:#7c85b0;font-size:11.5px;line-height:1.6;margin:-3px 0 6px">
+sk-ant-admin 으로 시작하는 관리자 키. 넣으면 이번 달 쓴 금액이 대시보드에 표시됩니다.
+개인 계정은 발급이 안 되며, 없어도 나머지는 정상 동작합니다.</div>
+<input id="k-admin" placeholder="ANTHROPIC_ADMIN_KEY" autocapitalize="off" spellcheck="false">
 <label for="k-nid">네이버 검색 API — 키워드·상품추천 (developers.naver.com)</label>
 <input id="k-nid" placeholder="NAVER_CLIENT_ID" autocapitalize="off" spellcheck="false">
 <input id="k-nsecret" placeholder="NAVER_CLIENT_SECRET" autocapitalize="off" spellcheck="false">
@@ -2054,7 +2106,8 @@ function saveKeys(){
   var r=document.getElementById('keys-result');
   var map={ANTHROPIC_API_KEY:'k-anthropic',UNSPLASH_ACCESS_KEY:'k-unsplash',
            NAVER_CLIENT_ID:'k-nid',NAVER_CLIENT_SECRET:'k-nsecret',
-           TELEGRAM_BOT_TOKEN:'k-tgtoken',TELEGRAM_CHAT_ID:'k-tgchat'};
+           TELEGRAM_BOT_TOKEN:'k-tgtoken',TELEGRAM_CHAT_ID:'k-tgchat',
+           ANTHROPIC_ADMIN_KEY:'k-admin'};
   var payload={};
   Object.keys(map).forEach(function(k){var el=document.getElementById(map[k]);if(el&&el.value.trim())payload[k]=el.value.trim();});
   if(!Object.keys(payload).length){r.textContent='입력한 값이 없습니다';r.style.color='#f87171';return;}

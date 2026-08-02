@@ -65,6 +65,7 @@ function waitForServer(tries = 40) {
     PORT: String(PORT),
     TOKENS_FILE: path.join(tmp, 'tokens.json'),
     PERSIST_DIR: path.join(tmp, 'vol'),
+    RETRY_WAIT_MS: '300',   // 재시도 대기까지 기다리면 테스트가 길어진다
     // 발행기가 자격증명 검사에서 먼저 막히지 않도록 채워둔다 (전부 스텁이라 실제 접속 없음)
     NAVER_ID: 'x', NAVER_PW: 'x', NAVER_BLOG_ID: 'x',
     TISTORY_ID: 'x', TISTORY_PW: 'x', TISTORY_BLOG_NAME: 'x',
@@ -80,7 +81,7 @@ function waitForServer(tries = 40) {
     ok('발행 테스트가 잡을 만들어 바로 응답한다', start.json && start.json.jobId);
 
     let job = null;
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 120; i++) {
       await new Promise(r => setTimeout(r, 500));
       const s = await req('GET', `/api/publish-test-status/${start.json.jobId}`);
       job = s.json;
