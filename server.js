@@ -319,41 +319,65 @@ app.get('/api/status', auth, (req, res) => {
 });
 
 /** Claude API 연결 테스트 (키 설정 후 이걸로 확인) */
-app.get('/api/test-claude', auth, async (req, res) => {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(500).json({ ok: false, error: 'ANTHROPIC_API_KEY 미설정' });
-  }
+/* 글 생성 키가 실제로 통하는지 아주 짧게 확인한다 (토큰 몇 개, 사실상 무료).
+ * 벽시계 타임아웃을 건다 — 연결은 됐는데 응답이 안 오는 경우
+ * req.setTimeout 은 작동하지 않아 호출이 영원히 멈춘다. */
+function probeClaudeKey(key, ms = 20000) {
   const https = require('https');
-  const body  = JSON.stringify({
+  const body = JSON.stringify({
     model: 'claude-sonnet-5',
-    max_tokens: 10,
+    max_tokens: 8,
     messages: [{ role: 'user', content: '안녕' }],
   });
-  try {
-    await new Promise((resolve, reject) => {
-      const req = https.request('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(body),
-        },
-      }, (r) => {
-        let d = '';
-        r.on('data', c => { d += c; });
-        r.on('end', () => {
-          try {
-            const j = JSON.parse(d);
-            if (j.error) return reject(new Error(j.error.message));
-            resolve(j);
-          } catch (e) { reject(e); }
-        });
+  const call = new Promise((resolve, reject) => {
+    const r = https.request('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, (res) => {
+      let d = '';
+      res.on('data', c => { d += c; });
+      res.on('end', () => {
+        let j = null;
+        try { j = JSON.parse(d); } catch (_) {}
+        if (!j) return reject(new Error(`응답을 이해할 수 없습니다 (HTTP ${res.statusCode})`));
+        if (j.error) {
+          // 원인별로 할 일이 다르므로 구분해서 알려준다
+          const t = j.error.type || '';
+          const m = j.error.message || '';
+          if (res.statusCode === 401 || /authentication/i.test(t)) {
+            return reject(new Error('키가 거부됐습니다 — 키를 다시 발급받아 넣으세요'));
+          }
+          if (/credit|billing|quota/i.test(m) || res.statusCode === 402) {
+            return reject(new Error('잔액이 없습니다 — console.anthropic.com 에서 충전하세요'));
+          }
+          if (res.statusCode === 429) {
+            return reject(new Error('요청이 몰렸습니다 (429) — 잠시 뒤 다시 시도하면 됩니다'));
+          }
+          return reject(new Error(`${t || 'error'} — ${m}`));
+        }
+        resolve(true);
       });
-      req.on('error', reject);
-      req.write(body);
-      req.end();
     });
+    r.on('error', e => reject(new Error(`네트워크 오류: ${e.message}`)));
+    r.write(body);
+    r.end();
+  });
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${ms / 1000}초 안에 응답이 없습니다`)), ms);
+    call.then(v => { clearTimeout(timer); resolve(v); }, e => { clearTimeout(timer); reject(e); });
+  });
+}
+
+app.get('/api/test-claude', auth, async (req, res) => {
+  const key = tokens.get('ANTHROPIC_API_KEY');
+  if (!key) return res.status(500).json({ ok: false, error: 'ANTHROPIC_API_KEY 미설정' });
+  try {
+    await probeClaudeKey(key);
     res.json({ ok: true, message: 'Claude API 연결 성공 ✅' });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -427,6 +451,75 @@ app.get('/api/test-platforms', auth, async (req, res) => {
   }
 
   res.json(results);
+});
+
+/* ── 글 생성 테스트 ────────────────────────────────────────
+ * "글이 안 써진다"의 원인을 한 번에 가른다.
+ * 실제로 글 하나를 만들어보고, 성공하면 무엇이 나왔는지,
+ * 실패하면 어느 단계에서 무슨 이유로 막혔는지 그대로 보여준다.
+ * 발행은 하지 않는다 — 생성만 확인하는 게 목적이다. */
+const _genTestJobs = new Map();
+
+app.post('/api/generate-test', auth, (req, res) => {
+  const keyword = (req.body?.keyword || '').trim() || '아침 루틴 만들기';
+  const jobId = `gentest_${Date.now()}`;
+  _genTestJobs.set(jobId, { status: 'running', keyword, startedAt: new Date().toISOString() });
+  res.json({ success: true, jobId, keyword });
+
+  (async () => {
+    const steps = [];
+    // 1단계: 키가 있는가
+    const key = tokens.get('ANTHROPIC_API_KEY');
+    steps.push(key
+      ? { step: '1. 글 생성 키', ok: true, detail: `있음 (${key.slice(0, 7)}…, 출처: ${tokens.sourceOf('ANTHROPIC_API_KEY') === 'env' ? 'Railway 환경변수' : '화면에서 저장'})` }
+      : { step: '1. 글 생성 키', ok: false, detail: '없음 — 설정에서 ANTHROPIC_API_KEY 를 넣어야 글이 만들어집니다' });
+    if (!key) {
+      _genTestJobs.set(jobId, { status: 'done', ok: false, keyword, steps, error: 'ANTHROPIC_API_KEY 미설정' });
+      return;
+    }
+
+    // 2단계: 그 키가 실제로 통하는가 (아주 짧은 호출)
+    try {
+      await probeClaudeKey(key);
+      steps.push({ step: '2. 키 유효성', ok: true, detail: '클로드가 정상 응답했습니다' });
+    } catch (e) {
+      steps.push({ step: '2. 키 유효성', ok: false, detail: e.message });
+      _genTestJobs.set(jobId, { status: 'done', ok: false, keyword, steps, error: e.message });
+      return;
+    }
+
+    // 3단계: 진짜로 글을 만들어본다
+    try {
+      const accounts = readAccounts();
+      const account = accounts[0] || {};
+      const post = await generatePost(keyword, {
+        topic:    account.topic    || '라이프스타일',
+        tone:     account.tone     || '친근한',
+        platform: (account.platforms || ['blogger'])[0],
+      });
+      const chars  = String(post.content || '').replace(/<[^>]+>/g, '').length;
+      const images = (String(post.content || '').match(/<img/g) || []).length;
+      steps.push({ step: '3. 글 만들기', ok: true, detail: `완성 — ${chars.toLocaleString('ko-KR')}자, 사진 ${images}장` });
+      _genTestJobs.set(jobId, {
+        status: 'done', ok: true, keyword, steps,
+        title: post.title, chars, images, tags: post.tags || [],
+        preview: String(post.content || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180),
+      });
+    } catch (e) {
+      steps.push({ step: '3. 글 만들기', ok: false, detail: e.message });
+      _genTestJobs.set(jobId, { status: 'done', ok: false, keyword, steps, error: e.message });
+    }
+  })().catch(err => {
+    _genTestJobs.set(jobId, { status: 'error', ok: false, keyword, error: err.message });
+  });
+
+  setTimeout(() => _genTestJobs.delete(jobId), 60 * 60 * 1000);
+});
+
+app.get('/api/generate-test-status/:jobId', auth, (req, res) => {
+  const job = _genTestJobs.get(req.params.jobId);
+  if (!job) return res.status(410).json({ error: '서버가 재시작되어 결과를 잃었습니다 — 다시 눌러주세요' });
+  res.json(job);
 });
 
 /* ── 진짜 발행 테스트 ──────────────────────────────────────
@@ -1474,11 +1567,40 @@ async function notifyText(text) {
   return true;
 }
 
+/* 키가 '있는지'와 '통하는지'는 다르다.
+   만료됐거나 잔액이 없는 키는 있어도 글이 안 만들어진다.
+   새벽 자동 발행이 조용히 실패하기 전에 미리 잡는다. */
+let _claudeKeyState = { ok: null, detail: null, checkedAt: null };
+
 async function runSelfCheck({ notify = true } = {}) {
   // 고칠 수 있는 건 먼저 고친다 — 알리기 전에
   try { await checkBloggerHealth(false); } catch (_) {}
 
+  const key = tokens.get('ANTHROPIC_API_KEY');
+  if (key) {
+    try {
+      await probeClaudeKey(key);
+      _claudeKeyState = { ok: true, detail: null, checkedAt: new Date().toISOString() };
+    } catch (e) {
+      _claudeKeyState = { ok: false, detail: e.message, checkedAt: new Date().toISOString() };
+    }
+  } else {
+    _claudeKeyState = { ok: null, detail: null, checkedAt: new Date().toISOString() };
+  }
+
   const state = currentState();
+  if (_claudeKeyState.ok === false) {
+    state.problems.unshift({
+      key: 'claude_key_bad',
+      severity: 'high',
+      title: '글 생성 키가 통하지 않습니다',
+      detail: _claudeKeyState.detail,
+      action: /잔액/.test(_claudeKeyState.detail || '')
+        ? 'console.anthropic.com 에서 충전'
+        : '설정 탭에서 ANTHROPIC_API_KEY 다시 입력',
+    });
+    state.ok = false;
+  }
   if (notify && state.problems.length) {
     const fresh = selfCheck.pickNewProblems(state.problems);
     if (fresh.length) {

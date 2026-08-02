@@ -1164,6 +1164,17 @@ body{background:
       </div>
 
       <div class="section">
+        <div class="bp-section-title">✍️ 글 생성 테스트</div>
+        <div class="bp-humanize-tip" style="margin-bottom:10px">
+          실제로 글 하나를 만들어봅니다. 발행은 하지 않습니다.
+          <b>글이 안 써지는 이유</b>가 키 문제인지, 잔액인지, 생성 자체인지 단계별로 갈립니다. (1~3분)
+        </div>
+        <input class="bp-inp" id="gt-keyword" placeholder="키워드 (비워두면 '아침 루틴 만들기')" style="margin-bottom:10px">
+        <button class="bp-pub-btn" style="max-width:220px" id="gen-test-btn" onclick="runGenerateTest()">✍️ 글 하나 만들어보기</button>
+        <div id="gen-test-result" style="margin-top:12px;display:none"></div>
+      </div>
+
+      <div class="section">
         <div class="bp-section-title">🚀 진짜 발행 테스트</div>
         <div class="bp-humanize-tip" style="margin-bottom:10px">
           짧은 테스트 글 하나를 <b>실제로</b> 올려봅니다. 글 생성(AI)은 건너뛰기 때문에,
@@ -3097,6 +3108,72 @@ function copyServerErrors() {
   navigator.clipboard.writeText(text)
     .then(function(){ bpToast('📋 오류 ' + _serverErrors.length + '건 복사됨', 'ok'); })
     .catch(function(){ bpToast('복사 실패 — 화면에서 직접 선택해주세요', 'err'); });
+}
+
+/* 실제로 글 하나를 만들어보고 어디서 막혔는지 단계별로 보여준다.
+   "글이 안 써진다"의 원인이 키인지, 잔액인지, 생성인지 가르기 위한 것. */
+async function runGenerateTest() {
+  var btn  = document.getElementById('gen-test-btn');
+  var wrap = document.getElementById('gen-test-result');
+  var kw   = (document.getElementById('gt-keyword').value || '').trim();
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="bp-spinner"></span>만드는 중...';
+  wrap.style.display = 'block';
+  wrap.innerHTML = '<div style="color:var(--t3);font-size:13px">글을 실제로 만들고 있습니다 — 1~3분 걸립니다</div>';
+
+  try {
+    var start = await bpFetch('/api/generate-test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keyword: kw }),
+    });
+
+    var job = null;
+    for (var i = 0; i < 120; i++) {
+      await new Promise(function(r){ setTimeout(r, 2500); });
+      try {
+        job = await bpFetch('/api/generate-test-status/' + start.jobId);
+      } catch (e) {
+        wrap.innerHTML = '<div style="color:var(--err);font-size:13px">❌ ' + escHtml(e.message) + '</div>';
+        return;
+      }
+      if (job.status !== 'running') break;
+    }
+    if (!job || job.status === 'running') {
+      wrap.innerHTML = '<div style="color:var(--err);font-size:13px">⏱ 5분이 지나도 안 끝났습니다 — 설정의 오류 목록을 확인해주세요</div>';
+      return;
+    }
+
+    var html = (job.steps || []).map(function(s) {
+      return '<div style="display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--bd)">'
+        + '<span style="flex-shrink:0">' + (s.ok ? '✅' : '❌') + '</span>'
+        + '<span style="flex-shrink:0;font-size:12.5px;color:var(--t1);min-width:96px">' + escHtml(s.step) + '</span>'
+        + '<span style="font-size:12.5px;color:' + (s.ok ? 'var(--ok)' : 'var(--err)') + ';word-break:break-all">'
+        + escHtml(s.detail) + '</span></div>';
+    }).join('');
+
+    if (job.ok) {
+      html += '<div style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(34,197,94,.07);'
+        + 'border:1px solid rgba(34,197,94,.3)">'
+        + '<div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:5px">' + escHtml(job.title || '') + '</div>'
+        + '<div style="font-size:12.5px;color:var(--t2);line-height:1.7">' + escHtml(job.preview || '') + '…</div>'
+        + '<div style="font-size:12px;color:var(--t3);margin-top:8px">'
+        + job.chars.toLocaleString('ko-KR') + '자 · 사진 ' + job.images + '장'
+        + (job.tags && job.tags.length ? ' · ' + escHtml(job.tags.slice(0, 5).join(', ')) : '') + '</div>'
+        + '<div style="font-size:12px;color:var(--ok);margin-top:8px">글 생성은 정상입니다. 저장은 하지 않았습니다.</div></div>';
+    } else {
+      html += '<div style="margin-top:12px;font-size:13px;color:var(--err)">👉 위에서 ❌ 표시된 곳이 원인입니다</div>';
+    }
+    wrap.innerHTML = html;
+    bpToast(job.ok ? '✅ 글 생성 정상' : '❌ ' + (job.error || '생성 실패'), job.ok ? 'ok' : 'err');
+  } catch (e) {
+    wrap.innerHTML = '<div style="color:var(--err);font-size:13px">❌ ' + escHtml(e.message) + '</div>';
+    bpToast('생성 테스트 실패: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✍️ 글 하나 만들어보기';
+  }
 }
 
 /* 짧은 글 하나를 실제로 올려보고, 블로그별 결과를 그대로 보여준다.
