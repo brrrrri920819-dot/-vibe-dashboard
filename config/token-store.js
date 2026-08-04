@@ -159,6 +159,25 @@ function set(key, value) {
   return true;
 }
 
+/* 값을 완전히 지운다.
+   메모리·환경변수·저장 파일 어디에도 남기지 않는다.
+   한 군데라도 남으면 다음 부팅 때 옛 값이 되살아난다. */
+function remove(key) {
+  const had = mem.has(key) || !!process.env[key];
+  mem.delete(key);
+  delete process.env[key];
+  blobKeys.delete(key);
+
+  const snapshot = Object.fromEntries(mem);
+  if (VOLUME_FILE && writable.volume) {
+    try { writeJson(VOLUME_FILE, snapshot); } catch (_) { /* 메모리에서는 이미 지워졌다 */ }
+  }
+  if (writable.local) {
+    try { writeJson(LOCAL_FILE, snapshot); } catch (_) {}
+  }
+  return had;
+}
+
 function keys() { return [...mem.keys()]; }
 
 /** 값의 출처 — 'saved'(저장소) | 'env'(Railway 환경변수) | null
@@ -183,4 +202,4 @@ function storageInfo() {
   };
 }
 
-module.exports = { get, set, keys, sourceOf, storageInfo, makeBlob, read: () => Object.fromEntries(mem) };
+module.exports = { get, set, remove, keys, sourceOf, storageInfo, makeBlob, read: () => Object.fromEntries(mem) };

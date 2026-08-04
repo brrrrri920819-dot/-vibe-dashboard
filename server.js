@@ -1907,6 +1907,7 @@ app.post('/api/credentials/restore', auth, (req, res) => {
   const incoming = req.body || {};
   const restored = [];
   const dead = [];
+  const kept = [];   // 화면에서 저장한 값이라 건드리지 않은 것들
   for (const key of RESTORABLE) {
     const val = typeof incoming[key] === 'string' ? incoming[key].trim() : '';
     if (!val) continue;
@@ -1914,19 +1915,26 @@ app.post('/api/credentials/restore', auth, (req, res) => {
        넣어봐야 발행 때 또 invalid_grant 가 나는데,
        화면에는 "복구됨"으로 보여서 원인을 못 찾게 된다. */
     if (key === 'BLOGGER_REFRESH_TOKEN' && _deadRefreshTokens.has(val)) { dead.push(key); continue; }
-    /* 이 프로세스에서 직접 저장된 값('saved')만 보호한다.
-       환경변수('env')는 틀린 값이 들어있을 수 있으므로 브라우저 사본으로 덮어쓴다.
-       — 예전엔 "값이 있으면 건너뛰기"여서 Railway의 잘못된 시크릿이
-         올바른 값의 복구를 계속 막았다. 이게 invalid_client 반복의 원인. */
-    if (tokens.sourceOf(key) === 'saved' && tokens.get(key) === val) continue;
-    if (tokens.sourceOf(key) === 'saved' && key === 'BLOGGER_REFRESH_TOKEN') continue; // 방금 발급된 토큰이 최신
-    if (tokens.sourceOf(key) === 'blob' && tokens.get(key) === val) continue;          // 블롭 값과 같으면 그대로 둔다
+    /* 화면에서 직접 저장한 값('saved')은 절대 덮어쓰지 않는다.
+       복구는 '비어 있는 것을 채우는 일'이지 '최신 값을 되돌리는 일'이 아니다.
+
+       예전엔 값이 다르면 브라우저 사본으로 덮어썼는데, 그래서
+       /setup 에서 새 클라이언트 ID를 입력해도 다음 순간 브라우저에 남아 있던
+       옛날(삭제된) ID가 다시 덮어써서 "OAuth client was not found"가 반복됐다.
+       가장 최근에 사람이 입력한 값이 언제나 이긴다.
+
+       환경변수('env')와 블롭('blob')은 오래된 값이 남아 있을 수 있으므로
+       브라우저 사본으로 덮어쓴다 — 이게 원래 복구가 필요했던 이유다. */
+    const src = tokens.sourceOf(key);
+    if (src === 'saved') { kept.push(key); continue; }
+    if (src === 'blob' && tokens.get(key) === val) continue;   // 블롭 값과 같으면 그대로 둔다
     tokens.set(key, val);
     restored.push(key);
   }
   if (restored.length) console.log(`[Restore] 자격증명 복구됨: ${restored.join(', ')}`);
   if (dead.length) console.warn(`[Restore] 만료된 값 무시: ${dead.join(', ')} — 구글 재연결 필요`);
-  res.json({ ok: true, restored, dead, needsReauth: dead.includes('BLOGGER_REFRESH_TOKEN') });
+  if (kept.length) console.log(`[Restore] 화면에서 저장한 값 유지(덮어쓰지 않음): ${kept.join(', ')}`);
+  res.json({ ok: true, restored, kept, dead, needsReauth: dead.includes('BLOGGER_REFRESH_TOKEN') });
 });
 
 /** 대시보드가 보관할 자격증명 사본 (복구용)
@@ -1939,6 +1947,26 @@ app.get('/api/credentials/backup', auth, (req, res) => {
     out[key] = tokens.get(key);
   }
   res.json(out);
+});
+
+/* 구글 자격증명만 완전히 지운다.
+   삭제된 OAuth 클라이언트의 옛날 ID가 서버·브라우저·환경변수에 남아 있으면
+   새로 만든 클라이언트를 넣어도 계속 옛것으로 되돌아간다.
+   그 고리를 끊고 처음부터 다시 입력할 수 있게 하는 비상구. */
+app.post('/api/credentials/clear-blogger', auth, (req, res) => {
+  const keys = ['BLOGGER_CLIENT_ID', 'BLOGGER_CLIENT_SECRET', 'BLOGGER_REFRESH_TOKEN',
+                'BLOGGER_BLOG_ID', 'BLOGGER_TOKEN_ISSUED_AT'];
+  const cleared = [];
+  for (const k of keys) {
+    if (tokens.get(k)) cleared.push(k);
+    tokens.remove(k);
+  }
+  _bloggerHealth = { checkedAt: new Date().toISOString(), ok: false, needsReauth: true, detail: '자격증명을 지웠습니다 — 새로 입력하세요' };
+  console.log(`[Clear] 구글 자격증명 삭제: ${cleared.join(', ') || '(없음)'}`);
+  res.json({
+    ok: true, cleared, keys,
+    note: 'CREDENTIALS_BLOB 환경변수에도 옛 값이 들어 있으면 Railway 에서 그 변수도 지우거나 새로 만들어야 합니다',
+  });
 });
 
 /* 지금 연결된 값 전부를 환경변수 한 줄로 묶어준다.
@@ -2123,7 +2151,10 @@ button:active,.btn:active{transform:translateY(1px) scale(.99)}
 <div class="head"><div class="logo">🔧</div><div><h1>Blogger 연결 설정</h1><div class="sub">구글 계정을 한 번만 연결하면 이후 자동 발행됩니다</div></div></div>
 
 <div class="card"><div class="card-t">📊 현재 상태</div>
-<div class="row"><span class="k">CLIENT ID</span><span class="v ${cid ? '' : 'off'}">${cid ? masked : '미설정'}</span></div>
+<div class="row"><span class="k">CLIENT ID</span><span class="v ${cid ? '' : 'off'}">${cid ? '설정됨' : '미설정'}</span></div>
+${cid ? `<div style="margin:4px 0 10px">
+<div style="color:#7c85b0;font-size:11px;margin-bottom:5px">지금 서버가 쓰는 클라이언트 ID — 구글 콘솔에 이 ID가 실제로 있는지 확인하세요</div>
+<div class="mono-box">${cid}</div></div>` : ''}
 <div class="row"><span class="k">CLIENT SECRET</span><span class="v ${sec ? '' : 'off'}">${sec ? secInfo : '미설정'}</span></div>
 <div class="row"><span class="k">REFRESH TOKEN</span><span class="v ${refreshOk ? '' : 'off'}">${dot(refreshOk)}${refreshOk ? '저장됨' : '미설정'}</span></div>
 <div class="row"><span class="k">BLOG ID</span><span class="v ${blogIdVal ? '' : 'off'}">${dot(!!blogIdVal)}${blogIdVal || '인증 시 자동설정'}</span></div>
@@ -2141,6 +2172,16 @@ ${store.persistent ? '' : `<div class="note"><b>🔌 연결이 계속 끊기지 
 <div class="note"><b>🔁 7일마다 연결이 끊긴다면 (원인 1위)</b>
 OAuth 앱이 <b>테스트</b> 상태면 구글이 7일마다 토큰을 강제로 만료시킵니다. 여기서 한 번만 바꾸면 다시는 안 끊깁니다.<div class="mono-box">console.cloud.google.com/auth/audience</div>
 → 대상(Audience) 화면에서 <b>앱 게시 → 프로덕션으로 전환</b> 누르기.</div>
+</div>
+
+<div class="card"><div class="card-t">🗑 구글 연결 초기화</div>
+<div style="color:#7c85b0;font-size:12px;line-height:1.7;margin-bottom:12px">
+<b style="color:#fcd34d">"OAuth client was not found" (401 invalid_client)</b> 가 뜬다면,
+구글 콘솔에서 그 클라이언트가 <b>삭제됐거나 다른 프로젝트</b>에 있는 것입니다.
+새로 만든 값을 넣어도 옛 값이 남아 되돌아갈 수 있으니, 먼저 여기서 지우고 아래에 새로 입력하세요.
+</div>
+<button style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff" onclick="clearBlogger()">🗑 구글 자격증명 모두 지우기</button>
+<div class="result" id="clear-result"></div>
 </div>
 
 <div class="card"><div class="card-t">📋 자격증명 직접 입력</div>
@@ -2188,6 +2229,20 @@ sk-ant-admin 으로 시작하는 관리자 키. 넣으면 이번 달 쓴 금액�
 
 <a class="btn btn-pink" href="/oauth/blogger">🔑 구글 계정 연결 시작</a>
 </div><script>
+function clearBlogger(){
+  var r=document.getElementById('clear-result');
+  r.textContent='지우는 중…';r.style.color='#7c85b0';
+  fetch('/api/credentials/clear-blogger',{method:'POST'}).then(function(x){return x.json();}).then(function(d){
+    // 브라우저 사본에서도 지운다 — 안 지우면 다음에 열 때 다시 올려보내 되살아난다
+    try{var c=JSON.parse(localStorage.getItem('riri_bp_creds')||'{}');
+      (d.keys||[]).forEach(function(k){delete c[k];});
+      localStorage.setItem('riri_bp_creds',JSON.stringify(c));}catch(e){}
+    r.innerHTML='✅ 지웠습니다 ('+(d.cleared.length)+'개). 아래에 새 ID·시크릿을 입력하세요.'
+      +'<div style="color:#fcd34d;font-size:11.5px;margin-top:6px;line-height:1.6">'+d.note+'</div>';
+    r.style.color='#86efac';
+    setTimeout(function(){location.reload();},2500);
+  }).catch(function(e){r.textContent='오류: '+e.message;r.style.color='#f87171';});
+}
 var _blobValue='';
 function makeBlob(){
   var r=document.getElementById('blob-result');
