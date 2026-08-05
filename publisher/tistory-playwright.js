@@ -4,6 +4,7 @@
  */
 
 const { chromium } = require('playwright');
+const { clickElement } = require('./click-helper');
 
 function delay(min, max) {
   return new Promise(r => setTimeout(r, min + Math.random() * (max - min)));
@@ -56,7 +57,7 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
     for (const sel of kakaoBtnSels) {
       const btn = await page.$(sel).catch(() => null);
       if (btn) {
-        await btn.click();
+        await clickElement(btn);
         await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
         await delay(1500, 2500);
         break;
@@ -94,7 +95,7 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
       for (const sel of loginBtnSels) {
         const btn = await page.$(sel).catch(() => null);
         if (btn) {
-          await btn.click();
+          await clickElement(btn);
           await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
           await delay(2000, 3500);
           break;
@@ -135,7 +136,7 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
     for (const sel of titleSels) {
       const el = await page.waitForSelector(sel, { timeout: 8000 }).catch(() => null);
       if (el) {
-        await el.click();
+        await clickElement(el);
         await el.fill(title);
         break;
       }
@@ -154,7 +155,7 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
     for (const sel of htmlBtnSels) {
       const btn = await page.$(sel).catch(() => null);
       if (btn) {
-        await btn.click();
+        await clickElement(btn);
         await delay(1000, 2000);
         htmlMode = true;
         break;
@@ -233,7 +234,7 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
       for (const sel of tagSels) {
         const el = await page.$(sel).catch(() => null);
         if (el) {
-          await el.click();
+          await clickElement(el);
           await el.fill(tags.slice(0, 10).join(','));
           await page.keyboard.press('Enter');
           await delay(500, 800);
@@ -254,7 +255,7 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
     for (const sel of pubSels) {
       const btn = await page.$(sel).catch(() => null);
       if (btn) {
-        await btn.click();
+        await clickElement(btn);
         pubClicked = true;
         break;
       }
@@ -267,7 +268,7 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
     for (const sel of confirmSels) {
       const btn = await page.$(sel).catch(() => null);
       if (btn) {
-        await btn.click();
+        await clickElement(btn);
         await delay(2000, 3500);
         break;
       }

@@ -5,6 +5,7 @@
  */
 
 const { chromium } = require('playwright');
+const { clickAny, clickElement, findAny } = require('./click-helper');
 const path = require('path');
 const fs = require('fs');
 
@@ -59,15 +60,33 @@ async function publishToNaver({ id, pw, blogId, title, content, tags = [], image
     await page.waitForTimeout(randomDelay(800, 1500));
 
     // 아이디 입력 (사람처럼 타이핑)
-    await page.click('#id');
-    await humanType(page, '#id', id);
+    // 네이버가 입력칸 id를 바꾼 적이 있어 후보를 여러 개 둔다
+    const idField = await findAny(page, ['#id', 'input[name="id"]', 'input#loginId'], { timeout: 10000 });
+    if (!idField.el) throw new Error('네이버 로그인 화면에서 아이디 입력칸을 찾지 못했습니다');
+    await clickElement(idField.el);
+    await humanType(page, idField.sel, id);
     await page.waitForTimeout(randomDelay(300, 700));
 
-    await page.click('#pw');
-    await humanType(page, '#pw', pw);
+    const pwField = await findAny(page, ['#pw', 'input[name="pw"]', 'input[type="password"]'], { timeout: 8000 });
+    if (!pwField.el) throw new Error('네이버 로그인 화면에서 비밀번호 입력칸을 찾지 못했습니다');
+    await clickElement(pwField.el);
+    await humanType(page, pwField.sel, pw);
     await page.waitForTimeout(randomDelay(400, 900));
 
-    await page.click('.btn_login');
+    /* 로그인 버튼.
+       예전엔 '.btn_login' 하나만 봤는데, 못 찾으면 30초를 기다렸다 실패했다.
+       (실제로 "page.click: Timeout 30000ms exceeded - waiting for locator('.btn_login')" 로 발행이 멈췄다)
+       후보를 여러 개 두고, 그래도 못 찾으면 엔터로 제출한다 — 폼은 엔터로도 넘어간다. */
+    const loginClick = await clickAny(page, [
+      '.btn_login', '#log\\.login', 'button[type="submit"]',
+      'input[type="submit"]', '.btn_login_wrap button', 'button:has-text("로그인")',
+    ], { timeout: 8000, label: '로그인 버튼', optional: true });
+
+    if (!loginClick.ok) {
+      console.warn('[Naver] 로그인 버튼을 못 찾아 엔터로 제출합니다');
+      await page.keyboard.press('Enter');
+    }
+
     await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
     await page.waitForTimeout(randomDelay(1000, 2000));
 
@@ -89,7 +108,7 @@ async function publishToNaver({ id, pw, blogId, title, content, tags = [], image
     const titleSel = '.se-title-text, [placeholder="제목"], #title';
     const titleEl = await page.$(titleSel);
     if (titleEl) {
-      await titleEl.click();
+      await clickElement(titleEl);
       await humanType(page, titleSel, title);
     }
 
@@ -102,7 +121,7 @@ async function publishToNaver({ id, pw, blogId, title, content, tags = [], image
       // 폴백: contenteditable 직접 사용
       const bodyEl = await page.$('.se-component-content, [contenteditable="true"]');
       if (bodyEl) {
-        await bodyEl.click();
+        await clickElement(bodyEl);
         await page.keyboard.type(content, { delay: randomDelay(20, 60) });
       }
     }
@@ -118,18 +137,19 @@ async function publishToNaver({ id, pw, blogId, title, content, tags = [], image
     await page.waitForTimeout(randomDelay(1000, 2000));
 
     // 발행 버튼 클릭
-    const publishBtn = await page.$('.publish_btn, [data-role="publishButton"], button:has-text("발행")');
-    if (publishBtn) {
-      await publishBtn.click();
-      await page.waitForTimeout(randomDelay(1500, 2500));
-    }
+    const published = await clickAny(page, [
+      '.publish_btn', '[data-role="publishButton"]', '.btn_publish',
+      'button:has-text("발행")', 'button:has-text("등록")',
+    ], { timeout: 10000, label: '발행 버튼' });
+    if (!published.ok) throw new Error(published.error);
+    await page.waitForTimeout(randomDelay(1500, 2500));
 
-    // 발행 확인 모달 처리
-    const confirmBtn = await page.$('[data-action="confirm"], .btn_confirm, button:has-text("확인")');
-    if (confirmBtn) {
-      await confirmBtn.click();
-      await page.waitForTimeout(randomDelay(2000, 3000));
-    }
+    // 발행 확인 모달 — 안 뜰 수도 있으므로 없으면 그냥 넘어간다
+    await clickAny(page, [
+      '[data-action="confirm"]', '.btn_confirm', '.se-popup-button-confirm',
+      'button:has-text("확인")', 'button:has-text("발행")',
+    ], { timeout: 5000, label: '확인 버튼', optional: true });
+    await page.waitForTimeout(randomDelay(2000, 3000));
 
     const postUrl = page.url();
     console.log(`[Naver] 발행 완료: ${postUrl}`);
