@@ -1876,7 +1876,7 @@ async function bpCheckBloggerReauth() {
     var h = await bpFetch('/api/health/blogger');
     if (h && h.needsReauth) {
       bar.innerHTML = '<span style="flex:1;min-width:0">🔌 구글 블로그 연결이 끊겼습니다 — ' + escHtml(h.detail || '재연결 필요') + '</span>'
-        + '<a href="/setup" target="_blank" style="background:#fff;color:#b91c1c;font-weight:700;padding:7px 13px;border-radius:8px;text-decoration:none;font-size:13px;white-space:nowrap">지금 재연결</a>';
+        + '<a href="/setup" onclick="return openExternal(\'/setup\')" style="background:#fff;color:#b91c1c;font-weight:700;padding:7px 13px;border-radius:8px;text-decoration:none;font-size:13px;white-space:nowrap">지금 재연결</a>';
       bar.style.display = 'flex';
     } else {
       bar.style.display = 'none';
@@ -2015,7 +2015,7 @@ function renderDashRecent(log) {
     if (j.results) {
       Object.keys(j.results).forEach(function(p) {
         var r = j.results[p];
-        if (r && r.url) links += '<a href="' + r.url + '" target="_blank" style="color:var(--ac)">' + p + ' 보기</a> ';
+        if (r && r.url) links += extLink(r.url, p + ' 보기', 'color:var(--ac)') + ' ';
       });
     }
     return '<div class="bp-log-item ' + cls + '">'
@@ -2061,6 +2061,25 @@ if (BP_ANTHROPIC_KEY.indexOf('8A5QLMQ') !== -1) {
 }
 var bpSelectedPlatforms = []; // bpCheckServerStatus() 후 설정된 플랫폼으로 자동 채워짐
 var bpImageFiles = [];
+
+/* 홈화면 앱(주소창 없는 상태)에서는 target="_blank" 가 아무 동작도 하지 않는다.
+   글이 올라갔는지 보려고 링크를 눌러도 반응이 없어 "발행됐는지 안 됐는지 모르겠다"가 됐다.
+   새 창을 시도하고, 막히면 현재 창에서 연다. */
+function openExternal(url) {
+  if (!url) return false;
+  try {
+    var w = window.open(url, '_blank');
+    if (w && !w.closed) return false;
+  } catch (e) { /* 아래에서 현재 창으로 연다 */ }
+  window.location.href = url;
+  return false;
+}
+
+/* 링크 태그 만들기 — 어디서든 같은 방식으로 열리게 한다 */
+function extLink(url, text, style) {
+  return '<a href="' + escHtml(url) + '" style="' + (style || '') + '"'
+    + ' onclick="return openExternal(this.getAttribute(\'href\'))">' + escHtml(text) + '</a>';
+}
 
 async function bpFetch(path, opts) {
   var url = BP_SERVER + path;
@@ -2599,7 +2618,7 @@ async function loadBlogLog() {
       if (j.results) {
         Object.keys(j.results).forEach(function(p) {
           var r = j.results[p];
-          if (r && r.url) links += '<a href="' + r.url + '" target="_blank">' + p + ' 링크</a> ';
+          if (r && r.url) links += extLink(r.url, p + ' 글 보기') + ' ';
         });
       }
       return '<div class="bp-log-item ' + cls + '">'
@@ -3254,11 +3273,10 @@ async function runFullCheck() {
         return '<div style="font-size:12.5px;padding:4px 0;color:var(--t2)">'
           + (r.success ? '✅ ' : '❌ ') + (NAMES[p] || p) + ' — '
           + (r.success
-              ? (r.url ? '<a href="' + escHtml(r.url) + '" target="_blank" style="color:var(--ok)">' + escHtml(r.url) + '</a>' : '올라감')
+              ? (r.url ? extLink(r.url, r.url, 'color:var(--ok);word-break:break-all') : '올라감')
               : '<span style="color:var(--err)">' + escHtml(r.error || '실패') + '</span>')
           + (r.screenshot
-              ? '<div style="margin-top:4px"><a href="' + escHtml(r.screenshot) + '" target="_blank"'
-                + ' style="color:var(--ac);font-size:12px">📷 막힌 화면 보기</a></div>'
+              ? '<div style="margin-top:4px">' + extLink(r.screenshot, '📷 막힌 화면 보기', 'color:var(--ac);font-size:12px') + '</div>'
               : '')
           + '</div>';
       }).join('') + '</div>';
@@ -3462,7 +3480,7 @@ async function runPublishTest() {
         + '<span class="ptr-name">' + names[p] + '</span>'
         + '<span class="ptr-pill">' + (r.success ? '올라감' : '실패') + '</span></div>'
         + '<div class="ptr-msg">' + (r.success
-            ? (r.url ? '<a href="' + escHtml(r.url) + '" target="_blank" style="color:var(--ok)">' + escHtml(r.url) + '</a>' : '발행 완료')
+            ? (r.url ? extLink(r.url, r.url, 'color:var(--ok);word-break:break-all') : '발행 완료')
             : escHtml(r.error || '알 수 없는 오류')) + '</div></div>';
     }).join('');
     bpToast(job.anySuccess ? '✅ 발행 성공 — 블로그에서 확인하세요' : '❌ 전부 실패 — 오류 메시지 확인', job.anySuccess ? 'ok' : 'err');
@@ -3697,7 +3715,9 @@ function bpToast(msg, type) {
           var ok = p.status === 'done';
           var t  = p.loggedAt ? new Date(p.loggedAt).toLocaleString('ko-KR') : '';
           var platRow = (p.platforms||[]).map(function(pl){ return PICONS[pl]||pl; }).join(' ');
-          var urls = Object.entries(p.urls||{}).map(function(e){ return '<a class="pub-post-url" href="' + e[1] + '" target="_blank">' + e[0] + ' 보기</a>'; }).join('');
+          var urls = Object.entries(p.urls||{}).map(function(e){
+            return '<a class="pub-post-url" href="' + escHtml(e[1]) + '"'
+                 + ' onclick="return openExternal(this.getAttribute(\'href\'))">' + escHtml(e[0]) + ' 보기</a>'; }).join('');
           return '<div class="pub-post-item">'
             + '<div class="pub-post-icon ' + (ok?'ok':'fail') + '">' + (ok?'✅':'❌') + '</div>'
             + '<div style="flex:1;min-width:0"><div class="pub-post-title">' + escP(p.title) + '</div>'
@@ -4212,7 +4232,8 @@ async function loadAffiliateView(forceRefresh) {
           + '<div class="aff-score-bar"><div class="aff-score-fill" style="width:' + p.hotScore + '%"></div><span class="aff-score-num">열기도 ' + p.hotScore + '/100</span></div>'
           + '<div class="aff-pros">' + (p.pros || []).map(function(pro){ return '<span class="aff-pro">✓ ' + escHtml(pro) + '</span>'; }).join('') + '</div>'
           + (p.bestFor ? '<div style="margin-top:8px;font-size:11px;color:var(--t3)">💡 <b style="color:var(--t2)">' + escHtml(p.bestFor) + '</b></div>' : '')
-          + '<a class="aff-url-btn" href="' + p.url + '" target="_blank">가입하기 →</a>'
+          + '<a class="aff-url-btn" href="' + escHtml(p.url) + '"'
+          + ' onclick="return openExternal(this.getAttribute(\'href\'))">가입하기 →</a>'
           + '</div>';
       }).join('');
     }
@@ -4721,7 +4742,8 @@ function renderHustleCards(hustles) {
       + '<span class="hustle-badge" style="background:rgba(139,92,246,.1);color:#a78bfa">HOT ' + score + '</span>'
       + '</div>'
       + (h.realData ? '<div class="hustle-real-data">' + escHtml(h.realData) + '</div>' : '')
-      + (h.platform ? '<a class="hustle-action-link" href="' + escHtml(h.platform) + '" target="_blank" rel="noopener">사이트 →</a>' : '')
+      + (h.platform ? '<a class="hustle-action-link" href="' + escHtml(h.platform) + '" rel="noopener"'
+          + ' onclick="return openExternal(this.getAttribute(\'href\'))">사이트 →</a>' : '')
       + '<button class="hustle-pipeline-btn" onclick="runHustlePipeline(\'' + escHtml(h.id || 'naver_blog') + '\')">▶ 파이프라인 자동 실행</button>'
       + '</div>';
   }).join('');

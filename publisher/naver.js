@@ -182,7 +182,14 @@ async function publishToNaver({ id, pw, blogId, title, content, tags = [], image
     ], { timeout: 5000, label: '확인 버튼', optional: true });
     await page.waitForTimeout(randomDelay(2000, 3000));
 
-    const postUrl = page.url();
+    /* 발행 후 주소.
+       편집기 주소(ArticleWrite 등)가 그대로 나오면 글 주소가 아니다.
+       그걸 '발행됨'이라며 링크로 주면, 눌러도 글이 안 보여
+       올라간 건지 아닌지 알 수 없게 된다. 그때는 블로그 첫 화면으로 보낸다. */
+    let postUrl = page.url();
+    if (/ArticleWrite|postwrite|Redirect|about:blank/i.test(postUrl) || !/^https?:/i.test(postUrl)) {
+      postUrl = `https://blog.naver.com/${blogId}`;
+    }
     console.log(`[Naver] 발행 완료: ${postUrl}`);
     return { success: true, url: postUrl, platform: 'naver' };
 
