@@ -26,6 +26,8 @@ const path    = require('path');
 let volumeIsMount = false;
 
 function pickVolume() {
+  // 테스트가 실제 볼륨을 타지 않게 하는 스위치 (운영에서는 쓰지 않는다)
+  if (process.env.DISABLE_VOLUME === '1') return null;
   const declared = [process.env.RAILWAY_VOLUME_MOUNT_PATH, process.env.PERSIST_DIR].filter(Boolean);
   const candidates = [...declared, '/data'];
 
@@ -77,7 +79,9 @@ function writeJson(file, data) {
  * 값들을 한 덩어리로 묶어 환경변수에 넣어둘 수 있게 한다.
  * 환경변수는 재배포해도 지워지지 않으므로 한 번 붙여넣으면 끝난다.
  * 출처를 'blob'으로 따로 표시해, 나중에 새로 인증한 값이 이걸 덮어쓸 수 있게 한다. */
-const blobKeys = new Set();
+const blobKeys = new Set();     // 아직 블롭 값 그대로인 키 (덮어쓰면 빠진다)
+const blobValues = new Map();   // 블롭에 들어 있던 원본 값 — 최신인지 비교하는 데 쓴다
+let blobPresent = false;        // 환경변수 자체가 있는가 (덮어써도 이건 그대로다)
 
 function readBlob() {
   const raw = process.env.CREDENTIALS_BLOB;
@@ -87,8 +91,9 @@ function readBlob() {
     if (!json || typeof json !== 'object') return {};
     const out = {};
     for (const [k, v] of Object.entries(json)) {
-      if (typeof v === 'string' && v) { out[k] = v; blobKeys.add(k); }
+      if (typeof v === 'string' && v) { out[k] = v; blobKeys.add(k); blobValues.set(k, v); }
     }
+    blobPresent = blobValues.size > 0;
     return out;
   } catch (e) {
     console.warn('[TokenStore] CREDENTIALS_BLOB 해석 실패 — 값을 다시 복사해 넣어주세요:', e.message);
@@ -122,8 +127,8 @@ function makeBlob(keys) {
       }
     }
   }
-  if (blobKeys.size) {
-    console.log(`[TokenStore] CREDENTIALS_BLOB 에서 ${blobKeys.size}개 불러옴 — 재배포해도 유지됩니다`);
+  if (blobPresent) {
+    console.log(`[TokenStore] CREDENTIALS_BLOB 에서 ${blobValues.size}개 불러옴 — 재배포해도 유지됩니다`);
   }
   if (VOLUME && volumeIsMount) {
     console.log(`[TokenStore] 영구 저장소 사용: ${VOLUME} (재배포해도 유지됩니다)`);
@@ -189,12 +194,36 @@ function sourceOf(key) {
   return null;
 }
 
+/* 복구값이 지금 상태보다 오래됐는가.
+   블롭을 넣은 뒤에 자격증명을 바꿨다면, 재배포 때 옛 값이 되살아난다.
+   그 경우엔 복구값을 다시 만들어 넣어야 하므로 따로 알려준다. */
+function isBlobStale() {
+  if (!blobPresent) return false;
+  for (const [k, v] of blobValues) {
+    const now = mem.get(k);
+    if (now && now !== v) return true;          // 넣은 뒤에 바뀐 값이 있다
+  }
+  for (const k of mem.keys()) {
+    if (!blobValues.has(k) && RESTORABLE_HINT.test(k)) return true;   // 블롭에 없는 새 값이 생겼다
+  }
+  return false;
+}
+
+/* 복구 대상 키인지 대략 판별 (token-store 는 서버의 목록을 모른다) */
+const RESTORABLE_HINT = /^(BLOGGER_|NAVER_|TISTORY_|ANTHROPIC_|UNSPLASH_|LINKPRICE_|COUPANG_|TELEGRAM_)/;
+
 /** 저장 상태 (진단용 — 값은 노출하지 않음) */
 function storageInfo() {
   return {
-    persistent: (!!VOLUME && volumeIsMount) || blobKeys.size > 0,
-    mode: (!!VOLUME && volumeIsMount) ? 'volume' : (blobKeys.size > 0 ? 'blob' : 'none'),
-    blobKeyCount: blobKeys.size,
+    /* 영구 저장 여부는 '환경변수가 있는가'로 판단한다.
+       예전엔 '아직 블롭 값 그대로인 키가 몇 개인가'로 봤는데,
+       대시보드를 열어 값이 한 번 갱신되면 그 수가 0이 되면서
+       복구값을 넣어뒀는데도 "재배포하면 끊깁니다"가 계속 떴다. */
+    persistent: (!!VOLUME && volumeIsMount) || blobPresent,
+    mode: (!!VOLUME && volumeIsMount) ? 'volume' : (blobPresent ? 'blob' : 'none'),
+    blobPresent,
+    blobStale: isBlobStale(),
+    blobKeyCount: blobValues.size,
     volumePath: VOLUME || null,
     volumeWritable: writable.volume,
     localWritable: writable.local,

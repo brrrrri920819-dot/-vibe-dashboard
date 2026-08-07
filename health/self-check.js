@@ -83,6 +83,17 @@ function assess({ tokens, readLog, readQueue, bloggerHealth, serverStartedAt }) 
       detail: '지금은 값이 서버 메모리에만 있어, 서버가 새로 뜨면 사라집니다.',
       action: '설정 탭 → 복구값 만들기 → Railway 에 CREDENTIALS_BLOB 으로 붙여넣기 (1회)',
     });
+  } else if (store.blobStale) {
+    /* 복구값은 넣었는데 그 뒤에 자격증명이 바뀐 경우.
+       "안 넣었다"고 다시 시키면 넣어둔 사람 입장에선 같은 말만 반복하는 꼴이라,
+       무엇이 달라졌는지 구분해서 알려준다. */
+    problems.push({
+      key: 'blob_stale',
+      severity: 'medium',
+      title: '복구값이 지금 설정보다 오래됐습니다',
+      detail: '복구값을 넣은 뒤에 연결 정보가 바뀌었습니다. 이대로 재배포하면 옛 값으로 되돌아갑니다.',
+      action: '설정 탭 → 복구값 만들기 → Railway 의 CREDENTIALS_BLOB 값만 새 걸로 교체',
+    });
   }
 
   // ── 최근 발행이 계속 실패하고 있는가 ──────────────────────

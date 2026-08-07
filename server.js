@@ -2162,8 +2162,11 @@ ${cid ? `<div style="margin:4px 0 10px">
 <div id="diag" style="margin-top:14px"></div>
 <div class="row"><span class="k">영구 저장</span><span class="v ${store.persistent ? '' : 'off'}">${dot(store.persistent)}${
   store.mode === 'volume' ? '켜짐 (볼륨) — 재배포해도 유지'
-: store.mode === 'blob'   ? '켜짐 (환경변수) — 재배포해도 유지'
+: store.mode === 'blob'   ? (store.blobStale ? '켜짐 — 다만 복구값이 오래됨' : '켜짐 (환경변수) — 재배포해도 유지')
 : '꺼짐 — 재배포 시 재연결 필요'}</span></div>
+${store.persistent && store.blobStale ? `<div class="note"><b>♻️ 복구값을 다시 만들어 주세요</b>
+복구값을 넣은 뒤에 연결 정보가 바뀌었습니다. 이대로 재배포하면 옛 값으로 되돌아갑니다.<br>
+아래 <b>복구값 만들기</b>로 새로 만들어 Railway 의 <b>CREDENTIALS_BLOB</b> 값만 교체하세요.</div>` : ''}
 ${store.persistent ? '' : `<div class="note"><b>🔌 연결이 계속 끊기지 않게 하려면 (1회, 30초)</b>
 아래 <b>복구값</b>을 복사해서 Railway → Variables 에 <b>CREDENTIALS_BLOB</b> 이름으로 붙여넣으세요.<br>
 환경변수는 재배포해도 지워지지 않아, 한 번만 하면 다시는 안 끊깁니다.
