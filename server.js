@@ -214,6 +214,7 @@ async function publishJob(job) {
       results.naver = await withRetry('naver', () => publishToNaver({
         id:       tokens.get('NAVER_ID'),
         pw:       tokens.get('NAVER_PW'),
+        cookies:  tokens.get('NAVER_COOKIES'),   // 있으면 로그인 단계를 건너뛴다
         blogId:   tokens.get('NAVER_BLOG_ID'),
         title:    variantTitle,
         content:  variantContent,
@@ -225,15 +226,22 @@ async function publishJob(job) {
       const tistoryId = tokens.get('TISTORY_ID');
       const tistoryPw = tokens.get('TISTORY_PW');
       // TISTORY_BLOG_NAME: 풀 URL 입력해도 앞부분만 추출 (예: abc.tistory.com → abc)
+      const tistoryCookies = tokens.get('TISTORY_COOKIES');
       const rawBlogName = tokens.get('TISTORY_BLOG_NAME') || '';
       const blogName = rawBlogName.replace(/\.tistory\.com.*$/, '').replace(/https?:\/\//, '').trim();
-      if (tistoryId && tistoryPw && blogName) {
+      // 쿠키가 있으면 아이디·비밀번호 없이도 발행할 수 있다
+      if (blogName && (tistoryCookies || (tistoryId && tistoryPw))) {
         results.tistory = await withRetry('tistory', () => publishToTistoryPlaywright({
-          id: tistoryId, pw: tistoryPw, blogName,
+          id: tistoryId, pw: tistoryPw, cookies: tistoryCookies, blogName,
           title: variantTitle, content: variantContent, tags,
         }));
       } else {
-        results.tistory = { success: false, error: 'Railway에 TISTORY_ID / TISTORY_PW / TISTORY_BLOG_NAME 설정 필요', platform: 'tistory' };
+        results.tistory = {
+          success: false,
+          error: !blogName ? 'TISTORY_BLOG_NAME 미설정'
+               : '티스토리 로그인 정보가 없습니다 — 설정에서 쿠키(권장) 또는 아이디/비밀번호를 넣으세요',
+          platform: 'tistory',
+        };
       }
 
     } else if (platform === 'blogger') {
@@ -608,7 +616,7 @@ app.post('/api/full-check', auth, (req, res) => {
     const okList = [], failList = [];
     for (const p of targets) {
       const r = results[p] || { success: false, error: '결과 없음' };
-      summary[p] = { success: !!r.success, url: r.url || null, error: r.error || null };
+      summary[p] = { success: !!r.success, url: r.url || null, error: r.error || null, screenshot: r.screenshot || null };
       (r.success ? okList : failList).push(p);
     }
     push({ step: '5. 발행', ok: okList.length > 0,
@@ -1867,6 +1875,8 @@ const RESTORABLE = [
   // 블로그스팟만 복구하고 나머지를 빼두면 결국 또 "연결이 끊겼다"가 된다
   'NAVER_ID', 'NAVER_PW', 'NAVER_BLOG_ID',
   'TISTORY_ID', 'TISTORY_PW', 'TISTORY_BLOG_NAME',
+  // 로그인 대신 쓰는 쿠키 — 자동 로그인이 막히는 곳을 우회한다
+  'NAVER_COOKIES', 'TISTORY_COOKIES',
   // 알림 채널 — 이것도 재배포 때 사라지면 조용히 알림이 끊긴다
   'TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID',
   'LINKPRICE_ID', 'LINKPRICE_PW',

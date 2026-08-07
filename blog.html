@@ -1169,6 +1169,26 @@ body{background:
       </div>
 
       <div class="section">
+        <div class="bp-section-title">🍪 네이버·티스토리 쿠키 로그인 (권장)</div>
+        <div class="bp-humanize-tip" style="margin-bottom:10px">
+          네이버·카카오는 <b>자동 로그인을 막습니다.</b> 아이디·비밀번호 방식은 캡차·기기 인증 때문에 계속 깨져요.<br>
+          <b>이미 로그인된 쿠키</b>를 넣으면 로그인 단계를 통째로 건너뛰어 훨씬 안정적입니다. 한 번 넣으면 몇 주~몇 달 갑니다.
+          <div style="margin-top:8px;color:var(--t3);font-size:12px;line-height:1.7">
+            <b>넣는 법</b> — PC 크롬에서 네이버(또는 티스토리) 로그인 → F12 → Application → Cookies →
+            해당 도메인 선택 → 전체 복사. 확장앱(EditThisCookie 등)의 JSON 내보내기도 그대로 됩니다.
+          </div>
+        </div>
+        <label style="display:block;font-size:12px;color:var(--t2);margin-bottom:5px">🟢 네이버 쿠키</label>
+        <textarea class="bp-inp" id="ck-naver" style="min-height:70px;font-size:12px"
+          placeholder='JSON 배열 또는 "NID_AUT=...; NID_SES=..." 형태'></textarea>
+        <label style="display:block;font-size:12px;color:var(--t2);margin-bottom:5px">🟠 티스토리 쿠키</label>
+        <textarea class="bp-inp" id="ck-tistory" style="min-height:70px;font-size:12px"
+          placeholder='JSON 배열 또는 "TSSESSION=...; ..." 형태'></textarea>
+        <button class="bp-pub-btn" style="max-width:180px" id="ck-save-btn" onclick="saveCookies()">🍪 쿠키 저장</button>
+        <div id="ck-result" style="margin-top:10px;font-size:13px"></div>
+      </div>
+
+      <div class="section">
         <div class="bp-section-title">🔍 플랫폼 실제 연결 테스트</div>
         <div class="bp-humanize-tip" style="margin-bottom:10px">자격증명이 실제로 유효한지 확인합니다. 발행이 안 될 때 여기서 원인을 찾으세요.</div>
         <button class="bp-pub-btn" style="max-width:180px" id="plat-test-btn" onclick="testPlatformConnections()">🔌 연결 테스트</button>
@@ -3087,6 +3107,43 @@ function copyBlobValue() {
     .catch(function(){ note.textContent = '복사 실패 — 위 상자를 길게 눌러 직접 복사하세요'; });
 }
 
+/* 쿠키 저장 — 로그인 단계를 건너뛰게 해주는 값이라 별도로 다룬다 */
+async function saveCookies() {
+  var btn = document.getElementById('ck-save-btn');
+  var out = document.getElementById('ck-result');
+  var payload = {};
+  var n = (document.getElementById('ck-naver').value || '').trim();
+  var t = (document.getElementById('ck-tistory').value || '').trim();
+  if (n) payload.NAVER_COOKIES = n;
+  if (t) payload.TISTORY_COOKIES = t;
+  if (!Object.keys(payload).length) { bpToast('넣을 쿠키가 없습니다', 'err'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="bp-spinner"></span>저장 중';
+  try {
+    var d = await bpFetch('/api/keys', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    out.innerHTML = '<span style="color:var(--ok)">✅ ' + d.saved.length + '개 저장됨 — 이제 로그인 단계를 건너뜁니다</span>';
+    // 재배포 대비 사본에도 넣어둔다
+    try {
+      var c = JSON.parse(localStorage.getItem('riri_bp_creds') || '{}');
+      Object.keys(payload).forEach(function(k){ c[k] = payload[k]; });
+      localStorage.setItem('riri_bp_creds', JSON.stringify(c));
+    } catch (e) {}
+    document.getElementById('ck-naver').value = '';
+    document.getElementById('ck-tistory').value = '';
+    bpToast('🍪 쿠키 저장 완료', 'ok');
+  } catch (e) {
+    out.innerHTML = '<span style="color:var(--err)">❌ ' + escHtml(e.message) + '</span>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🍪 쿠키 저장';
+  }
+}
+
 /* 서버가 겪은 오류를 화면에서 바로 본다.
    Railway 로그를 열어보지 않아도 원인을 확인할 수 있게 하기 위한 것. */
 var _serverErrors = [];
@@ -3199,6 +3256,10 @@ async function runFullCheck() {
           + (r.success
               ? (r.url ? '<a href="' + escHtml(r.url) + '" target="_blank" style="color:var(--ok)">' + escHtml(r.url) + '</a>' : '올라감')
               : '<span style="color:var(--err)">' + escHtml(r.error || '실패') + '</span>')
+          + (r.screenshot
+              ? '<div style="margin-top:4px"><a href="' + escHtml(r.screenshot) + '" target="_blank"'
+                + ' style="color:var(--ac);font-size:12px">📷 막힌 화면 보기</a></div>'
+              : '')
           + '</div>';
       }).join('') + '</div>';
     }

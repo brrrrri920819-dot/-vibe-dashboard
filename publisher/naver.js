@@ -6,15 +6,25 @@
 
 const { chromium } = require('playwright');
 const { clickAny, clickElement, findAny } = require('./click-helper');
+const { applyCookies, looksLoggedOut } = require('./session');
+const { saveFailureShot } = require('./failure-shot');
 const path = require('path');
 const fs = require('fs');
 
 const NAVER_LOGIN_URL = 'https://nid.naver.com/nidlogin.login';
 const BLOG_WRITE_URL  = 'https://blog.naver.com/ArticleWrite.naver';
 
-async function publishToNaver({ id, pw, blogId, title, content, tags = [], imagePaths = [], category = '' }) {
-  if (!id || !pw) {
-    return { success: false, error: '네이버 아이디/비밀번호 미설정 — 설정에서 입력하세요', platform: 'naver' };
+async function publishToNaver({ id, pw, blogId, title, content, tags = [], imagePaths = [], category = '', cookies = '' }) {
+  /* 쿠키가 있으면 로그인 단계를 통째로 건너뛴다.
+     네이버는 자동 로그인을 막기 때문에, 아이디·비밀번호 방식은
+     캡차·기기 인증·화면 개편으로 계속 깨진다. */
+  const useCookies = !!String(cookies || '').trim();
+  if (!useCookies && (!id || !pw)) {
+    return {
+      success: false,
+      error: '네이버 로그인 정보가 없습니다 — 설정에서 쿠키(권장) 또는 아이디/비밀번호를 넣으세요',
+      platform: 'naver',
+    };
   }
   /* 브라우저 실행부터 예외로 터지면 호출한 쪽이 통째로 죽어
      다른 블로그 발행까지 못 하게 된다. 여기서 결과값으로 바꿔 돌려준다. */
@@ -39,6 +49,16 @@ async function publishToNaver({ id, pw, blogId, title, content, tags = [], image
     locale: 'ko-KR',
   });
 
+  // 쿠키를 먼저 심는다 — 이게 있으면 로그인 화면을 볼 일이 없다
+  if (useCookies) {
+    const applied = await applyCookies(context, cookies, '.naver.com');
+    if (!applied.ok) {
+      await browser.close().catch(() => {});
+      return { success: false, error: `네이버 쿠키 오류 — ${applied.error}`, platform: 'naver' };
+    }
+    console.log(`[Naver] 쿠키 ${applied.count}개 적용 — 로그인 단계 건너뜀`);
+  }
+
   // 자동화 감지 우회
   await context.addInitScript(() => {
     Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
@@ -56,6 +76,15 @@ async function publishToNaver({ id, pw, blogId, title, content, tags = [], image
 
   try {
     // ── 1. 로그인 ─────────────────────────────────
+    if (useCookies) {
+      // 쿠키가 살아있는지만 확인한다
+      await page.goto('https://blog.naver.com', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForTimeout(randomDelay(800, 1500));
+      if (looksLoggedOut(page.url())) {
+        throw new Error('NAVER_COOKIE_EXPIRED: 쿠키가 만료됐습니다 — 설정에서 쿠키를 다시 복사해 넣어주세요');
+      }
+      console.log('[Naver] 쿠키 로그인 확인됨');
+    } else {
     await page.goto(NAVER_LOGIN_URL, { waitUntil: 'networkidle' });
     await page.waitForTimeout(randomDelay(800, 1500));
 
@@ -93,8 +122,10 @@ async function publishToNaver({ id, pw, blogId, title, content, tags = [], image
     // 캡차 or 2차 인증 확인
     const currentUrl = page.url();
     if (currentUrl.includes('nidlogin') || currentUrl.includes('captcha')) {
-      throw new Error('NAVER_LOGIN_BLOCKED: 캡차 또는 2차 인증이 필요합니다. 수동 로그인 후 쿠키를 저장하세요.');
+      throw new Error('NAVER_LOGIN_BLOCKED: 네이버가 자동 로그인을 막았습니다 (캡차 또는 기기 인증). '
+        + '설정에서 쿠키를 넣으면 로그인 단계를 건너뛸 수 있습니다.');
     }
+    }   // 아이디/비밀번호 로그인 끝
 
     // ── 2. 글쓰기 페이지 이동 ─────────────────────
     await page.goto(`${BLOG_WRITE_URL}?blogId=${blogId}`, { waitUntil: 'domcontentloaded' });
@@ -157,7 +188,9 @@ async function publishToNaver({ id, pw, blogId, title, content, tags = [], image
 
   } catch (err) {
     console.error('[Naver] 발행 실패:', err.message);
-    return { success: false, error: err.message, platform: 'naver' };
+    // 막힌 화면을 남긴다 — 캡차인지, 비번 오류인지, 화면이 바뀐 건지 눈으로 봐야 고칠 수 있다
+    const shot = await saveFailureShot(page, 'naver').catch(() => null);
+    return { success: false, error: err.message, screenshot: shot, platform: 'naver' };
   } finally {
     // 닫기 실패가 발행 결과를 덮어쓰지 않게 한다
     if (browser) await browser.close().catch(() => {});

@@ -5,12 +5,17 @@
 
 const { chromium } = require('playwright');
 const { clickElement } = require('./click-helper');
+const { applyCookies, looksLoggedOut } = require('./session');
+const { saveFailureShot } = require('./failure-shot');
 
 function delay(min, max) {
   return new Promise(r => setTimeout(r, min + Math.random() * (max - min)));
 }
 
-async function publishToTistoryPlaywright({ id, pw, blogName, title, content, tags = [] }) {
+async function publishToTistoryPlaywright({ id, pw, blogName, title, content, tags = [], cookies = '' }) {
+  /* 쿠키가 있으면 카카오 로그인 단계를 건너뛴다.
+     카카오도 자동 로그인을 막기 때문에 아이디·비밀번호 방식은 자주 깨진다. */
+  const useCookies = !!String(cookies || '').trim();
   /* 브라우저 실행 실패가 예외로 튀면 다른 블로그 발행까지 함께 중단된다.
      결과값으로 바꿔 돌려줘, 이 블로그만 실패로 남게 한다. */
   let browser, context, page;
@@ -39,6 +44,14 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
   });
 
   page = await context.newPage();
+  if (useCookies) {
+    const applied = await applyCookies(context, cookies, '.tistory.com');
+    if (!applied.ok) {
+      await browser.close().catch(() => {});
+      return { success: false, error: `티스토리 쿠키 오류 — ${applied.error}`, platform: 'tistory' };
+    }
+    console.log(`[Tistory] 쿠키 ${applied.count}개 적용 — 로그인 단계 건너뜀`);
+  }
   } catch (err) {
     if (browser) await browser.close().catch(() => {});
     const m = /Executable doesn't exist|ENOENT/.test(err.message)
@@ -49,6 +62,15 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
 
   try {
     // ── 1. 티스토리 로그인 (카카오 계정) ─────────────────
+    if (useCookies) {
+      // 쿠키가 살아있는지만 확인하고 로그인은 건너뛴다
+      await page.goto('https://www.tistory.com/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await delay(800, 1500);
+      if (looksLoggedOut(page.url())) {
+        throw new Error('TISTORY_COOKIE_EXPIRED: 쿠키가 만료됐습니다 — 설정에서 쿠키를 다시 복사해 넣어주세요');
+      }
+      console.log('[Tistory] 쿠키 로그인 확인됨');
+    } else {
     await page.goto('https://www.tistory.com/auth/login', { waitUntil: 'domcontentloaded', timeout: 30000 });
     await delay(1500, 2500);
 
@@ -109,9 +131,11 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
       // 잠깐 더 기다려봄 (리다이렉트 지연)
       await delay(3000, 5000);
       if (page.url().includes('login') || page.url().includes('accounts.kakao')) {
-        throw new Error('로그인 실패 — TISTORY_ID(카카오 이메일)/TISTORY_PW(카카오 비번) 확인 필요');
+        throw new Error('로그인 실패 — 카카오가 자동 로그인을 막았거나 계정 정보가 틀립니다. '
+          + '설정에서 쿠키를 넣으면 로그인 단계를 건너뛸 수 있습니다.');
       }
     }
+    }   // 아이디/비밀번호 로그인 끝
 
     // ── 2. 글쓰기 페이지로 이동 ───────────────────────────
     const writeUrl = `https://${blogName}.tistory.com/manage/post/write`;
@@ -279,13 +303,11 @@ async function publishToTistoryPlaywright({ id, pw, blogName, title, content, ta
     return { success: true, url: postUrl, platform: 'tistory' };
 
   } catch (err) {
-    // 스크린샷 저장 (디버깅용)
-    try {
-      await page.screenshot({ path: '/tmp/tistory-error.png' });
-      console.error('[Tistory-PW] 오류 스크린샷 저장: /tmp/tistory-error.png');
-    } catch {}
     console.error('[Tistory-PW] 발행 실패:', err.message);
-    return { success: false, error: err.message, platform: 'tistory' };
+    /* 막힌 화면을 남긴다.
+       예전엔 /tmp 에 저장해서 아무도 볼 수 없었다 — 이제 대시보드에서 열어본다. */
+    const shot = await saveFailureShot(page, 'tistory').catch(() => null);
+    return { success: false, error: err.message, screenshot: shot, platform: 'tistory' };
   } finally {
     await browser.close().catch(() => {});
   }
