@@ -108,6 +108,23 @@ function assess({ tokens, readLog, readQueue, bloggerHealth, serverStartedAt }) 
     });
   }
 
+  /* 제휴 프로그램 목록이 낡으면, 수수료 낮은 곳만 계속 소개하게 된다.
+     새로 뜬 곳(수수료가 몇 배인 곳)을 놓치는 건 조용한 손해라 눈에 안 띈다.
+     그래서 마지막으로 확인한 시점을 보고 오래됐으면 알린다. */
+  try {
+    const { programsAgeMonths } = require('../affiliates/crawler');
+    const age = programsAgeMonths();
+    if (age !== null && age >= 4) {
+      problems.push({
+        key: 'affiliate_list_stale',
+        severity: 'medium',
+        title: `제휴 프로그램 목록이 ${age}개월째 그대로입니다`,
+        detail: '새로 나온 고수수료 프로그램을 놓치고 있을 수 있습니다. 수수료 차이는 몇 배까지 납니다.',
+        action: '제휴 목록을 다시 확인해 갱신 요청하기',
+      });
+    }
+  } catch (_) { /* 목록을 못 읽어도 점검 자체는 계속한다 */ }
+
   // ── 최근 발행이 계속 실패하고 있는가 ──────────────────────
   const log = (typeof readLog === 'function' ? readLog() : []) || [];
   const recent = log.slice(0, 10);

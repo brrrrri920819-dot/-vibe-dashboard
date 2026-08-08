@@ -45,7 +45,13 @@ setTimeout(async()=>{
   ck('네이버 글에 대가성 고지 포함',/제휴 링크가 포함/.test(naverJob.content));
   ck('네이버 글에 제휴 블록 포함',/함께 보면 좋은 제휴 서비스/.test(naverJob.content));
   ck('제휴 링크에 sponsored nofollow',/rel="sponsored nofollow noopener"/.test(naverJob.content));
-  ck('네이버 허용 프로그램만 사용',!/쿠팡파트너스 바로가기/.test(naverJob.content)||/네이버/.test(naverJob.content));
+  /* '네이버' 라는 글자가 들어있는지로 판단하면 안 된다.
+     추천 순위가 바뀌어 네이버 쇼핑파트너가 빠지면 멀쩡한데도 실패한다.
+     실제로 봐야 할 것은 '네이버에서 금지된 프로그램이 들어갔는가' 다. */
+  const naverBanned = ['알리익스프레스', '테무'];
+  ck('네이버에서 막히는 제휴는 넣지 않는다',
+     naverBanned.every(n => !naverJob.content.includes(n)),
+     naverBanned.filter(n => naverJob.content.includes(n)).join(','));
   ck('사용된 제휴가 결과에 기록',(st.items[0].affiliates||[]).length>0,JSON.stringify(st.items[0].affiliates));
 
   console.log('\n[40] 시간 간격 예약');

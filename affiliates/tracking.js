@@ -61,6 +61,15 @@ function withTracking(rawUrl, tokens) {
     return { url: u.toString(), tracked: true, network: 'naver' };
   }
 
+  /* 토스 쉐어링크는 링크를 만들 때 이미 내 ID가 박혀 나온다.
+     그래서 뒤에 뭘 붙일 게 없다. 다만 '추적되는 링크'로 인식은 해줘야
+     "추적 안 됨"이라고 잘못 경고하지 않는다.
+     반대로 그냥 토스 주소는 추적되지 않으므로 그렇다고 말한다. */
+  if (/(^|\.)toss\.im$/i.test(u.hostname)) {
+    const looksShared = /share|sharelink|ref|sid/i.test(u.pathname + u.search);
+    return { url, tracked: looksShared, network: 'toss' };
+  }
+
   return { url, tracked: false, network: null };
 }
 

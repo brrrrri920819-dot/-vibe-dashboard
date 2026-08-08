@@ -29,8 +29,86 @@ function fetchUrl(url, opts = {}) {
   });
 }
 
+/* 목록을 마지막으로 사실 확인한 시점.
+   제휴 시장은 빨리 바뀐다 — 새 프로그램이 기존보다 수수료가 몇 배인 경우가 흔하다.
+   이 값이 오래되면 자가 점검이 갱신하라고 알린다. */
+const PROGRAMS_VERIFIED_AT = '2026-08';
+
+/** 목록을 확인한 지 몇 달 됐나 (모르면 null) */
+function programsAgeMonths(now = new Date()) {
+  const m = /^(\d{4})-(\d{2})$/.exec(PROGRAMS_VERIFIED_AT);
+  if (!m) return null;
+  const then = new Date(Number(m[1]), Number(m[2]) - 1, 1);
+  return Math.max(0, (now.getFullYear() - then.getFullYear()) * 12 + (now.getMonth() - then.getMonth()));
+}
+
 // ── 주요 제휴 프로그램 정보 (curated + live 스코어) ──────
 const PROGRAMS = [
+  /* 2026년 기준으로 확인해 추가한 것들.
+     목록이 낡으면 수수료 낮은 곳만 계속 소개하게 된다.
+     쿠팡은 1~3%인데 토스 쉐어링크는 10%다 — 같은 글, 같은 클릭에 몇 배 차이다.
+     출처를 적어두어 나중에 사실을 다시 확인할 수 있게 한다. */
+  {
+    id: 'toss_sharelink',
+    name: '토스쇼핑 쉐어링크',
+    url: 'https://toss.im',
+    type: 'CPS',
+    category: '종합쇼핑',
+    commissionRate: '10% (베타)',
+    commissionAvg: 10.0,
+    payment: '토스쇼핑 파트너스에서 정산',
+    minPayout: 0,
+    cookieDays: 14,
+    pros: ['수수료가 쿠팡의 3배 이상', '토스 앱 사용자 기반이 커 전환이 붙는다', '링크 만들기가 간단'],
+    cons: ['베타 기간 조건이라 수수료가 바뀔 수 있다', '취급 상품 폭이 쿠팡보다 좁다'],
+    bestFor: '생활용품, 패션, 뷰티 — 객단가 있는 상품',
+    hotScore: 96,
+    trending: true,
+    naverBlogCompatible: true,
+    tag: '🔥 수수료 최고',
+    verifiedAt: '2026-08',
+    source: 'https://support.toss.im/faq/4713',
+  },
+  {
+    id: 'aliexpress',
+    name: '알리익스프레스 어필리에이트',
+    url: 'https://portals.aliexpress.com',
+    type: 'CPS',
+    category: '해외직구',
+    commissionRate: '카테고리별 상이 (쿠팡보다 대체로 높음)',
+    commissionAvg: 6.0,
+    payment: '월 정산',
+    minPayout: 16000,
+    cookieDays: 3,
+    pros: ['쿠팡보다 기본 수수료가 높다', '가성비 상품군이 넓다', '해외 상품 리뷰 글과 잘 맞는다'],
+    cons: ['배송이 느려 구매 전환이 떨어질 수 있다', '쿠키 기간이 짧다'],
+    bestFor: '가성비 전자기기, 생활 소품, 취미 용품',
+    hotScore: 88,
+    trending: true,
+    naverBlogCompatible: false,
+    tag: '💰 고수수료',
+    verifiedAt: '2026-08',
+  },
+  {
+    id: 'temu',
+    name: '테무 어필리에이트',
+    url: 'https://www.temu.com',
+    type: 'CPS + CPA',
+    category: '해외직구',
+    commissionRate: '주문 금액별 + 신규 설치 리워드',
+    commissionAvg: 5.0,
+    payment: '플랫폼 정책에 따름',
+    minPayout: 0,
+    cookieDays: 30,
+    pros: ['앱 설치만으로도 리워드가 붙는다', '신규 유입 보상이 크다', '쿠키 기간이 길다'],
+    cons: ['정책 변동이 잦다', '브랜드 신뢰도를 따지는 독자에겐 약하다'],
+    bestFor: '초저가 생활용품, 가성비 비교 글',
+    hotScore: 84,
+    trending: true,
+    naverBlogCompatible: false,
+    tag: '🆕 신규',
+    verifiedAt: '2026-08',
+  },
   {
     id: 'coupang',
     name: '쿠팡파트너스',
@@ -476,4 +554,4 @@ async function crawlAffiliates() {
   return result;
 }
 
-module.exports = { crawlAffiliates };
+module.exports = { crawlAffiliates, programsAgeMonths, PROGRAMS_VERIFIED_AT };

@@ -91,5 +91,21 @@ const fakeTokens = (v = {}) => ({ get: (k) => v[k] || null });
   ok('붙은 개수를 세어 알려준다', res.trackedCount === 1 && res.total === 2);
   ok('붙지 않은 링크도 그대로 남긴다', res.products[1].link === 'https://example.com/x');
 
+  // ── 6) 제휴 목록이 대세를 따라가는가 ─────────────────────
+  const { programsAgeMonths } = require('../affiliates/crawler');
+  const crawlerSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'affiliates', 'crawler.js'), 'utf8');
+  ok('토스쇼핑 쉐어링크가 목록에 있다', /toss_sharelink/.test(crawlerSrc));
+  ok('토스 수수료가 쿠팡보다 높게 잡혀 있다', /commissionAvg: 10\.0/.test(crawlerSrc));
+  ok('알리익스프레스가 목록에 있다', /aliexpress/.test(crawlerSrc));
+  ok('테무가 목록에 있다', /temu/.test(crawlerSrc));
+  ok('언제 확인한 목록인지 적혀 있다', /PROGRAMS_VERIFIED_AT/.test(crawlerSrc));
+  ok('목록 나이를 셀 수 있다', typeof programsAgeMonths() === 'number');
+
+  // 토스 쉐어링크는 링크에 이미 ID가 박혀 나온다
+  const share = withTracking('https://toss.im/share/abc123', fakeTokens());
+  ok('토스 쉐어링크는 추적되는 링크로 본다', share.tracked === true && share.network === 'toss');
+  const plainToss = withTracking('https://toss.im/', fakeTokens());
+  ok('그냥 토스 주소는 추적 안 된다고 말한다', plainToss.tracked === false);
+
   console.log(`\n✅ ${pass}개 통과\n`);
 })().catch((e) => { console.error('\n❌ 실패:', e.message, '\n'); process.exit(1); });

@@ -1,5 +1,11 @@
-const http=require('http');const fs=require('fs');const path=require('path');
-const TOKENS=path.join(__dirname,'../config/tokens.json');
+const http=require('http');const fs=require('fs');const path=require('path');const os=require('os');
+/* 다른 테스트와 저장소를 공유하면 앞 테스트가 남긴 값이 섞여
+   "복구 4개"가 2개로 보인다. 이 테스트만의 저장소를 쓴다. */
+const TMP=fs.mkdtempSync(path.join(os.tmpdir(),'vibe-credrestore-'));
+const TOKENS=path.join(TMP,'tokens.json');
+process.env.TOKENS_FILE=TOKENS;
+process.env.DISABLE_VOLUME='1';
+delete process.env.CREDENTIALS_BLOB;
 process.env.PORT=3995;
 ['BLOGGER_CLIENT_ID','BLOGGER_CLIENT_SECRET','BLOGGER_REFRESH_TOKEN','BLOGGER_BLOG_ID'].forEach(k=>delete process.env[k]);
 try{fs.unlinkSync(TOKENS)}catch(e){}
@@ -30,7 +36,9 @@ setTimeout(async()=>{
   ck('원래 토큰 유지',bk.body.BLOGGER_REFRESH_TOKEN==='1//refresh-token',bk.body.BLOGGER_REFRESH_TOKEN);
 
   console.log('\n[18] 백업 API가 사본을 내려줌');
-  ck('4개 항목 반환',Object.keys(bk.body).length===4,Object.keys(bk.body).join(','));
+  ck('넣은 4개가 그대로 내려온다',
+     ['BLOGGER_CLIENT_ID','BLOGGER_CLIENT_SECRET','BLOGGER_REFRESH_TOKEN','BLOGGER_BLOG_ID']
+       .every(k=>bk.body[k]),Object.keys(bk.body).join(','));
 
   console.log('\n[19] 빈 값은 무시');
   try{fs.unlinkSync(TOKENS)}catch(e){}
