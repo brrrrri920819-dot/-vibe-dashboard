@@ -164,6 +164,27 @@ async function withRetry(platform, run, { tries = 2, waitMs = Number(process.env
   return last;
 }
 
+/* 자동 발행에서 '설정되지 않은 블로그'는 아예 뺀다.
+ * 예전엔 연결도 안 된 곳에 매일 시도해서 실패 로그가 쌓이고 알림이 갔다.
+ * 시도조차 못 할 곳을 매일 두드리는 건 아무에게도 도움이 되지 않는다.
+ * 자격증명이 갖춰진 곳만 남기고, 하나도 없으면 블로그스팟만 남겨
+ * "왜 아무 데도 안 올라갔지"가 아니라 분명한 실패 이유가 남게 한다. */
+function readyPlatforms(wanted) {
+  const list = Array.isArray(wanted) && wanted.length ? wanted : ['blogger'];
+  const ready = {
+    blogger: !!(tokens.get('BLOGGER_CLIENT_ID') && tokens.get('BLOGGER_CLIENT_SECRET') && tokens.get('BLOGGER_REFRESH_TOKEN'))
+             || !!(tokens.get('BLOGGER_EMAIL') && tokens.get('BLOGGER_PW')),
+    naver:   !!(tokens.get('NAVER_BLOG_ID') && (tokens.get('NAVER_COOKIES') || (tokens.get('NAVER_ID') && tokens.get('NAVER_PW')))),
+    tistory: !!(tokens.get('TISTORY_BLOG_NAME') && (tokens.get('TISTORY_COOKIES') || (tokens.get('TISTORY_ID') && tokens.get('TISTORY_PW')))),
+  };
+  const kept = list.filter(p => ready[p]);
+  const dropped = list.filter(p => !ready[p]);
+  if (dropped.length) {
+    console.log(`[Publish] 설정되지 않아 건너뜀: ${dropped.join(', ')} (설정하면 자동으로 다시 포함됩니다)`);
+  }
+  return kept.length ? kept : ['blogger'];
+}
+
 async function publishJob(job) {
   // 한달 예약 자동생성: 발행 시점에 최신 트렌딩 키워드로 글 생성
   if (job.autoGenerate && !job.content) {
@@ -1182,7 +1203,7 @@ app.post('/api/month-schedule', auth, (req, res) => {
         content:      '',
         tags:         [],
         imagePaths:   [],
-        platforms:    account.platforms || ['blogger'],
+        platforms:    readyPlatforms(account.platforms),
         scheduledAt:  scheduledAt.toISOString(),
         autoGenerate: true,
         accountId:    account.id,
@@ -2467,7 +2488,7 @@ app.listen(PORT, () => {
     try {
       const report = await generateIncomeReport();
       incomeReportCache = { data: { ...report, generatedAt: new Date().toISOString() }, date: new Date().toISOString().slice(0, 10) };
-      const platforms = account.platforms || ['blogger'];
+      const platforms = readyPlatforms(account.platforms);
       enqueue({
         id:          `income_${Date.now()}`,
         title:       report.title,
