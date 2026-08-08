@@ -221,10 +221,13 @@ async function publishJob(job) {
 
     /* 네이버 글은 항상 제휴 구조를 포함한다 (요청 사항).
        이미 제휴 블록이 붙어 있으면(일괄 발행 경로) 중복으로 넣지 않는다. */
-    if (platform === 'naver' && !job.skipAffiliate && !/함께 보면 좋은 제휴 서비스/.test(variantContent)) {
+    /* 제휴 블록은 발행되는 모든 블로그에 넣는다.
+       예전엔 네이버에만 넣었는데, 정작 지금 글이 올라가는 곳은 구글 블로그다.
+       수익이 날 수 있는 곳에 링크가 없으면 아무 의미가 없다. */
+    if (!job.skipAffiliate && job.affiliate !== false && !/함께 보면 좋은 제휴 서비스/.test(variantContent)) {
       try {
         const { applyAffiliates } = require('./affiliates/recommender');
-        const r = await applyAffiliates(variantContent, `${job.keyword || ''} ${title}`, { platform: 'naver', limit: 2 });
+        const r = await applyAffiliates(variantContent, `${job.keyword || ''} ${title}`, { platform, limit: 2, tokens });
         variantContent = r.content;
       } catch (e) {
         console.warn('[Affiliate] 네이버 제휴 삽입 실패(본문은 그대로 발행):', e.message);
@@ -525,6 +528,71 @@ app.get('/api/test-platforms', auth, async (req, res) => {
   }
 
   res.json(results);
+});
+
+/* ── 수익 우선 자동 발행 ───────────────────────────────────
+ * 트렌드 글은 조회수는 나와도 돈이 안 된다.
+ * 물건을 살까 고민하는 사람이 검색하는 말("○○ 추천/비교/후기")로 글을 쓰고,
+ * 추적 ID가 붙은 상품 링크를 넣어야 수익이 난다.
+ * 매일 정해진 개수만큼 알아서 만들어 발행 큐에 넣는다. */
+const { pickRevenueKeywords, articleShape, weeklyPlan } = require('./income/revenue-keywords');
+
+async function runRevenuePublish(perDay = 2) {
+  const { trackingStatus } = require('./affiliates/tracking');
+  const track = trackingStatus(tokens);
+  const picks = pickRevenueKeywords(perDay);
+  const made = [];
+
+  for (const kw of picks) {
+    try {
+      const shape = articleShape(kw);
+      const post = await generatePost(kw.keyword, { topic: shape.topic, tone: shape.tone, platform: 'blogger' });
+      const job = {
+        id:        `rev_${Date.now()}_${made.length}`,
+        title:     post.title,
+        content:   post.content,
+        tags:      post.tags,
+        keyword:   kw.keyword,
+        platforms: readyPlatforms(['blogger', 'naver', 'tistory']),
+        source:    'revenue',
+      };
+      enqueue(job);
+      made.push({ keyword: kw.keyword, title: post.title, jobId: job.id, why: kw.why });
+      console.log(`[Revenue] 큐 등록: "${kw.keyword}" → ${post.title}`);
+    } catch (e) {
+      console.error(`[Revenue] "${kw.keyword}" 실패: ${e.message}`);
+    }
+  }
+
+  if (!track.ok) console.warn(`[Revenue] ⚠️ ${track.reason}`);
+  return { made, tracked: track.ok, trackingReason: track.reason, planned: picks.length };
+}
+
+/** 일주일 계획 미리보기 — 무슨 글이 언제 올라갈지 */
+app.get('/api/revenue-plan', auth, (req, res) => {
+  const { trackingStatus } = require('./affiliates/tracking');
+  const perDay = Math.min(Math.max(Number(req.query.perDay) || 2, 1), 5);
+  res.json({ ...weeklyPlan(perDay), tracking: trackingStatus(tokens) });
+});
+
+/** 지금 당장 수익 글 만들어 큐에 넣기 */
+const _revJobs = new Map();
+app.post('/api/revenue-run', auth, (req, res) => {
+  const perDay = Math.min(Math.max(Number(req.body?.count) || 2, 1), 5);
+  const jobId = `revrun_${Date.now()}`;
+  _revJobs.set(jobId, { status: 'running', startedAt: new Date().toISOString() });
+  res.json({ success: true, jobId, count: perDay });
+
+  runRevenuePublish(perDay)
+    .then(r => _revJobs.set(jobId, { status: 'done', ...r }))
+    .catch(e => _revJobs.set(jobId, { status: 'error', error: e.message }));
+  setTimeout(() => _revJobs.delete(jobId), 60 * 60 * 1000);
+});
+
+app.get('/api/revenue-run-status/:jobId', auth, (req, res) => {
+  const job = _revJobs.get(req.params.jobId);
+  if (!job) return res.status(410).json({ error: '서버가 재시작되어 결과를 잃었습니다 — 다시 눌러주세요' });
+  res.json(job);
 });
 
 /* ── 전체 점검 (한 방) ─────────────────────────────────────
@@ -1900,6 +1968,8 @@ const RESTORABLE = [
   'NAVER_COOKIES', 'TISTORY_COOKIES',
   // 알림 채널 — 이것도 재배포 때 사라지면 조용히 알림이 끊긴다
   'TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID',
+  // 제휴 수익 추적 ID — 이게 없으면 링크를 걸어도 수익이 0원이다
+  'COUPANG_PARTNERS_TAG', 'NAVER_CONNECT_ID',
   'LINKPRICE_ID', 'LINKPRICE_PW',
   'COUPANG_PARTNERS_ID', 'COUPANG_PARTNERS_PW',
   'NAVER_SHOPPING_ID', 'NAVER_SHOPPING_PW',
@@ -2471,6 +2541,13 @@ app.listen(PORT, () => {
     } catch (e) { console.warn('[SelfCheck] 하루 요약 실패:', e.message); }
   }, { timezone: 'Asia/Seoul' });
   console.log('[SelfCheck] 자가 점검 등록됨 (매시간 + 매일 21:00 요약)');
+
+  /* 매일 06:30 수익 글 자동 생성·예약.
+     트렌드 글이 아니라 '살까 고민하는 사람'이 검색하는 말로 쓴다. */
+  cron.schedule('30 6 * * *', () => {
+    runRevenuePublish(2).catch(e => console.error('[Revenue] 오류:', e.message));
+  }, { timezone: 'Asia/Seoul' });
+  console.log('[Revenue] 수익 글 크론 등록됨 (매일 06:30, 하루 2편)');
 
   const store = tokens.storageInfo();
   console.log(store.persistent

@@ -36,6 +36,7 @@ function fakeTokens(values, persistent = true) {
 const FULL = {
   ANTHROPIC_API_KEY: 'sk-ant-x',
   BLOGGER_CLIENT_ID: 'a', BLOGGER_CLIENT_SECRET: 'b', BLOGGER_REFRESH_TOKEN: 'c',
+  COUPANG_PARTNERS_TAG: 'AF1234567',   // 없으면 '수익 0원' 경고가 뜬다
 };
 
 function req(method, p, port) {
@@ -123,6 +124,17 @@ function waitForServer(port, tries = 40) {
     bloggerHealth: { ok: true }, serverStartedAt: Date.now() - 3600_000,
   });
   ok('가끔 실패하는 건 문제로 보지 않는다 (헛알림 방지)', !mixed.problems.some(p => p.key === 'all_failing'));
+
+  /* 추적 ID가 없으면 글이 올라가도 수익이 0원이다 — 반드시 알려야 한다 */
+  const noTracking = sc.assess({
+    tokens: fakeTokens({ ...FULL, COUPANG_PARTNERS_TAG: null }),
+    readLog: () => [], readQueue: () => [],
+    bloggerHealth: { ok: true }, serverStartedAt: Date.now() - 3600_000,
+  });
+  const tr = noTracking.problems.find(p => p.key === 'no_affiliate_tracking');
+  ok('제휴 추적 ID가 없으면 잡아낸다', !!tr);
+  ok('수익이 0원이라고 분명히 말한다', /0원/.test(tr.detail));
+  ok('쿠팡파트너스 가입을 안내한다', /쿠팡파트너스/.test(tr.action));
 
   // ── 2) 같은 문제로 반복 알리지 않는가 ────────────────────
   sc._reset();

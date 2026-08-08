@@ -179,9 +179,15 @@ async function recommendProducts(topicText = '', limit = 5) {
   return { ok: true, query, category, products: scored.slice(0, limit) };
 }
 
-/** 추천 상품을 본문에 넣을 HTML로 (발행용 인라인 서식) */
-function productBlock(rec) {
+/** 추천 상품을 본문에 넣을 HTML로 (발행용 인라인 서식)
+ *  tokens 를 주면 상품 주소에 내 추적 ID를 붙인다.
+ *  추적 ID가 없으면 링크는 그대로 두되 수익은 발생하지 않는다 — 속이지 않는다. */
+function productBlock(rec, tokens) {
   if (!rec || !rec.ok || !rec.products.length) return '';
+  if (tokens) {
+    const { trackAll } = require('./tracking');
+    rec = { ...rec, products: trackAll(rec.products, tokens).products };
+  }
 
   const cards = rec.products.slice(0, 3).map(p => {
     const price = p.price ? p.price.toLocaleString('ko-KR') + '원' : '가격 문의';

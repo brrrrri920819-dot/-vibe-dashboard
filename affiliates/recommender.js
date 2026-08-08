@@ -10,6 +10,7 @@
  */
 
 const { crawlAffiliates } = require('./crawler');
+const { trackingStatus } = require('./tracking');
 
 // 주제 → 어울리는 제휴 카테고리 힌트
 const TOPIC_HINTS = [
@@ -104,18 +105,25 @@ function affiliateBlock(programs, topicText = '') {
  */
 async function applyAffiliates(content, topicText, opts = {}) {
   const platform = opts.platform || 'blogger';
+  const tokens = opts.tokens || null;
   const programs = await recommendAffiliates(topicText, opts);
 
-  /* 네이버는 쇼핑커넥트로 실제 상품을 걸 수 있으므로,
-     프로그램 안내만 넣지 말고 주제에 맞는 상품 링크까지 함께 넣는다. */
+  /* 추적 ID가 없으면 상품 링크를 걸어도 수익이 0원이다.
+     그 사실을 로그로 분명히 남긴다 — 조용히 0원인 게 제일 나쁘다. */
+  const track = tokens ? trackingStatus(tokens) : { ok: false, reason: '추적 ID 확인 불가' };
+  if (!track.ok) console.warn(`[Affiliate] ⚠️ ${track.reason}`);
+
+  /* 상품 링크는 플랫폼을 가리지 않고 넣는다.
+     예전엔 네이버에서만 넣었는데, 정작 지금 발행이 되는 곳은 구글 블로그다.
+     수익이 날 수 있는 곳에 링크가 없으면 아무 의미가 없다. */
   let productHtml = '';
   let products = [];
-  if (platform === 'naver') {
+  {
     try {
       const { recommendProducts, productBlock } = require('./shopping-connect');
       const rec = await recommendProducts(topicText, 3);
       if (rec.ok) {
-        productHtml = productBlock(rec);
+        productHtml = productBlock(rec, tokens);
         products = rec.products.map(p => ({ title: p.title, price: p.price, link: p.link, rate: p.commissionRate }));
         console.log(`[ShoppingConnect] 상품 ${products.length}개 삽입 (${rec.category})`);
       } else if (rec.reason) {
@@ -134,6 +142,8 @@ async function applyAffiliates(content, topicText, opts = {}) {
     content: withBanner,
     used: programs.map(p => ({ id: p.id, name: p.name, rate: p.commissionRate })),
     products,
+    tracked: track.ok,        // 이 글의 링크로 수익이 발생할 수 있는가
+    trackingReason: track.reason,
   };
 }
 

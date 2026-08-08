@@ -1169,6 +1169,22 @@ body{background:
       </div>
 
       <div class="section">
+        <div class="bp-section-title">💰 제휴 수익 추적 ID (이거 없으면 수익 0원)</div>
+        <div class="bp-humanize-tip" style="margin-bottom:10px">
+          상품 링크에 <b>내 추적 ID</b>가 붙어야 "누가 소개해서 팔렸는지"가 기록되고 수익이 들어옵니다.
+          없으면 독자가 아무리 사도 <b>0원</b>입니다.
+          <div style="margin-top:8px;color:var(--t3);font-size:12px;line-height:1.7">
+            <b>쿠팡파트너스</b> — partners.coupang.com 가입(대개 즉시~하루) → 내 아이디(AF로 시작) 복사.
+            애드센스와 달리 <b>심사 대기가 거의 없어 일주일 안에 수익이 가능한 유일한 경로</b>입니다.
+          </div>
+        </div>
+        <input class="bp-inp" id="tr-coupang" placeholder="COUPANG_PARTNERS_TAG (예: AF1234567)" autocapitalize="off">
+        <input class="bp-inp" id="tr-naver" placeholder="NAVER_CONNECT_ID (네이버 쇼핑커넥트, 선택)" autocapitalize="off">
+        <button class="bp-pub-btn" style="max-width:180px" id="tr-save-btn" onclick="saveTracking()">💰 저장</button>
+        <div id="tr-result" style="margin-top:10px;font-size:13px"></div>
+      </div>
+
+      <div class="section">
         <div class="bp-section-title">🍪 네이버·티스토리 쿠키 로그인 (권장)</div>
         <div class="bp-humanize-tip" style="margin-bottom:10px">
           네이버·카카오는 <b>자동 로그인을 막습니다.</b> 아이디·비밀번호 방식은 캡차·기기 인증 때문에 계속 깨져요.<br>
@@ -3124,6 +3140,39 @@ function copyBlobValue() {
   navigator.clipboard.writeText(v)
     .then(function(){ note.textContent = '✅ 복사됨 — Railway Variables 에 CREDENTIALS_BLOB 으로 붙여넣으세요'; })
     .catch(function(){ note.textContent = '복사 실패 — 위 상자를 길게 눌러 직접 복사하세요'; });
+}
+
+/* 제휴 추적 ID 저장 — 수익이 실제로 잡히느냐가 여기서 갈린다 */
+async function saveTracking() {
+  var btn = document.getElementById('tr-save-btn');
+  var out = document.getElementById('tr-result');
+  var payload = {};
+  var c = (document.getElementById('tr-coupang').value || '').trim();
+  var n = (document.getElementById('tr-naver').value || '').trim();
+  if (c) payload.COUPANG_PARTNERS_TAG = c;
+  if (n) payload.NAVER_CONNECT_ID = n;
+  if (!Object.keys(payload).length) { bpToast('입력한 값이 없습니다', 'err'); return; }
+
+  btn.disabled = true; btn.innerHTML = '<span class="bp-spinner"></span>저장 중';
+  try {
+    var d = await bpFetch('/api/keys', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    out.innerHTML = '<span style="color:var(--ok)">✅ 저장됨 — 이제부터 발행되는 글의 상품 링크에 추적 ID가 붙습니다</span>';
+    try {
+      var cc = JSON.parse(localStorage.getItem('riri_bp_creds') || '{}');
+      Object.keys(payload).forEach(function(k){ cc[k] = payload[k]; });
+      localStorage.setItem('riri_bp_creds', JSON.stringify(cc));
+    } catch (e) {}
+    document.getElementById('tr-coupang').value = '';
+    document.getElementById('tr-naver').value = '';
+    loadStatusCard();
+    bpToast('💰 추적 ID 저장 완료', 'ok');
+  } catch (e) {
+    out.innerHTML = '<span style="color:var(--err)">❌ ' + escHtml(e.message) + '</span>';
+  } finally {
+    btn.disabled = false; btn.textContent = '💰 저장';
+  }
 }
 
 /* 쿠키 저장 — 로그인 단계를 건너뛰게 해주는 값이라 별도로 다룬다 */

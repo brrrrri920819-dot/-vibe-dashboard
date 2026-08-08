@@ -96,6 +96,18 @@ function assess({ tokens, readLog, readQueue, bloggerHealth, serverStartedAt }) 
     });
   }
 
+  /* 제휴 링크에 추적 ID가 없으면 글이 아무리 올라가도 수익은 0원이다.
+     조용히 0원인 상태가 제일 나쁘므로 분명히 알린다. */
+  if (!tokens.get('COUPANG_PARTNERS_TAG') && !tokens.get('NAVER_CONNECT_ID')) {
+    problems.push({
+      key: 'no_affiliate_tracking',
+      severity: 'high',
+      title: '제휴 수익 추적이 안 붙어 있습니다',
+      detail: '지금 글에 들어가는 상품 링크로는 구매가 일어나도 수익이 0원입니다.',
+      action: '쿠팡파트너스 가입 후 설정 탭에 COUPANG_PARTNERS_TAG 입력 (가입 즉시 발급)',
+    });
+  }
+
   // ── 최근 발행이 계속 실패하고 있는가 ──────────────────────
   const log = (typeof readLog === 'function' ? readLog() : []) || [];
   const recent = log.slice(0, 10);
