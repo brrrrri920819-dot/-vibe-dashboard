@@ -18,6 +18,7 @@ const path  = require('path');
 const { generatePost }         = require('../content/generator');
 const { generateShortsScript } = require('../content/shorts-script');
 const { SIDE_HUSTLES }         = require('./analyzer');
+const { enqueue }              = require('../scheduler/queue');
 
 // ── 상수 ─────────────────────────────────────────────────────────────────────
 
@@ -29,13 +30,16 @@ const CACHE_FILE = path.join(DATA_DIR, 'pipeline-cache.json');
 // ── 파이프라인 메타데이터 ─────────────────────────────────────────────────────
 
 const PIPELINE_CONFIGS = {
-  naver_blog:   { name: '네이버 블로그',  emoji: '📝', totalSteps: 3, estimatedMinutes: 2, autoLevel: '100% 자동'  },
-  ai_freelance: { name: 'AI 프리랜서',   emoji: '💼', totalSteps: 3, estimatedMinutes: 3, autoLevel: '분석 자동'  },
-  shorts:       { name: '유튜브 숏츠',   emoji: '🎬', totalSteps: 4, estimatedMinutes: 2, autoLevel: '대본 자동'  },
-  smart_store:  { name: '스마트스토어',  emoji: '🛍️', totalSteps: 3, estimatedMinutes: 4, autoLevel: '리스팅 자동' },
-  ebook:        { name: '전자책',        emoji: '📚', totalSteps: 5, estimatedMinutes: 5, autoLevel: '초안 자동'  },
-  class101:     { name: 'Class101',     emoji: '🎓', totalSteps: 3, estimatedMinutes: 3, autoLevel: '기획 자동'  },
-  app_tech:     { name: '앱테크',        emoji: '📱', totalSteps: 3, estimatedMinutes: 1, autoLevel: '목록 자동'  },
+  /* autoLevel 은 '어디까지 자동인가'를 사실대로 적는다.
+     '100% 자동'이라 써놓고 실제로는 자료만 만들어주면 그게 제일 나쁘다.
+     글을 만들어 발행까지 가는 건 네이버 블로그 하나뿐이다. */
+  naver_blog:   { name: '네이버 블로그',  emoji: '📝', totalSteps: 3, estimatedMinutes: 2, autoLevel: '글 작성 + 발행 예약' },
+  ai_freelance: { name: 'AI 프리랜서',   emoji: '💼', totalSteps: 3, estimatedMinutes: 3, autoLevel: '자료만 (등록은 직접)' },
+  shorts:       { name: '유튜브 숏츠',   emoji: '🎬', totalSteps: 4, estimatedMinutes: 2, autoLevel: '대본만 (촬영·업로드는 직접)' },
+  smart_store:  { name: '스마트스토어',  emoji: '🛍️', totalSteps: 3, estimatedMinutes: 4, autoLevel: '상품안만 (등록은 직접)' },
+  ebook:        { name: '전자책',        emoji: '📚', totalSteps: 5, estimatedMinutes: 5, autoLevel: '초안만 (편집·등록은 직접)' },
+  class101:     { name: 'Class101',     emoji: '🎓', totalSteps: 3, estimatedMinutes: 3, autoLevel: '기획안만 (제작은 직접)' },
+  app_tech:     { name: '앱테크',        emoji: '📱', totalSteps: 3, estimatedMinutes: 1, autoLevel: '목록만 (참여는 직접)' },
 };
 
 // ── 캐시 유틸 ────────────────────────────────────────────────────────────────
@@ -240,13 +244,34 @@ async function pipelineNaverBlog() {
     };
   });
 
-  // Step 3: 발행 큐 준비
+  /* Step 3: 발행 큐에 진짜로 넣는다.
+     예전엔 "발행 큐 준비 완료"라고 표시만 하고 큐에 넣지 않았다.
+     화면에는 '100% 자동'이라고 떠 있는데 글은 만들어놓고 버려졌다.
+     만들었으면 올라가야 한다. */
+  let queued = null;
   await runStep(steps[2], async () => {
+    if (!postData || !postData.content) {
+      throw new Error('글이 만들어지지 않아 큐에 넣을 수 없습니다');
+    }
+    const runAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    const job = {
+      id:         `hustle_naver_${Date.now()}`,
+      title:      postData.title,
+      content:    postData.content,
+      tags:       postData.tags || [],
+      keyword,
+      platforms:  ['naver', 'blogger'],   // 설정된 곳만 실제로 시도된다
+      scheduledAt: runAt,
+      source:     'hustle:naver_blog',
+    };
+    enqueue(job);
+    queued = job;
     return {
-      readyToPublish: true,
-      platform:       'naver_blog',
-      scheduledAt:    new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-      estimatedUV:    '일 100~500 UV (트렌드 키워드 기준)',
+      queued:      true,
+      jobId:       job.id,
+      scheduledAt: runAt,
+      platforms:   job.platforms,
+      note:        '설정된 블로그에만 실제로 발행됩니다',
     };
   });
 
@@ -256,8 +281,11 @@ async function pipelineNaverBlog() {
     title:          postData?.title,
     content:        postData?.content,
     tags:           postData?.tags,
-    readyToPublish: true,
-    summary:        `"${keyword}" 키워드로 블로그 포스팅 완성 — 발행 큐 대기`,
+    queuedJobId:    queued?.id || null,
+    readyToPublish: !!queued,
+    summary:        queued
+      ? `"${keyword}" 글 완성 — 5분 뒤 발행 예약됨`
+      : `"${keyword}" 글은 만들었지만 예약에 실패했습니다`,
   };
 }
 
